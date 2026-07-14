@@ -223,3 +223,9 @@ gym:      oklch(0.62 0.13 55)    health:   oklch(0.55 0.13 20)
 - Sign-up stays disabled; never build multi-user features (NG1).
 - Keep the mockup (`docs/design/LifeOS.dc.html`) as the visual reference for
   every screen; open questions live in spec §13.
+
+RLS bypass rule: server-side Drizzle connects as `postgres` and BYPASSES RLS. Every
+Drizzle query that reads or writes user-scoped tables MUST filter by the session user's
+id explicitly — RLS does not protect this path. Prefer a single helper (e.g. a
+`db.forUser(userId)` wrapper or a required `userId` arg on all data functions) so the
+filter can't be forgotten. Treat a user-scoped query without a user_id filter as a bug.
