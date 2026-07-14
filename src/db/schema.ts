@@ -1,0 +1,364 @@
+/**
+ * LifeOS core data model — spec §7, implemented in full (hub and spoke).
+ *
+ * All seven core entities ship in Phase 1 even though Phase 1 UIs only
+ * exercise Tasks, Habits, and Events. Every core entity carries:
+ * id, domain, created_at, updated_at, archived (spec §7) plus user_id for
+ * RLS (NFR-6). Log tables (habit_completions, metric_datapoints) are
+ * sub-records of their parent entity: they carry id/user_id/created_at only.
+ *
+ * RLS: every table is owner-only via `user_id = auth.uid()`. On plain local
+ * Postgres (not Supabase), apply scripts/local-auth-shim.sql first — it
+ * provides the `auth.uid()` function and the `authenticated` role that
+ * Supabase ships natively.
+ */
+import { sql } from "drizzle-orm";
+import {
+  boolean,
+  check,
+  date,
+  doublePrecision,
+  index,
+  jsonb,
+  pgEnum,
+  pgPolicy,
+  pgTable,
+  smallint,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  type AnyPgColumn,
+} from "drizzle-orm/pg-core";
+import { authenticatedRole } from "drizzle-orm/supabase";
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+export const domainEnum = pgEnum("domain", [
+  "personal",
+  "academic",
+  "work",
+  "finance",
+  "gym",
+  "health",
+]);
+
+export const goalHorizonEnum = pgEnum("goal_horizon", [
+  "life",
+  "yearly",
+  "quarterly",
+  "monthly",
+]);
+
+export const goalStatusEnum = pgEnum("goal_status", [
+  "active",
+  "achieved",
+  "abandoned",
+  "paused",
+]);
+
+export const taskStatusEnum = pgEnum("task_status", ["open", "done", "dropped"]);
+
+export const eventKindEnum = pgEnum("event_kind", [
+  "appointment",
+  "deadline",
+  "session",
+  "bill",
+  "birthday",
+  "other",
+]);
+
+export const metricDirectionEnum = pgEnum("metric_direction", [
+  "higher-better",
+  "lower-better",
+  "target-range",
+]);
+
+export const habitCompletionStatusEnum = pgEnum("habit_completion_status", [
+  "done",
+  "skipped",
+]);
+
+export const linkRelationEnum = pgEnum("link_relation", [
+  "funds",
+  "supports",
+  "blocks",
+  "relates-to",
+]);
+
+/** Which core table a Link endpoint lives in (uuid alone is not resolvable). */
+export const entityTypeEnum = pgEnum("entity_type", [
+  "goal",
+  "task",
+  "habit",
+  "event",
+  "metric",
+  "journal_entry",
+]);
+
+// ---------------------------------------------------------------------------
+// Shared payload / JSON types
+// ---------------------------------------------------------------------------
+
+/** Habit.schedule shapes (spec §7.3: daily, Mon/Wed/Fri, 3×/week). */
+export type HabitSchedule =
+  | { type: "daily" }
+  | {
+      type: "weekly_days";
+      days: ("mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun")[];
+    }
+  | { type: "times_per_week"; times: number };
+
+export type GymSetLog = { kg: number; reps: number; done?: boolean };
+
+/** Event.payload by kind (spec §7.4); open-ended for future kinds. */
+export type EventPayload =
+  | {
+      template?: string;
+      exercises: {
+        name: string;
+        targetSets: number;
+        targetReps: number;
+        targetKg?: number;
+        sets: GymSetLog[];
+      }[];
+    }
+  | { amount: number; currency: string; autopay?: boolean }
+  | Record<string, unknown>;
+
+// ---------------------------------------------------------------------------
+// Shared columns (spec §7 preamble + NFR-6)
+// ---------------------------------------------------------------------------
+
+const coreEntityColumns = () => ({
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().default(sql`auth.uid()`),
+  domain: domainEnum("domain").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+  archived: boolean("archived").notNull().default(false),
+});
+
+const logRowColumns = () => ({
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().default(sql`auth.uid()`),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** Owner-only RLS policy: rows are visible/writable iff user_id = auth.uid(). */
+const ownerPolicy = (table: string, userId: AnyPgColumn) =>
+  pgPolicy(`${table}_owner_all`, {
+    as: "permissive",
+    for: "all",
+    to: authenticatedRole,
+    using: sql`(select auth.uid()) = ${userId}`,
+    withCheck: sql`(select auth.uid()) = ${userId}`,
+  });
+
+// ---------------------------------------------------------------------------
+// Goal (§7.1)
+// ---------------------------------------------------------------------------
+
+export const goals = pgTable(
+  "goals",
+  {
+    ...coreEntityColumns(),
+    title: text("title").notNull(),
+    description: text("description"),
+    horizon: goalHorizonEnum("horizon").notNull(),
+    parentGoalId: uuid("parent_goal_id").references((): AnyPgColumn => goals.id, {
+      onDelete: "set null",
+    }),
+    targetDate: date("target_date"),
+    status: goalStatusEnum("status").notNull().default("active"),
+    successCriteria: text("success_criteria"),
+  },
+  (t) => [
+    index("goals_user_idx").on(t.userId),
+    index("goals_parent_idx").on(t.parentGoalId),
+    index("goals_status_idx").on(t.status),
+    ownerPolicy("goals", t.userId),
+  ],
+).enableRLS();
+
+// ---------------------------------------------------------------------------
+// Event (§7.4) — before tasks, which reference it
+// ---------------------------------------------------------------------------
+
+export const events = pgTable(
+  "events",
+  {
+    ...coreEntityColumns(),
+    title: text("title").notNull(),
+    start: timestamp("start", { withTimezone: true }).notNull(),
+    end: timestamp("end", { withTimezone: true }),
+    allDay: boolean("all_day").notNull().default(false),
+    kind: eventKindEnum("kind").notNull().default("other"),
+    goalId: uuid("goal_id").references(() => goals.id, { onDelete: "set null" }),
+    payload: jsonb("payload").$type<EventPayload>(),
+  },
+  (t) => [
+    index("events_user_idx").on(t.userId),
+    index("events_start_idx").on(t.start),
+    index("events_kind_idx").on(t.kind),
+    ownerPolicy("events", t.userId),
+  ],
+).enableRLS();
+
+// ---------------------------------------------------------------------------
+// Task (§7.2)
+// ---------------------------------------------------------------------------
+
+export const tasks = pgTable(
+  "tasks",
+  {
+    ...coreEntityColumns(),
+    title: text("title").notNull(),
+    notes: text("notes"),
+    dueDate: date("due_date"),
+    priority: smallint("priority").notNull().default(2),
+    status: taskStatusEnum("status").notNull().default("open"),
+    goalId: uuid("goal_id").references(() => goals.id, { onDelete: "set null" }),
+    eventId: uuid("event_id").references(() => events.id, {
+      onDelete: "set null",
+    }),
+    /** RFC 5545 RRULE string, e.g. "FREQ=WEEKLY;BYDAY=SU". */
+    recurrence: text("recurrence"),
+  },
+  (t) => [
+    index("tasks_user_idx").on(t.userId),
+    index("tasks_status_idx").on(t.status),
+    index("tasks_due_idx").on(t.dueDate),
+    check("tasks_priority_range", sql`${t.priority} BETWEEN 1 AND 3`),
+    ownerPolicy("tasks", t.userId),
+  ],
+).enableRLS();
+
+// ---------------------------------------------------------------------------
+// Habit (§7.3) + completion log
+// ---------------------------------------------------------------------------
+
+export const habits = pgTable(
+  "habits",
+  {
+    ...coreEntityColumns(),
+    title: text("title").notNull(),
+    schedule: jsonb("schedule").$type<HabitSchedule>().notNull(),
+    goalId: uuid("goal_id").references(() => goals.id, { onDelete: "set null" }),
+  },
+  (t) => [index("habits_user_idx").on(t.userId), ownerPolicy("habits", t.userId)],
+).enableRLS();
+
+export const habitCompletions = pgTable(
+  "habit_completions",
+  {
+    ...logRowColumns(),
+    habitId: uuid("habit_id")
+      .notNull()
+      .references(() => habits.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    status: habitCompletionStatusEnum("status").notNull(),
+  },
+  (t) => [
+    uniqueIndex("habit_completions_habit_date_uq").on(t.habitId, t.date),
+    index("habit_completions_user_idx").on(t.userId),
+    index("habit_completions_date_idx").on(t.date),
+    ownerPolicy("habit_completions", t.userId),
+  ],
+).enableRLS();
+
+// ---------------------------------------------------------------------------
+// Metric (§7.5) + time-series datapoints
+// ---------------------------------------------------------------------------
+
+export const metrics = pgTable(
+  "metrics",
+  {
+    ...coreEntityColumns(),
+    name: text("name").notNull(),
+    unit: text("unit"),
+    direction: metricDirectionEnum("direction").notNull(),
+  },
+  (t) => [
+    index("metrics_user_idx").on(t.userId),
+    ownerPolicy("metrics", t.userId),
+  ],
+).enableRLS();
+
+export const metricDatapoints = pgTable(
+  "metric_datapoints",
+  {
+    ...logRowColumns(),
+    metricId: uuid("metric_id")
+      .notNull()
+      .references(() => metrics.id, { onDelete: "cascade" }),
+    timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
+    value: doublePrecision("value").notNull(),
+    source: text("source"),
+  },
+  (t) => [
+    index("metric_datapoints_metric_ts_idx").on(t.metricId, t.timestamp),
+    index("metric_datapoints_user_idx").on(t.userId),
+    ownerPolicy("metric_datapoints", t.userId),
+  ],
+).enableRLS();
+
+// ---------------------------------------------------------------------------
+// Journal entry (§7.6)
+// ---------------------------------------------------------------------------
+
+export const journalEntries = pgTable(
+  "journal_entries",
+  {
+    ...coreEntityColumns(),
+    date: date("date").notNull(),
+    /** Markdown. Excluded from LLM context by default (NFR-1). */
+    body: text("body").notNull(),
+    mood: smallint("mood"),
+    energy: smallint("energy"),
+    tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
+  },
+  (t) => [
+    index("journal_entries_user_idx").on(t.userId),
+    index("journal_entries_date_idx").on(t.date),
+    check(
+      "journal_entries_mood_range",
+      sql`${t.mood} IS NULL OR ${t.mood} BETWEEN 1 AND 5`,
+    ),
+    check(
+      "journal_entries_energy_range",
+      sql`${t.energy} IS NULL OR ${t.energy} BETWEEN 1 AND 5`,
+    ),
+    ownerPolicy("journal_entries", t.userId),
+  ],
+).enableRLS();
+
+// ---------------------------------------------------------------------------
+// Link (§7.7) — cross-domain graph between any two core objects
+// ---------------------------------------------------------------------------
+
+export const links = pgTable(
+  "links",
+  {
+    ...coreEntityColumns(),
+    fromId: uuid("from_id").notNull(),
+    fromType: entityTypeEnum("from_type").notNull(),
+    toId: uuid("to_id").notNull(),
+    toType: entityTypeEnum("to_type").notNull(),
+    relation: linkRelationEnum("relation").notNull(),
+  },
+  (t) => [
+    uniqueIndex("links_from_to_relation_uq").on(t.fromId, t.toId, t.relation),
+    index("links_user_idx").on(t.userId),
+    ownerPolicy("links", t.userId),
+  ],
+).enableRLS();

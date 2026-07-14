@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+/* LifeOS design tokens — docs/design/LifeOS.dc.html via CLAUDE.md.
+   Flat, dense, utilitarian: no border-radius, no shadows, no gradients,
+   light theme only. */
+@theme {
+  --color-*: initial;
+  --color-bg: #f2f2ee;
+  --color-surface: #ffffff;
+  --color-ink: #1a1a18;
+  --color-inverse: #f2f2ee;
+  --color-border-outer: #d9d9d2;
+  --color-border-header: #e5e5de;
+  --color-border-row: #efefe8;
+  --color-muted: #6e6e66;
+  --color-faint: #8b8b80;
+  --color-faintest: #a3a39a;
+  --color-subtle: #fafaf6;
+  --color-border-input: #c9c9c0;
+  --color-track: #ecece5;
+  --color-bar-inactive: #c9c9c0;
+
+  --color-domain-personal: oklch(0.55 0.09 200);
+  --color-domain-academic: oklch(0.55 0.09 285);
+  --color-domain-work: oklch(0.55 0.09 250);
+  --color-domain-finance: oklch(0.55 0.1 150);
+  --color-domain-gym: oklch(0.62 0.13 55);
+  --color-domain-health: oklch(0.55 0.13 20);
+
+  --color-status-good: oklch(0.55 0.1 150);
+  --color-status-warn: oklch(0.62 0.13 55);
+  --color-status-bad: oklch(0.55 0.13 20);
+
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, Menlo, monospace;
+}
+
+@layer base {
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font: 13px/1.45 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  a:hover {
+    color: #000;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+    color: inherit;
+  }
+}
