@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body{margin:0;background:#f2f2ee;color:#1a1a18;font:13px/1.45 "Helvetica Neue",Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+  a{color:#1a1a18;text-decoration:underline;text-underline-offset:2px}
+  a:hover{color:#000}
+  input,select,textarea,button{font:inherit;color:inherit}
+  *{box-sizing:border-box}
+</style>
+</helmet>
+
+<header style="background:#ffffff;border-bottom:1px solid #d9d9d2">
+  <div style="max-width:1280px;margin:0 auto;padding:10px 16px 8px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap">
+    <div style="display:flex;align-items:baseline;gap:8px">
+      <span style="font:700 15px ui-monospace,Menlo,monospace;letter-spacing:.05em">LIFEOS</span>
+      <span style="font:600 9px ui-monospace,Menlo,monospace;letter-spacing:.06em;border:1px solid #d9d9d2;padding:1px 5px;color:#8b8b80">V0.1</span>
+    </div>
+    <div style="flex:1"></div>
+    <div style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66;display:flex;gap:14px;flex-wrap:wrap">
+      <span>NW {{nwF}}</span>
+      <span>WAM 78.4</span>
+      <span>BENCH e1RM 95.0</span>
+      <span>JOURNAL ×23</span>
+    </div>
+    <div style="font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.06em">TUE 14 JUL 2026</div>
+  </div>
+  <nav style="max-width:1280px;margin:0 auto;padding:0 8px;display:flex;overflow-x:auto">
+    <sc-for list="{{navItems}}" as="it" hint-placeholder-count="7">
+      <button onClick="{{it.go}}" style="appearance:none;background:none;border:none;border-bottom:2px solid {{it.bc}};color:{{it.cl}};padding:9px 12px;cursor:pointer;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.08em;white-space:nowrap">{{it.label}}</button>
+    </sc-for>
+  </nav>
+</header>
+
+<sc-if value="{{isToday}}" hint-placeholder-val="{{true}}">
+<section data-screen-label="Today dashboard" style="max-width:1280px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+  <sc-if value="{{nudgeOn}}" hint-placeholder-val="{{true}}">
+    <div style="background:#1a1a18;color:#f2f2ee;padding:10px 14px;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap">
+      <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#a3a39a;flex:none">ASSISTANT</span>
+      <span style="font-size:12.5px;flex:1;min-width:260px">{{nudgeText}}</span>
+      <button onClick="{{goAssistant}}" style="appearance:none;background:none;border:none;color:#f2f2ee;text-decoration:underline;text-underline-offset:2px;cursor:pointer;font:11px ui-monospace,Menlo,monospace;padding:0">ask a follow-up →</button>
+    </div>
+  </sc-if>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;align-items:start">
+
+    <div style="background:#ffffff;border:1px solid #d9d9d2">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">SCHEDULE</span>
+        <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">6 events</span>
+      </div>
+      <sc-for list="{{todayEvents}}" as="e" hint-placeholder-count="6">
+        <div style="display:flex;gap:10px;align-items:baseline;padding:8px 12px;border-bottom:1px solid #efefe8;opacity:{{e.op}}">
+          <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66;width:58px;flex:none">{{e.tm}}</span>
+          <span style="width:7px;height:7px;background:{{e.col}};flex:none"></span>
+          <span style="flex:1;font-size:12.5px;text-decoration:{{e.td}}">{{e.t}}</span>
+          <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80;text-transform:uppercase">{{e.d}}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="background:#ffffff;border:1px solid #d9d9d2">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">TASKS</span>
+        <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">{{taskCount}}</span>
+      </div>
+      <sc-for list="{{tasks}}" as="t" hint-placeholder-count="5">
+        <div style="display:flex;gap:10px;align-items:baseline;padding:8px 12px;border-bottom:1px solid #efefe8">
+          <button onClick="{{t.tog}}" style="width:16px;height:16px;border:1.5px solid #1a1a18;background:{{t.bg}};color:#ffffff;font-size:10px;line-height:1;cursor:pointer;flex:none;padding:0">{{t.chk}}</button>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12.5px;text-decoration:{{t.td}};opacity:{{t.op}}">{{t.t}}</div>
+            <div style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80;text-transform:uppercase">{{t.meta}}</div>
+          </div>
+          <span style="font:600 10px ui-monospace,Menlo,monospace;border:1px solid #d9d9d2;padding:1px 5px;color:#6e6e66;flex:none">P{{t.p}}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="background:#ffffff;border:1px solid #d9d9d2">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">HABITS</span>
+        <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">{{habitCount}}</span>
+      </div>
+      <sc-for list="{{habits}}" as="h" hint-placeholder-count="5">
+        <div style="display:flex;gap:10px;align-items:baseline;padding:8px 12px;border-bottom:1px solid #efefe8">
+          <button onClick="{{h.tog}}" style="width:16px;height:16px;border:1.5px solid #1a1a18;background:{{h.bg}};color:#ffffff;font-size:10px;line-height:1;cursor:pointer;flex:none;padding:0">{{h.chk}}</button>
+          <span style="flex:1;font-size:12.5px;text-decoration:{{h.td}};opacity:{{h.op}}">{{h.t}}</span>
+          <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">×{{h.streak}}</span>
+        </div>
+      </sc-for>
+      <div style="padding:8px 12px;font:10px ui-monospace,Menlo,monospace;color:#8b8b80">7-DAY ADHERENCE 71%</div>
+    </div>
+
+    <div style="background:#ffffff;border:1px solid #d9d9d2">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">BUDGET — JULY</span>
+        <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">{{budgetTotF}}</span>
+      </div>
+      <sc-for list="{{budgets}}" as="b" hint-placeholder-count="5">
+        <div style="padding:7px 12px;border-bottom:1px solid #efefe8">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:12px">{{b.c}}</span>
+            <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">{{b.sF}} / {{b.cF}}</span>
+          </div>
+          <div style="height:4px;background:#ecece5;margin-top:5px">
+            <div style="height:4px;background:{{b.col}};width:{{b.w}}"></div>
+          </div>
+        </div>
+      </sc-for>
+      <div style="display:flex;gap:6px;padding:10px 12px">
+        <input value="{{expAmt}}" onChange="{{onExpAmt}}" placeholder="0.00" inputMode="decimal" style="width:76px;border:1px solid #c9c9c0;background:#fafaf6;padding:6px 8px;font:12px ui-monospace,Menlo,monospace">
+        <select value="{{expCat}}" onChange="{{onExpCat}}" style="flex:1;min-width:0;border:1px solid #c9c9c0;background:#fafaf6;padding:6px 4px;font-size:12px">
+          <option>Groceries</option>
+          <option>Eating out</option>
+          <option>Transport</option>
+          <option>Subscriptions</option>
+          <option>Other</option>
+        </select>
+        <button onClick="{{addExpense}}" style="background:#1a1a18;color:#ffffff;border:none;padding:6px 12px;cursor:pointer;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.06em">LOG</button>
+      </div>
+    </div>
+
+    <div style="background:#ffffff;border:1px solid #d9d9d2">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">WORKOUT</span>
+        <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">UPPER A · 07:00</span>
+      </div>
+      <sc-for list="{{workoutSummary}}" as="x" hint-placeholder-count="5">
+        <div style="display:flex;gap:10px;align-items:baseline;padding:8px 12px;border-bottom:1px solid #efefe8">
+          <span style="flex:1;font-size:12.5px">{{x.n}}</span>
+          <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">{{x.tgt}}</span>
+          <span style="font:600 11px ui-monospace,Menlo,monospace;color:{{x.pcol}};width:32px;text-align:right">{{x.prog}}</span>
+        </div>
+      </sc-for>
+      <button onClick="{{goGym}}" style="display:block;width:100%;background:#fafaf6;border:none;border-top:1px solid #e5e5de;padding:9px 12px;cursor:pointer;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.06em;text-align:left">OPEN SESSION LOG →</button>
+    </div>
+
+  </div>
+</section>
+</sc-if>
+
+<sc-if value="{{isGoals}}" hint-placeholder-val="{{false}}">
+<section data-screen-label="Goals" style="max-width:1280px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+  <div style="display:flex;justify-content:space-between;align-items:baseline">
+    <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">GOALS — ALL DOMAINS, BY HORIZON</span>
+    <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">10 active</span>
+  </div>
+  <sc-for list="{{horizons}}" as="hz" hint-placeholder-count="3">
+    <div style="background:#ffffff;border:1px solid #d9d9d2">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">{{hz.label}}</span>
+        <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">{{hz.n}}</span>
+      </div>
+      <sc-for list="{{hz.rows}}" as="g" hint-placeholder-count="3">
+        <div style="display:grid;grid-template-columns:1fr 200px;gap:12px;align-items:center;padding:9px 12px;border-bottom:1px solid #efefe8">
+          <div style="display:flex;gap:9px;align-items:baseline;min-width:0">
+            <span style="width:7px;height:7px;background:{{g.col}};flex:none"></span>
+            <div style="min-width:0">
+              <div style="font-size:13px;font-weight:500">{{g.t}}</div>
+              <div style="font:11px ui-monospace,Menlo,monospace;color:#8b8b80">{{g.sub}}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:4px;background:#ecece5">
+              <div style="height:4px;background:{{g.col}};width:{{g.w}}"></div>
+            </div>
+            <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66;width:34px;text-align:right">{{g.pct}}%</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-for>
+</section>
+</sc-if>
+
+<sc-if value="{{isCalendar}}" hint-placeholder-val="{{false}}">
+<section data-screen-label="Calendar" style="max-width:1280px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+  <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap">
+    <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">JULY 2026 · WEEK 29</span>
+    <div style="flex:1"></div>
+    <sc-for list="{{legend}}" as="l" hint-placeholder-count="6">
+      <span style="display:inline-flex;align-items:center;gap:5px;font:10px ui-monospace,Menlo,monospace;color:#6e6e66;text-transform:uppercase">
+        <span style="width:7px;height:7px;background:{{l.col}}"></span>{{l.d}}
+      </span>
+    </sc-for>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;align-items:stretch">
+    <sc-for list="{{calDays}}" as="d" hint-placeholder-count="7">
+      <div style="background:#ffffff;border:1px solid #d9d9d2;min-height:190px">
+        <div style="padding:6px 9px;border-bottom:1px solid #e5e5de;display:flex;justify-content:space-between;background:{{d.hbg}};color:{{d.hcl}}">
+          <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em">{{d.dow}}</span>
+          <span style="font:600 11px ui-monospace,Menlo,monospace">{{d.dt}}</span>
+        </div>
+        <div style="padding:7px 9px;display:flex;flex-direction:column;gap:4px">
+          <sc-for list="{{d.allday}}" as="a" hint-placeholder-count="0">
+            <div style="display:flex;gap:6px;align-items:center;border:1px solid #e2e2da;background:#fafaf6;padding:3px 6px;font-size:11px">
+              <span style="width:6px;height:6px;background:{{a.col}};flex:none"></span>{{a.t}}
+            </div>
+          </sc-for>
+          <sc-for list="{{d.ev}}" as="e" hint-placeholder-count="3">
+            <div style="display:flex;gap:6px;align-items:baseline;opacity:{{e.op}}">
+              <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80;width:34px;flex:none">{{e.tm}}</span>
+              <span style="width:6px;height:6px;background:{{e.col}};flex:none"></span>
+              <span style="font-size:11.5px;text-decoration:{{e.td}}">{{e.t}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+</sc-if>
+
+<sc-if value="{{isGym}}" hint-placeholder-val="{{false}}">
+<section data-screen-label="Gym" style="max-width:1280px;margin:0 auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px;align-items:start">
+
+  <div style="background:#ffffff;border:1px solid #d9d9d2">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+      <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">SESSION — UPPER A · TUE 14 JUL</span>
+      <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">PRE-FILLED FROM JUL 10</span>
+    </div>
+    <sc-for list="{{exercises}}" as="x" hint-placeholder-count="5">
+      <div style="border-bottom:1px solid #efefe8;padding-bottom:6px">
+        <div style="padding:9px 12px 0;display:flex;justify-content:space-between;align-items:baseline">
+          <span style="font-size:12.5px;font-weight:600">{{x.n}}</span>
+          <span style="font:10px ui-monospace,Menlo,monospace;color:#6e6e66">{{x.tgt}}</span>
+        </div>
+        <div style="padding:0 12px 3px;font:10px ui-monospace,Menlo,monospace;color:#8b8b80">LAST: {{x.last}}</div>
+        <sc-for list="{{x.sets}}" as="s" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:10px;padding:3px 12px">
+            <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80;width:44px;flex:none">SET {{s.i}}</span>
+            <span style="flex:1;font:12px ui-monospace,Menlo,monospace">{{s.val}}</span>
+            <button onClick="{{s.tog}}" style="width:20px;height:20px;border:1.5px solid #1a1a18;background:{{s.bg}};color:#ffffff;cursor:pointer;font-size:11px;line-height:1;padding:0">{{s.chk}}</button>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+    <div style="padding:9px 12px;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.06em;color:#6e6e66">{{setsDone}} OF {{setsTotal}} SETS LOGGED</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="background:#ffffff;border:1px solid #d9d9d2">
+      <div style="padding:10px 12px;border-bottom:1px solid #e5e5de">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">ESTIMATED 1RM — PRS</span>
+      </div>
+      <sc-for list="{{prs}}" as="p" hint-placeholder-count="4">
+        <div style="display:flex;gap:10px;align-items:baseline;padding:8px 12px;border-bottom:1px solid #efefe8">
+          <span style="flex:1;font-size:12.5px">{{p.lift}}</span>
+          <span style="font:600 12px ui-monospace,Menlo,monospace">{{p.e1}}</span>
+          <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80;width:44px;text-align:right">{{p.when}}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="background:#ffffff;border:1px solid #d9d9d2">
+      <div style="padding:10px 12px;border-bottom:1px solid #e5e5de">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">BENCH e1RM — LAST 8 WEEKS</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:4px;height:64px;padding:12px 12px 0">
+        <sc-for list="{{benchBars}}" as="b" hint-placeholder-count="8">
+          <div style="flex:1;background:{{b.bg}};height:{{b.h}}"></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:4px 12px 10px;font:10px ui-monospace,Menlo,monospace;color:#8b8b80">
+        <span>87.5 KG</span><span>95.0 KG</span>
+      </div>
+    </div>
+
+    <div style="background:#ffffff;border:1px solid #d9d9d2">
+      <div style="padding:10px 12px;border-bottom:1px solid #e5e5de">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">ADHERENCE — THIS WEEK</span>
+      </div>
+      <div style="display:flex;gap:8px;padding:12px">
+        <sc-for list="{{gymWeek}}" as="w" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <div style="width:28px;height:28px;border:1.5px solid #1a1a18;background:{{w.bg}};color:{{w.cl}};display:flex;align-items:center;justify-content:center;font:600 11px ui-monospace,Menlo,monospace">{{w.d}}</div>
+            <span style="font:9px ui-monospace,Menlo,monospace;color:#8b8b80">{{w.s}}</span>
+          </div>
+        </sc-for>
+        <div style="flex:1"></div>
+        <div style="text-align:right">
+          <div style="font:600 16px ui-monospace,Menlo,monospace">2 / 4</div>
+          <div style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">91% LAST 8 WKS</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</sc-if>
+
+<sc-if value="{{isFinance}}" hint-placeholder-val="{{false}}">
+<section data-screen-label="Finance" style="max-width:1280px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;align-items:start">
+
+    <div style="background:#ffffff;border:1px solid #d9d9d2">
+      <div style="padding:10px 12px;border-bottom:1px solid #e5e5de">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">NET WORTH</span>
+      </div>
+      <div style="padding:12px">
+        <div style="font:600 26px ui-monospace,Menlo,monospace">{{nwF}}</div>
+        <div style="font:11px ui-monospace,Menlo,monospace;color:oklch(0.5 0.1 150);margin-top:2px">+{{nwDeltaF}} THIS MONTH · +A$4,600 YTD</div>
+        <div style="display:flex;align-items:flex-end;gap:4px;height:56px;margin-top:12px">
+          <sc-for list="{{nwBars}}" as="b" hint-placeholder-count="7">
+            <div style="flex:1;background:{{b.bg}};height:{{b.h}}"></div>
+          </sc-for>
+        </div>
+        <div style="display:flex;justify-content:space-between;font:10px ui-monospace,Menlo,monospace;color:#8b8b80;margin-top:4px">
+          <span>JAN</span><span>JUL</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#ffffff;border:1px solid #d9d9d2">
+      <div style="padding:10px 12px;border-bottom:1px solid #e5e5de">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">ACCOUNTS</span>
+      </div>
+      <sc-for list="{{accounts}}" as="a" hint-placeholder-count="4">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 12px;border-bottom:1px solid #efefe8">
+          <span style="font-size:12.5px">{{a.n}}</span>
+          <span style="font:600 12px ui-monospace,Menlo,monospace">{{a.vF}}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="background:#ffffff;border:1px solid #d9d9d2">
+      <div style="padding:10px 12px;border-bottom:1px solid #e5e5de">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">SAVINGS GOALS</span>
+      </div>
+      <sc-for list="{{savings}}" as="s" hint-placeholder-count="2">
+        <div style="padding:9px 12px;border-bottom:1px solid #efefe8">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:12.5px;font-weight:500">{{s.n}}</span>
+            <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">{{s.curF}} / {{s.tgtF}}</span>
+          </div>
+          <div style="height:4px;background:#ecece5;margin-top:5px">
+            <div style="height:4px;background:oklch(0.55 0.10 150);width:{{s.w}}"></div>
+          </div>
+          <div style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80;margin-top:4px">{{s.link}}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;align-items:start">
+    <div style="background:#ffffff;border:1px solid #d9d9d2">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">BUDGET VS ACTUAL — JULY</span>
+        <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">{{budgetTotF}}</span>
+      </div>
+      <sc-for list="{{budgets}}" as="b" hint-placeholder-count="5">
+        <div style="padding:7px 12px;border-bottom:1px solid #efefe8">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:12px">{{b.c}}</span>
+            <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">{{b.sF}} / {{b.cF}}</span>
+          </div>
+          <div style="height:4px;background:#ecece5;margin-top:5px">
+            <div style="height:4px;background:{{b.col}};width:{{b.w}}"></div>
+          </div>
+        </div>
+      </sc-for>
+      <div style="display:flex;gap:6px;padding:10px 12px">
+        <input value="{{expAmt}}" onChange="{{onExpAmt}}" placeholder="0.00" inputMode="decimal" style="width:76px;border:1px solid #c9c9c0;background:#fafaf6;padding:6px 8px;font:12px ui-monospace,Menlo,monospace">
+        <select value="{{expCat}}" onChange="{{onExpCat}}" style="flex:1;min-width:0;border:1px solid #c9c9c0;background:#fafaf6;padding:6px 4px;font-size:12px">
+          <option>Groceries</option>
+          <option>Eating out</option>
+          <option>Transport</option>
+          <option>Subscriptions</option>
+          <option>Other</option>
+        </select>
+        <button onClick="{{addExpense}}" style="background:#1a1a18;color:#ffffff;border:none;padding:6px 12px;cursor:pointer;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.06em">LOG</button>
+      </div>
+    </div>
+
+    <div style="background:#ffffff;border:1px solid #d9d9d2">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">EXPENSE LOG</span>
+        <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">CAPTURE TARGET ≤10 S</span>
+      </div>
+      <sc-for list="{{expenses}}" as="x" hint-placeholder-count="5">
+        <div style="display:flex;gap:10px;align-items:baseline;padding:8px 12px;border-bottom:1px solid #efefe8">
+          <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80;width:46px;flex:none">{{x.dt}}</span>
+          <span style="flex:1;font-size:12.5px">{{x.desc}}</span>
+          <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80;text-transform:uppercase">{{x.c}}</span>
+          <span style="font:600 12px ui-monospace,Menlo,monospace;width:66px;text-align:right">{{x.amtF}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+</sc-if>
+
+<sc-if value="{{isReview}}" hint-placeholder-val="{{false}}">
+<section data-screen-label="Weekly review" style="max-width:1280px;margin:0 auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px;align-items:start">
+
+  <div style="background:#ffffff;border:1px solid #d9d9d2;grid-column:1 / -1">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+      <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">WEEKLY REVIEW — W28 · JUL 6–12</span>
+      <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">SUMMARY AUTO-GENERATED · TARGET ≤10 MIN</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));border-bottom:1px solid #e5e5de">
+      <sc-for list="{{revStats}}" as="s" hint-placeholder-count="7">
+        <div style="background:#ffffff;padding:10px 12px;border-right:1px solid #efefe8;border-bottom:1px solid #efefe8;margin-bottom:-1px">
+          <div style="font:600 17px ui-monospace,Menlo,monospace">{{s.v}}</div>
+          <div style="font:600 9px ui-monospace,Menlo,monospace;letter-spacing:.07em;color:#8b8b80;text-transform:uppercase;margin-top:2px">{{s.l}}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="padding:10px 12px;border-bottom:1px solid #efefe8">
+      <div style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80;margin-bottom:6px">HIGHLIGHTS</div>
+      <sc-for list="{{highlights}}" as="h" hint-placeholder-count="4">
+        <div style="display:flex;gap:8px;font-size:12.5px;padding:2px 0">
+          <span style="font:11px ui-monospace,Menlo,monospace;color:#8b8b80">—</span>{{h.t}}
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;padding:12px">
+      <div>
+        <div style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80;margin-bottom:5px">WHAT WORKED?</div>
+        <textarea rows="3" placeholder="e.g. morning sessions stuck; prepped meals Sunday…" style="width:100%;border:1px solid #c9c9c0;background:#fafaf6;padding:8px;font-size:12.5px;resize:vertical"></textarea>
+      </div>
+      <div>
+        <div style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80;margin-bottom:5px">WHAT DIDN'T, AND WHY?</div>
+        <textarea rows="3" placeholder="e.g. late nights killed Thursday…" style="width:100%;border:1px solid #c9c9c0;background:#fafaf6;padding:8px;font-size:12.5px;resize:vertical"></textarea>
+      </div>
+      <div>
+        <div style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80;margin-bottom:5px">TOP 3 FOR NEXT WEEK</div>
+        <textarea rows="3" placeholder="1. …&#10;2. …&#10;3. …" style="width:100%;border:1px solid #c9c9c0;background:#fafaf6;padding:8px;font-size:12.5px;resize:vertical"></textarea>
+      </div>
+    </div>
+    <div style="padding:0 12px 12px">
+      <button onClick="{{completeReview}}" style="background:{{revBtnBg}};color:{{revBtnCl}};border:1px solid #1a1a18;padding:8px 16px;cursor:pointer;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.06em">{{revBtnLabel}}</button>
+    </div>
+  </div>
+
+  <div style="background:#ffffff;border:1px solid #d9d9d2;grid-column:1 / -1">
+    <div style="padding:10px 12px;border-bottom:1px solid #e5e5de">
+      <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">REVIEW TIMELINE</span>
+    </div>
+    <sc-for list="{{pastReviews}}" as="r" hint-placeholder-count="3">
+      <div style="display:flex;gap:14px;align-items:baseline;padding:8px 12px;border-bottom:1px solid #efefe8">
+        <span style="font:600 11px ui-monospace,Menlo,monospace;width:36px">{{r.w}}</span>
+        <span style="flex:1;font:11px ui-monospace,Menlo,monospace;color:#6e6e66">{{r.range}}</span>
+        <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">{{r.note}}</span>
+      </div>
+    </sc-for>
+  </div>
+</section>
+</sc-if>
+
+<sc-if value="{{isAssistant}}" hint-placeholder-val="{{false}}">
+<section data-screen-label="AI assistant" style="max-width:840px;margin:0 auto;padding:16px">
+  <div style="background:#ffffff;border:1px solid #d9d9d2">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+      <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">ASSISTANT</span>
+      <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">CONTEXT: GOALS · CALENDAR · BUDGETS · METRICS</span>
+    </div>
+    <div style="min-height:300px;display:flex;flex-direction:column;gap:10px;padding:14px">
+      <sc-for list="{{chat}}" as="m" hint-placeholder-count="2">
+        <div style="display:flex;justify-content:{{m.j}}">
+          <div style="max-width:82%;padding:9px 12px;background:{{m.bg}};color:{{m.cl}};border:{{m.bd}};font-size:12.5px;white-space:pre-wrap">{{m.text}}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 12px">
+      <sc-for list="{{chips}}" as="c" hint-placeholder-count="3">
+        <button onClick="{{c.go}}" style="border:1px solid #c9c9c0;background:#fafaf6;padding:5px 10px;font:11px ui-monospace,Menlo,monospace;cursor:pointer">{{c.t}}</button>
+      </sc-for>
+    </div>
+    <div style="display:flex;gap:6px;padding:12px;border-top:1px solid #e5e5de">
+      <input value="{{chatInput}}" onChange="{{onChatInput}}" onKeyDown="{{onChatKey}}" placeholder="Ask about your data…" style="flex:1;border:1px solid #c9c9c0;background:#fafaf6;padding:8px 10px;font-size:12.5px">
+      <button onClick="{{sendChat}}" style="background:#1a1a18;color:#ffffff;border:none;padding:8px 16px;cursor:pointer;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.06em">SEND</button>
+    </div>
+    <div style="padding:8px 12px;border-top:1px solid #efefe8;font:9px ui-monospace,Menlo,monospace;letter-spacing:.06em;color:#a3a39a">ADVISORY ONLY — NEVER MUTATES DATA WITHOUT EXPLICIT CONFIRMATION (FR-AI.4)</div>
+  </div>
+</section>
+</sc-if>
+
+<sc-if value="{{isPersonal}}" hint-placeholder-val="{{false}}">
+<section data-screen-label="Personal — journal" style="max-width:1280px;margin:0 auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;align-items:start">
+
+  <div style="background:#ffffff;border:1px solid #d9d9d2">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+      <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">CHECK-IN — TUE 14 JUL</span>
+      <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">TICKS JOURNAL HABIT</span>
+    </div>
+    <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
+      <textarea value="{{jBody}}" onChange="{{onJBody}}" rows="4" placeholder="How was today? What moved, what stalled…" style="width:100%;border:1px solid #c9c9c0;background:#fafaf6;padding:8px;font-size:12.5px;resize:vertical"></textarea>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80;width:56px">MOOD</span>
+        <sc-for list="{{moodBtns}}" as="m" hint-placeholder-count="5">
+          <button onClick="{{m.set}}" style="width:26px;height:26px;border:1.5px solid #1a1a18;background:{{m.bg}};color:{{m.cl}};cursor:pointer;font:600 11px ui-monospace,Menlo,monospace;padding:0">{{m.v}}</button>
+        </sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80;width:56px">ENERGY</span>
+        <sc-for list="{{energyBtns}}" as="m" hint-placeholder-count="5">
+          <button onClick="{{m.set}}" style="width:26px;height:26px;border:1.5px solid #1a1a18;background:{{m.bg}};color:{{m.cl}};cursor:pointer;font:600 11px ui-monospace,Menlo,monospace;padding:0">{{m.v}}</button>
+        </sc-for>
+      </div>
+      <button onClick="{{addJournal}}" style="align-self:flex-start;background:#1a1a18;color:#ffffff;border:none;padding:8px 16px;cursor:pointer;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.06em">SAVE ENTRY</button>
+    </div>
+  </div>
+
+  <div style="background:#ffffff;border:1px solid #d9d9d2">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:10px 12px;border-bottom:1px solid #e5e5de">
+      <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80;flex:none">JOURNAL — RECENT</span>
+      <input value="{{jq}}" onChange="{{onJq}}" placeholder="Search entries…" style="width:130px;border:1px solid #c9c9c0;background:#fafaf6;padding:3px 6px;font:11px ui-monospace,Menlo,monospace">
+    </div>
+    <sc-for list="{{journal}}" as="j" hint-placeholder-count="3">
+      <div style="padding:9px 12px;border-bottom:1px solid #efefe8">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.06em">{{j.dt}}</span>
+          <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">{{j.me}}</span>
+        </div>
+        <div style="font-size:12.5px;margin-top:3px">{{j.body}}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="background:#ffffff;border:1px solid #d9d9d2">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+      <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">IMPORTANT DATES</span>
+      <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">GENERATE RECURRING EVENTS</span>
+    </div>
+    <sc-for list="{{dates}}" as="d" hint-placeholder-count="4">
+      <div style="display:flex;gap:10px;align-items:baseline;padding:8px 12px;border-bottom:1px solid #efefe8">
+        <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66;width:64px;flex:none">{{d.dt}}</span>
+        <span style="width:7px;height:7px;background:{{d.col}};flex:none"></span>
+        <span style="flex:1;font-size:12.5px">{{d.t}}</span>
+        <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">{{d.rep}}</span>
+      </div>
+    </sc-for>
+  </div>
+</section>
+</sc-if>
+
+<sc-if value="{{isAcademic}}" hint-placeholder-val="{{false}}">
+<section data-screen-label="Academic" style="max-width:1280px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px">
+    <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">ACADEMIC — S2 2026 · STARTS JUL 27</span>
+    <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">WAM 78.4 / TARGET 80.0</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;align-items:start">
+    <sc-for list="{{courses}}" as="c" hint-placeholder-count="3">
+      <div style="background:#ffffff;border:1px solid #d9d9d2">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+          <span style="font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.04em">{{c.code}} <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66;font-weight:400">{{c.n}}</span></span>
+          <span style="font:600 9px ui-monospace,Menlo,monospace;letter-spacing:.07em;color:{{c.rcol}};border:1px solid {{c.rcol}};padding:1px 5px">{{c.risk}}</span>
+        </div>
+        <sc-for list="{{c.rows}}" as="a" hint-placeholder-count="3">
+          <div style="display:flex;gap:10px;align-items:baseline;padding:8px 12px;border-bottom:1px solid #efefe8">
+            <span style="flex:1;font-size:12.5px">{{a.t}}</span>
+            <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66;width:36px;text-align:right">{{a.w}}</span>
+            <span style="font:10px ui-monospace,Menlo,monospace;color:{{a.dcol}};width:72px;text-align:right">{{a.due}}</span>
+            <span style="font:600 11px ui-monospace,Menlo,monospace;width:30px;text-align:right">{{a.g}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+
+    <div style="background:#ffffff;border:1px solid #d9d9d2">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+        <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">STUDY HOURS — THIS WEEK</span>
+        <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">PLANNED VS ACTUAL</span>
+      </div>
+      <sc-for list="{{studyHours}}" as="s" hint-placeholder-count="3">
+        <div style="padding:8px 12px;border-bottom:1px solid #efefe8">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:12px">{{s.c}}</span>
+            <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">{{s.f}}</span>
+          </div>
+          <div style="height:4px;background:#ecece5;margin-top:5px">
+            <div style="height:4px;background:{{s.col}};width:{{s.w}}"></div>
+          </div>
+        </div>
+      </sc-for>
+      <div style="padding:9px 12px;font:10px ui-monospace,Menlo,monospace;color:#8b8b80">PACE FLAG: COMP3888 PREFERENCE FORM DUE TODAY — 2 OF 4 PLANNED HOURS LOGGED</div>
+    </div>
+  </div>
+</section>
+</sc-if>
+
+<sc-if value="{{isWork}}" hint-placeholder-val="{{false}}">
+<section data-screen-label="Work" style="max-width:1280px;margin:0 auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;align-items:start">
+
+  <div style="background:#ffffff;border:1px solid #d9d9d2">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+      <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">PROJECTS</span>
+      <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">2 active</span>
+    </div>
+    <sc-for list="{{projects}}" as="p" hint-placeholder-count="2">
+      <div style="padding:9px 12px;border-bottom:1px solid #efefe8">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span style="font-size:12.5px;font-weight:600">{{p.n}}</span>
+          <span style="font:10px ui-monospace,Menlo,monospace;color:#6e6e66">{{p.due}}</span>
+        </div>
+        <div style="font-size:12px;margin-top:3px">{{p.next}}</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:5px">
+          <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">{{p.hrsF}}</span>
+          <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">{{p.goal}}</span>
+        </div>
+        <div style="height:4px;background:#ecece5;margin-top:4px">
+          <div style="height:4px;background:oklch(0.55 0.09 250);width:{{p.w}}"></div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="padding:9px 12px;font:10px ui-monospace,Menlo,monospace;color:#8b8b80">TIME THIS WEEK: 15.5 H TRACKED ACROSS 2 PROJECTS</div>
+  </div>
+
+  <div style="background:#ffffff;border:1px solid #d9d9d2">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+      <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">ACHIEVEMENTS LOG</span>
+      <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">DATED WINS · CV-READY</span>
+    </div>
+    <sc-for list="{{achievements}}" as="a" hint-placeholder-count="4">
+      <div style="display:flex;gap:10px;align-items:baseline;padding:8px 12px;border-bottom:1px solid #efefe8">
+        <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80;width:48px;flex:none">{{a.dt}}</span>
+        <span style="flex:1;font-size:12.5px">{{a.t}}</span>
+        <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80;text-transform:uppercase">{{a.ctx}}</span>
+      </div>
+    </sc-for>
+    <button onClick="{{copyAch}}" style="display:block;width:100%;background:#fafaf6;border:none;border-top:1px solid #e5e5de;padding:9px 12px;cursor:pointer;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.06em;text-align:left">{{achBtn}}</button>
+  </div>
+
+  <div style="background:#ffffff;border:1px solid #d9d9d2">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+      <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">CAREER GOALS</span>
+      <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">VIA GOAL ENGINE</span>
+    </div>
+    <sc-for list="{{workGoals}}" as="g" hint-placeholder-count="2">
+      <div style="padding:9px 12px;border-bottom:1px solid #efefe8">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span style="font-size:12.5px;font-weight:500">{{g.t}}</span>
+          <span style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66">{{g.pct}}%</span>
+        </div>
+        <div style="font:11px ui-monospace,Menlo,monospace;color:#8b8b80">{{g.sub}}</div>
+        <div style="height:4px;background:#ecece5;margin-top:5px">
+          <div style="height:4px;background:oklch(0.55 0.09 250);width:{{g.w}}"></div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+</sc-if>
+
+<sc-if value="{{isHealth}}" hint-placeholder-val="{{false}}">
+<section data-screen-label="Health" style="max-width:1280px;margin:0 auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;align-items:start">
+
+  <div style="background:#ffffff;border:1px solid #d9d9d2">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+      <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">WEIGHT</span>
+      <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">LAST 8 WEEKS</span>
+    </div>
+    <div style="padding:12px">
+      <div style="font:600 26px ui-monospace,Menlo,monospace">{{wNow}} kg</div>
+      <div style="font:11px ui-monospace,Menlo,monospace;color:oklch(0.5 0.1 150);margin-top:2px">{{wDelta}} / 8 WKS</div>
+      <div style="display:flex;align-items:flex-end;gap:4px;height:52px;margin-top:12px">
+        <sc-for list="{{weightBars}}" as="b" hint-placeholder-count="8">
+          <div style="flex:1;background:{{b.bg}};height:{{b.h}}"></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:12px">
+        <input value="{{wInput}}" onChange="{{onWInput}}" placeholder="78.0" inputMode="decimal" style="width:76px;border:1px solid #c9c9c0;background:#fafaf6;padding:6px 8px;font:12px ui-monospace,Menlo,monospace">
+        <button onClick="{{logWeight}}" style="background:#1a1a18;color:#ffffff;border:none;padding:6px 12px;cursor:pointer;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.06em">LOG KG</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#ffffff;border:1px solid #d9d9d2">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+      <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">SLEEP</span>
+      <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">LAST 7 NIGHTS</span>
+    </div>
+    <div style="padding:12px">
+      <div style="font:600 26px ui-monospace,Menlo,monospace">6h 44m <span style="font:600 11px ui-monospace,Menlo,monospace;color:#8b8b80">AVG</span></div>
+      <div style="font:11px ui-monospace,Menlo,monospace;color:oklch(0.55 0.13 20);margin-top:2px">3 NIGHTS UNDER 6H30 TARGET</div>
+      <div style="display:flex;align-items:flex-end;gap:4px;height:52px;margin-top:12px">
+        <sc-for list="{{sleepBars}}" as="b" hint-placeholder-count="7">
+          <div style="flex:1;background:{{b.bg}};height:{{b.h}}"></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;font:10px ui-monospace,Menlo,monospace;color:#8b8b80;margin-top:4px">
+        <span>TUE</span><span>MON</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#ffffff;border:1px solid #d9d9d2">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+      <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">MOOD &amp; ENERGY</span>
+      <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">SOURCE: JOURNAL CHECK-INS</span>
+    </div>
+    <div style="padding:12px">
+      <div style="font:600 26px ui-monospace,Menlo,monospace">3.4 <span style="font:600 11px ui-monospace,Menlo,monospace;color:#8b8b80">AVG MOOD / 5</span></div>
+      <div style="font:11px ui-monospace,Menlo,monospace;color:#6e6e66;margin-top:2px">ENERGY AVG 3.1 · DIPS FOLLOW SHORT SLEEP</div>
+      <div style="display:flex;align-items:flex-end;gap:4px;height:52px;margin-top:12px">
+        <sc-for list="{{moodBars}}" as="b" hint-placeholder-count="7">
+          <div style="flex:1;background:{{b.bg}};height:{{b.h}}"></div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#ffffff;border:1px solid #d9d9d2">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid #e5e5de">
+      <span style="font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#8b8b80">MEDS &amp; APPOINTMENTS</span>
+      <span style="font:10px ui-monospace,Menlo,monospace;color:#8b8b80">WITH REMINDERS</span>
+    </div>
+    <sc-for list="{{medRows}}" as="m" hint-placeholder-count="4">
+      <div style="display:flex;gap:10px;align-items:baseline;padding:8px 12px;border-bottom:1px solid #efefe8">
+        <span style="font:10px ui-monospace,Menlo,monospace;color:#6e6e66;width:80px;flex:none">{{m.tm}}</span>
+        <span style="width:7px;height:7px;background:{{m.col}};flex:none"></span>
+        <span style="flex:1;font-size:12.5px">{{m.t}}</span>
+      </div>
+    </sc-for>
+  </div>
+</section>
+</sc-if>
+
+<footer style="max-width:1280px;margin:0 auto;padding:8px 16px 24px;font:10px ui-monospace,Menlo,monospace;color:#a3a39a;letter-spacing:.04em">LIFEOS V0.1 · SINGLE-TENANT · MANUAL BEFORE AUTOMATIC · NIGHTLY BACKUP 02:00</footer>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;currency&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;A$&quot;,&quot;$&quot;,&quot;€&quot;,&quot;£&quot;],&quot;default&quot;:&quot;A$&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Display&quot;},&quot;showNudge&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Display&quot;},&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;today&quot;,&quot;goals&quot;,&quot;calendar&quot;,&quot;personal&quot;,&quot;academic&quot;,&quot;work&quot;,&quot;finance&quot;,&quot;gym&quot;,&quot;health&quot;,&quot;review&quot;,&quot;assistant&quot;],&quot;default&quot;:&quot;today&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Behaviour&quot;}}">
+class Component extends DCLogic {
+  state = {
+    screen: null,
+    tasks: [
+      { t: 'Submit COMP3888 project preference form', d: 'academic', due: 'today', p: 1, done: false },
+      { t: 'Pay electricity bill', d: 'finance', due: 'today', p: 1, done: false },
+      { t: 'Email Dr Shen re: thesis expression of interest', d: 'academic', due: 'Wed', p: 2, done: false },
+      { t: 'Renew gym membership', d: 'gym', due: 'Thu', p: 2, done: false },
+      { t: 'Book car service', d: 'personal', due: 'Fri', p: 3, done: true }
+    ],
+    habits: [
+      { t: 'Morning mobility (10 min)', streak: 8, done: true },
+      { t: 'Read 20 min', streak: 12, done: false },
+      { t: '10,000 steps', streak: 4, done: false },
+      { t: 'Journal + mood check-in', streak: 23, done: false },
+      { t: 'No takeaway Mon\u2013Thu', streak: 2, done: false }
+    ],
+    budgets: [
+      { c: 'Groceries', spent: 312.4, cap: 550 },
+      { c: 'Eating out', spent: 148.5, cap: 200 },
+      { c: 'Transport', spent: 86.0, cap: 160 },
+      { c: 'Subscriptions', spent: 63.97, cap: 70 },
+      { c: 'Other', spent: 96.8, cap: 250 }
+    ],
+    expenses: [
+      { dt: 'TUE 14', desc: 'Coles \u2014 groceries', c: 'Groceries', amt: 68.4 },
+      { dt: 'MON 13', desc: 'Opal top-up', c: 'Transport', amt: 20.0 },
+      { dt: 'MON 13', desc: 'Chemist Warehouse', c: 'Other', amt: 14.95 },
+      { dt: 'SUN 12', desc: 'Dinner \u2014 Marrickville', c: 'Eating out', amt: 42.5 },
+      { dt: 'SAT 11', desc: 'Coles \u2014 groceries', c: 'Groceries', amt: 91.2 }
+    ],
+    exercises: [
+      { n: 'Bench Press', tgt: '4 \u00d7 6 @ 82.5 KG', last: 'JUL 10 \u00b7 80 KG \u2014 6,6,6,5', sets: [true, true, true, true].map(d => ({ kg: 82.5, reps: 6, done: d })) },
+      { n: 'Barbell Row', tgt: '4 \u00d7 8 @ 70 KG', last: 'JUL 10 \u00b7 70 KG \u2014 8,8,8,7', sets: [true, true, false, false].map(d => ({ kg: 70, reps: 8, done: d })) },
+      { n: 'Overhead Press', tgt: '3 \u00d7 8 @ 47.5 KG', last: 'JUL 10 \u00b7 45 KG \u2014 8,8,8', sets: [false, false, false].map(d => ({ kg: 47.5, reps: 8, done: d })) },
+      { n: 'Lat Pulldown', tgt: '3 \u00d7 10 @ 61 KG', last: 'JUL 10 \u00b7 61 KG \u2014 10,10,9', sets: [false, false, false].map(d => ({ kg: 61, reps: 10, done: d })) },
+      { n: 'EZ-Bar Curl', tgt: '3 \u00d7 12 @ 30 KG', last: 'JUL 10 \u00b7 30 KG \u2014 12,12,11', sets: [false, false, false].map(d => ({ kg: 30, reps: 12, done: d })) }
+    ],
+    chat: [
+      { role: 'user', text: 'Can I afford the Japan trip in December at my current savings rate?' },
+      { role: 'ai', text: 'Yes, with a gap to close. Japan fund: A$1,120 of A$3,000, averaging A$180/month since March \u2014 that lands ~A$2,020 by 1 Dec, A$980 short.\n\nOptions: bump transfers to A$380/month (fits your ~A$410 monthly surplus), or redirect two months of house-deposit contributions. Flag: Sydney\u2013Tokyo fares typically rise ~15% after September.' }
+    ],
+    chatInput: '',
+    expAmt: '',
+    expCat: 'Groceries',
+    reviewDone: false,
+    journal: [
+      { dt: 'MON 13', body: 'Lower A done before work. Shift dragged \u2014 energy dipped hard by 15:00. Meal-prepped for the week, which already feels like a win.', mood: 4, energy: 3 },
+      { dt: 'SUN 12', body: 'Long run skipped \u2014 slept badly. Planned the week instead and set the COMP3888 shortlist. Dinner out with J, over budget again.', mood: 3, energy: 2 },
+      { dt: 'SAT 11', body: 'Groceries, cleaned the flat, read 40 min. Quiet day. Bench felt strong in Friday\u2019s session \u2014 100 kg feels realistic this year.', mood: 4, energy: 4 }
+    ],
+    jBody: '', jMood: 0, jEnergy: 0, jq: '',
+    weights: [79.6, 79.4, 79.1, 79.0, 78.7, 78.6, 78.4, 78.2],
+    wInput: '',
+    achCopied: false
+  };
+
+  ACH = [
+    { dt: 'JUL 9', t: 'Led incident response on Atlas outage; service restored in 40 min', ctx: 'Atlas' },
+    { dt: 'JUN 30', t: 'Shipped Atlas search rewrite \u2014 p95 latency down 60%', ctx: 'Atlas' },
+    { dt: 'JUN 12', t: 'Mentored new intern through first production PR', ctx: 'Team' },
+    { dt: 'MAY 28', t: 'Proposed API migration plan; signed off by staff eng', ctx: 'Atlas' }
+  ];
+
+  DCOL = {
+    personal: 'oklch(0.55 0.09 200)',
+    academic: 'oklch(0.55 0.09 285)',
+    work: 'oklch(0.55 0.09 250)',
+    finance: 'oklch(0.55 0.10 150)',
+    gym: 'oklch(0.62 0.13 55)',
+    health: 'oklch(0.55 0.13 20)'
+  };
+
+  fmt(n, d) {
+    const cur = this.props.currency ?? 'A$';
+    const dd = d === undefined ? 0 : d;
+    return cur + n.toLocaleString('en-AU', { minimumFractionDigits: dd, maximumFractionDigits: dd });
+  }
+
+  getScreen() { return this.state.screen ?? (this.props.startScreen ?? 'today'); }
+
+  setScreen(s) { this.setState({ screen: s }); }
+
+  toggleIn(key, i) {
+    this.setState(st => ({ [key]: st[key].map((x, j) => j === i ? { ...x, done: !x.done } : x) }));
+  }
+
+  toggleSet(ei, si) {
+    this.setState(st => ({
+      exercises: st.exercises.map((x, i) => i !== ei ? x : { ...x, sets: x.sets.map((s, j) => j === si ? { ...s, done: !s.done } : s) })
+    }));
+  }
+
+  addExpense() {
+    const amt = parseFloat(this.state.expAmt);
+    if (!amt || amt <= 0) return;
+    const cat = this.state.expCat;
+    this.setState(st => ({
+      expAmt: '',
+      expenses: [{ dt: 'TUE 14', desc: 'Quick log', c: cat, amt }, ...st.expenses],
+      budgets: st.budgets.map(b => b.c === cat ? { ...b, spent: b.spent + amt } : b)
+    }));
+  }
+
+  addJournal() {
+    const b = this.state.jBody.trim();
+    if (!b) return;
+    this.setState(st => ({
+      jBody: '', jMood: 0, jEnergy: 0,
+      journal: [{ dt: 'TUE 14', body: b, mood: st.jMood || 3, energy: st.jEnergy || 3 }, ...st.journal],
+      habits: st.habits.map(h => h.t.indexOf('Journal') === 0 ? { ...h, done: true } : h)
+    }));
+  }
+
+  logWeight() {
+    const v = parseFloat(this.state.wInput);
+    if (!v || v < 30 || v > 250) return;
+    this.setState(st => ({ wInput: '', weights: [...st.weights, v] }));
+  }
+
+  copyAch() {
+    const txt = this.ACH.map(a => a.dt + ' \u2014 ' + a.t + ' (' + a.ctx + ')').join('\n');
+    try { navigator.clipboard.writeText(txt); } catch (e) {}
+    this.setState({ achCopied: true });
+    setTimeout(() => this.setState({ achCopied: false }), 1600);
+  }
+
+  reply(q) {
+    const t = q.toLowerCase();
+    if (t.includes('study') || t.includes('plan')) return 'Work blocks Tue/Thu 10:00\u201313:00 and the sprint review Fri 15:00 are fixed. Best study windows this week: Wed 13:00\u201317:00 (4h), Thu 14:00\u201317:00 (3h), Sun 10:00\u201312:00 (2h) \u2014 9h total, matching your COMP3888 weekly target. Want them added to the calendar as academic events?';
+    if (t.includes('eating') || t.includes('budget') || t.includes('spend')) return 'Eating out is at A$148 of A$200 with 17 days left in July \u2014 current pace lands ~A$278 by month end. The overage is concentrated in Fri/Sat dinners (avg A$41). Two home-cooked weekend meals keeps you under the cap and protects the Q3 goal.';
+    if (t.includes('review') || t.includes('draft')) return 'Draft for W29 so far: 1 of 5 tasks done today, Upper A completed at 07:00 (bench 82.5 kg \u00d7 6,6,6,6 \u2014 ties your rep PR), week spend A$103. I\u2019ll fill in the rest before Sunday 16:00; the reflection prompts stay yours.';
+    if (t.includes('afford') || t.includes('japan') || t.includes('trip')) return 'Japan fund is A$1,120 of A$3,000. At A$180/month you reach ~A$2,020 by December \u2014 A$980 short. Raising transfers to A$380/month closes it and still leaves ~A$30 surplus.';
+    return 'Snapshot: 1 of 5 tasks done today, habits 1/5, Upper A completed at 07:00. July spend A$708 of A$1,230. Most at-risk goal: \u201cScope COMP3888 capstone\u201d \u2014 preference form is due today and unticked. Ask me to plan your week, check a budget, or draft the weekly review.';
+  }
+
+  sendChatMsg(text) {
+    const q = (text ?? this.state.chatInput).trim();
+    if (!q) return;
+    this.setState(st => ({ chatInput: '', chat: [...st.chat, { role: 'user', text: q }] }));
+    setTimeout(() => {
+      this.setState(st => ({ chat: [...st.chat, { role: 'ai', text: this.reply(q) }] }));
+    }, 350);
+  }
+
+  renderVals() {
+    const scr = this.getScreen();
+    const C = this.DCOL;
+    const bar = (p) => Math.min(100, Math.round(p * 100)) + '%';
+
+    const navItems = ['today', 'goals', 'calendar', 'personal', 'academic', 'work', 'finance', 'gym', 'health', 'review', 'assistant'].map(k => ({
+      label: k.toUpperCase(),
+      go: () => this.setScreen(k),
+      bc: scr === k ? '#1a1a18' : 'transparent',
+      cl: scr === k ? '#1a1a18' : '#8b8b80'
+    }));
+
+    const todayEventsRaw = [
+      { tm: '07:00', t: 'Gym \u2014 Upper A', d: 'gym', done: true },
+      { tm: '09:30', t: 'Standup \u2014 Atlas project', d: 'work', done: false },
+      { tm: '10:00', t: 'Deep work \u2014 Atlas API migration', d: 'work', done: false },
+      { tm: '14:30', t: 'Dentist \u2014 6-month checkup', d: 'health', done: false },
+      { tm: '16:00', t: 'Study block \u2014 COMP3888 proposal', d: 'academic', done: false },
+      { tm: 'DUE', t: 'Electricity bill \u2014 A$187', d: 'finance', done: false }
+    ];
+    const todayEvents = todayEventsRaw.map(e => ({
+      ...e, col: C[e.d], op: e.done ? 0.45 : 1, td: e.done ? 'line-through' : 'none'
+    }));
+
+    const tasks = this.state.tasks.map((t, i) => ({
+      ...t,
+      tog: () => this.toggleIn('tasks', i),
+      bg: t.done ? '#1a1a18' : '#ffffff',
+      chk: t.done ? '\u2713' : '',
+      td: t.done ? 'line-through' : 'none',
+      op: t.done ? 0.5 : 1,
+      meta: t.d.toUpperCase() + ' \u00b7 DUE ' + t.due.toUpperCase()
+    }));
+    const tasksOpen = this.state.tasks.filter(t => !t.done).length;
+
+    const habits = this.state.habits.map((h, i) => ({
+      ...h,
+      tog: () => this.toggleIn('habits', i),
+      bg: h.done ? '#1a1a18' : '#ffffff',
+      chk: h.done ? '\u2713' : '',
+      td: 'none',
+      op: h.done ? 0.5 : 1
+    }));
+    const habitsDone = this.state.habits.filter(h => h.done).length;
+
+    const budgets = this.state.budgets.map(b => {
+      const p = b.spent / b.cap;
+      return {
+        ...b,
+        sF: this.fmt(b.spent), cF: this.fmt(b.cap), w: bar(p),
+        col: p > 1 ? 'oklch(0.55 0.13 20)' : p > 0.88 ? 'oklch(0.62 0.13 55)' : 'oklch(0.55 0.10 150)'
+      };
+    });
+    const budgetTot = this.state.budgets.reduce((a, b) => a + b.spent, 0);
+    const budgetCap = this.state.budgets.reduce((a, b) => a + b.cap, 0);
+
+    const exercises = this.state.exercises.map((x, ei) => ({
+      n: x.n, tgt: x.tgt, last: x.last,
+      sets: x.sets.map((s, si) => ({
+        i: si + 1,
+        val: s.kg + ' kg \u00d7 ' + s.reps,
+        done: s.done,
+        bg: s.done ? '#1a1a18' : '#ffffff',
+        chk: s.done ? '\u2713' : '',
+        tog: () => this.toggleSet(ei, si)
+      }))
+    }));
+    const allSets = this.state.exercises.flatMap(x => x.sets);
+    const setsDone = allSets.filter(s => s.done).length;
+
+    const workoutSummary = this.state.exercises.map(x => {
+      const d = x.sets.filter(s => s.done).length;
+      return { n: x.n, tgt: x.tgt, prog: d + '/' + x.sets.length, pcol: d === x.sets.length ? 'oklch(0.5 0.1 150)' : '#8b8b80' };
+    });
+
+    const horizons = [
+      { label: 'LIFE', rows: [
+        { t: 'Build a career as an ML engineer', d: 'work', sub: '2 SUPPORTING GOALS \u00b7 NEXT: COMP3888 CAPSTONE', pct: 35 },
+        { t: 'Long-term financial security', d: 'finance', sub: 'NET WORTH ' + this.fmt(29342) + ' \u00b7 +A$4,600 YTD', pct: 24 },
+        { t: 'Strong and pain-free for life', d: 'gym', sub: 'SUPPORTED BY: BENCH 100 KG \u00b7 10K RUN', pct: 58 }
+      ]},
+      { label: 'YEARLY \u2014 2026', rows: [
+        { t: 'Finish Year 3 with \u2265 80 WAM', d: 'academic', sub: 'CURRENT WAM 78.4 \u00b7 2 UNITS AT RISK', pct: 65 },
+        { t: 'Save A$12,000 house deposit', d: 'finance', sub: this.fmt(7350) + ' SAVED \u00b7 FUNDS \u2192 FINANCIAL SECURITY', pct: 61 },
+        { t: 'Bench press 100 kg', d: 'gym', sub: 'e1RM 95.0 KG \u00b7 +7.5 KG YTD', pct: 60 },
+        { t: 'Run 10 k under 50:00', d: 'health', sub: 'BEST 54:10 \u00b7 LAST ATTEMPT JUL 6', pct: 48 }
+      ]},
+      { label: 'QUARTERLY \u2014 Q3', rows: [
+        { t: 'Ship LifeOS Phase 1', d: 'personal', sub: '8 OF 19 TASKS \u00b7 DUE AUG 15', pct: 42 },
+        { t: 'Scope COMP3888 capstone project', d: 'academic', sub: 'PREFERENCE FORM DUE TODAY', pct: 25 },
+        { t: 'Eating out < A$200 / month', d: 'finance', sub: 'JULY: ' + this.fmt(this.state.budgets[1].spent) + ' OF A$200', pct: 74 }
+      ]}
+    ].map(h => ({
+      label: h.label, n: h.rows.length + ' GOALS',
+      rows: h.rows.map(g => ({ ...g, col: C[g.d], w: g.pct + '%' }))
+    }));
+
+    const mkEv = (tm, t, d, done) => ({ tm, t, d, done: !!done, col: C[d], op: done ? 0.45 : 1, td: done ? 'line-through' : 'none' });
+    const mkAd = (t, d) => ({ t, d, col: C[d] });
+    const calDays = [
+      { dow: 'MON', dt: '13', today: false, allday: [], ev: [mkEv('07:00', 'Gym \u2014 Lower A', 'gym', true), mkEv('10:00', 'Work shift \u2014 Atlas', 'work', true), mkEv('19:00', 'Meal prep', 'personal', true)] },
+      { dow: 'TUE', dt: '14', today: true, allday: [mkAd('Electricity bill due', 'finance')], ev: todayEventsRaw.slice(0, 5).map(e => mkEv(e.tm, e.t, e.d, e.done)) },
+      { dow: 'WED', dt: '15', today: false, allday: [mkAd('Netflix A$22.99', 'finance')], ev: [mkEv('07:00', 'Gym \u2014 Upper B', 'gym'), mkEv('11:00', 'COMP3888 team call', 'academic'), mkEv('18:00', 'Groceries run', 'personal')] },
+      { dow: 'THU', dt: '16', today: false, allday: [], ev: [mkEv('09:30', 'Standup \u2014 Atlas', 'work'), mkEv('10:00', 'Deep work \u2014 Atlas', 'work'), mkEv('17:30', 'Run \u2014 5 k tempo', 'health')] },
+      { dow: 'FRI', dt: '17', today: false, allday: [], ev: [mkEv('07:00', 'Gym \u2014 Lower B', 'gym'), mkEv('12:30', 'Lunch \u2014 Sam', 'personal'), mkEv('15:00', 'Atlas sprint review', 'work')] },
+      { dow: 'SAT', dt: '18', today: false, allday: [mkAd('Mum\u2019s birthday', 'personal')], ev: [mkEv('09:00', 'Farmers market', 'personal'), mkEv('18:30', 'Family dinner', 'personal')] },
+      { dow: 'SUN', dt: '19', today: false, allday: [mkAd('Rent A$620', 'finance')], ev: [mkEv('10:00', 'Long run \u2014 8 k', 'health'), mkEv('16:00', 'Weekly review \u2014 W29', 'personal')] }
+    ].map(d => ({ ...d, hbg: d.today ? '#1a1a18' : '#fafaf6', hcl: d.today ? '#ffffff' : '#1a1a18' }));
+
+    const legend = Object.keys(C).map(d => ({ d, col: C[d] }));
+
+    const prs = [
+      { lift: 'Bench Press', e1: '95.0 kg', when: 'JUL 10' },
+      { lift: 'Squat', e1: '125.0 kg', when: 'JUL 9' },
+      { lift: 'Deadlift', e1: '155.0 kg', when: 'JUL 2' },
+      { lift: 'Overhead Press', e1: '62.5 kg', when: 'JUN 26' }
+    ];
+
+    const benchSeries = [87.5, 88.5, 90, 90, 91.5, 92.5, 94, 95];
+    const benchBars = benchSeries.map((v, i) => ({
+      h: Math.round(20 + 80 * (v - 86) / (95 - 86)) + '%',
+      bg: i === benchSeries.length - 1 ? '#1a1a18' : '#c9c9c0'
+    }));
+
+    const gymWeek = [
+      { d: 'M', s: 'DONE', done: true }, { d: 'T', s: 'DONE', done: true },
+      { d: 'W', s: 'PLAN', done: false }, { d: 'F', s: 'PLAN', done: false }
+    ].map(w => ({ ...w, bg: w.done ? '#1a1a18' : '#ffffff', cl: w.done ? '#ffffff' : '#1a1a18' }));
+
+    const nwSeries = [24.1, 24.8, 25.6, 26.3, 27.1, 27.9, 28.7];
+    const nwBars = nwSeries.map((v, i) => ({
+      h: Math.round(20 + 80 * (v - 23) / (28.7 - 23)) + '%',
+      bg: i === nwSeries.length - 1 ? '#1a1a18' : '#c9c9c0'
+    }));
+
+    const accounts = [
+      { n: 'Everyday \u2014 Up', v: 2412.18 },
+      { n: 'Bills \u2014 Up', v: 640.0 },
+      { n: 'HISA \u2014 house deposit', v: 7350.0 },
+      { n: 'Super \u2014 Hostplus', v: 18940.0 }
+    ].map(a => ({ ...a, vF: this.fmt(a.v, 2) }));
+
+    const savings = [
+      { n: 'House deposit', cur: 7350, tgt: 12000, link: 'FUNDS \u2192 LONG-TERM FINANCIAL SECURITY' },
+      { n: 'Japan \u2014 Dec 2026', cur: 1120, tgt: 3000, link: 'FUNDS \u2192 TRAVEL' }
+    ].map(s => ({ ...s, curF: this.fmt(s.cur), tgtF: this.fmt(s.tgt), w: bar(s.cur / s.tgt) }));
+
+    const expenses = this.state.expenses.map(x => ({ ...x, amtF: this.fmt(x.amt, 2) }));
+
+    const revStats = [
+      { v: '14/19', l: 'tasks done' }, { v: '71%', l: 'habit adherence' }, { v: '3/4', l: 'workouts' },
+      { v: this.fmt(486), l: 'spend \u00b7 +16%' }, { v: '6/7', l: 'journal days' }, { v: '3.4', l: 'avg mood' }, { v: '6h 51m', l: 'avg sleep' }
+    ];
+    const highlights = [
+      { t: 'PR \u2014 squat 125 kg (Thu)' },
+      { t: 'COMP3888 preferences shortlisted to 3 projects' },
+      { t: 'Eating out over weekly cap for the 2nd week running' },
+      { t: 'Both skipped-habit days followed nights under 6 h sleep' }
+    ];
+    const pastReviews = [
+      ...(this.state.reviewDone ? [{ w: 'W28', range: 'JUL 6 \u2013 12', note: 'COMPLETED TODAY' }] : []),
+      { w: 'W27', range: 'JUN 29 \u2013 JUL 5', note: '74% COMPLETION' },
+      { w: 'W26', range: 'JUN 22 \u2013 28', note: '81% COMPLETION' },
+      { w: 'W25', range: 'JUN 15 \u2013 21', note: '68% COMPLETION' }
+    ];
+
+    const chat = this.state.chat.map(m => m.role === 'user'
+      ? { text: m.text, j: 'flex-end', bg: '#1a1a18', cl: '#f2f2ee', bd: 'none' }
+      : { text: m.text, j: 'flex-start', bg: '#fafaf6', cl: '#1a1a18', bd: '1px solid #e2e2da' });
+
+    const chips = ['Plan my study week around work', 'Why is eating out over budget?', 'Draft my weekly review']
+      .map(t => ({ t, go: () => this.sendChatMsg(t) }));
+
+    const q = this.state.jq.trim().toLowerCase();
+    const journal = this.state.journal
+      .filter(j => !q || j.body.toLowerCase().includes(q) || j.dt.toLowerCase().includes(q))
+      .map(j => ({ ...j, me: 'MOOD ' + j.mood + '/5 \u00b7 ENERGY ' + j.energy + '/5' }));
+    const mkBtn = (key) => [1, 2, 3, 4, 5].map(v => ({
+      v,
+      bg: this.state[key] === v ? '#1a1a18' : '#ffffff',
+      cl: this.state[key] === v ? '#ffffff' : '#1a1a18',
+      set: () => this.setState({ [key]: v })
+    }));
+    const dates = [
+      { dt: 'JUL 18', t: 'Mum\u2019s birthday', rep: 'YEARLY' },
+      { dt: 'AUG 3', t: 'Car rego renewal', rep: 'YEARLY' },
+      { dt: 'SEP 12', t: 'Domain renewal \u2014 lifeos.dev', rep: 'YEARLY' },
+      { dt: 'FEB 2027', t: 'Passport renewal', rep: 'ONCE' }
+    ].map(d => ({ ...d, col: C.personal }));
+
+    const red = 'oklch(0.55 0.13 20)', green = 'oklch(0.5 0.1 150)', amber = 'oklch(0.62 0.13 55)';
+    const courses = [
+      { code: 'COMP3888', n: 'CS Capstone', risk: 'AT RISK', rcol: red, rows: [
+        { t: 'Project preference form', w: '\u2014', due: 'DUE TODAY', dcol: red, g: '\u2014' },
+        { t: 'Proposal', w: '15%', due: 'AUG 21', dcol: '#8b8b80', g: '\u2014' },
+        { t: 'Demo 1', w: '25%', due: 'SEP 25', dcol: '#8b8b80', g: '\u2014' }
+      ]},
+      { code: 'COMP3608', n: 'Intro to AI (Adv)', risk: 'ON TRACK', rcol: green, rows: [
+        { t: 'Assignment 1', w: '20%', due: 'AUG 28', dcol: '#8b8b80', g: '\u2014' },
+        { t: 'Quiz 1', w: '10%', due: 'SEP 4', dcol: '#8b8b80', g: '\u2014' },
+        { t: 'Final exam', w: '50%', due: 'NOV 16', dcol: '#8b8b80', g: '\u2014' }
+      ]},
+      { code: 'MATH3061', n: 'Geometry & Topology', risk: 'ON TRACK', rcol: green, rows: [
+        { t: 'Assignment 1', w: '15%', due: 'AUG 14', dcol: '#8b8b80', g: '\u2014' },
+        { t: 'Mid-semester exam', w: '25%', due: 'SEP 18', dcol: '#8b8b80', g: '\u2014' },
+        { t: 'Final exam', w: '60%', due: 'NOV 20', dcol: '#8b8b80', g: '\u2014' }
+      ]}
+    ];
+    const studyHours = [
+      { c: 'COMP3888', plan: 4, act: 2.5 },
+      { c: 'COMP3608', plan: 3, act: 3 },
+      { c: 'MATH3061', plan: 2, act: 0.5 }
+    ].map(s => {
+      const p = s.act / s.plan;
+      return { c: s.c, f: s.act.toFixed(1) + ' / ' + s.plan.toFixed(1) + ' H', w: bar(p), col: p >= 0.9 ? green : p >= 0.5 ? amber : red };
+    });
+
+    const projects = [
+      { n: 'Atlas API migration', due: 'DUE AUG 1', next: 'Next: finish auth middleware tests', hrs: 11.5, goal: '12 OF 18 TICKETS', pct: 67 },
+      { n: 'LifeOS Phase 1', due: 'DUE AUG 15', next: 'Next: habit streak calculation', hrs: 4.0, goal: '8 OF 19 TASKS', pct: 42 }
+    ].map(p => ({ ...p, hrsF: p.hrs.toFixed(1) + ' H THIS WK', w: p.pct + '%' }));
+    const workGoals = [
+      { t: 'Land ML engineering internship \u2014 summer 26/27', sub: 'APPLICATIONS OPEN AUG \u00b7 CV REFRESH PENDING', pct: 30 },
+      { t: 'Ship 2 production ML features at Atlas', sub: '1 SHIPPED (SEARCH RANKING) \u00b7 1 SCOPED', pct: 50 }
+    ].map(g => ({ ...g, w: g.pct + '%' }));
+    const achievements = this.ACH;
+
+    const ws = this.state.weights.slice(-8);
+    const wMin = Math.min(...ws), wMax = Math.max(...ws);
+    const weightBars = ws.map((v, i) => ({
+      h: Math.round(20 + 80 * (v - wMin) / ((wMax - wMin) || 1)) + '%',
+      bg: i === ws.length - 1 ? '#1a1a18' : '#c9c9c0'
+    }));
+    const wNow = ws[ws.length - 1];
+    const wd = wNow - ws[0];
+    const sleep = [6.2, 7.4, 6.1, 7.0, 5.9, 8.1, 6.9];
+    const sleepBars = sleep.map(h => ({
+      h: Math.round(100 * h / 9) + '%',
+      bg: h < 6.5 ? red : '#c9c9c0'
+    }));
+    const moodSeries = [3, 4, 3, 2, 4, 4, 3];
+    const moodBars = moodSeries.map((v, i) => ({
+      h: Math.round(100 * v / 5) + '%',
+      bg: i === moodSeries.length - 1 ? '#1a1a18' : '#c9c9c0'
+    }));
+    const medRows = [
+      { tm: 'DAILY 08:00', t: 'Vitamin D 1000 IU' },
+      { tm: 'TODAY 14:30', t: 'Dentist \u2014 6-month checkup' },
+      { tm: 'JUL 22', t: 'Flu shot \u2014 booked' },
+      { tm: 'AUG 12', t: 'Skin check \u2014 annual' }
+    ].map(m => ({ ...m, col: C.health }));
+
+    return {
+      isPersonal: scr === 'personal', isAcademic: scr === 'academic', isWork: scr === 'work', isHealth: scr === 'health',
+      journal, dates,
+      jBody: this.state.jBody,
+      onJBody: (e) => this.setState({ jBody: e.target.value }),
+      jq: this.state.jq,
+      onJq: (e) => this.setState({ jq: e.target.value }),
+      moodBtns: mkBtn('jMood'), energyBtns: mkBtn('jEnergy'),
+      addJournal: () => this.addJournal(),
+      courses, studyHours, projects, workGoals, achievements,
+      copyAch: () => this.copyAch(),
+      achBtn: this.state.achCopied ? 'COPIED TO CLIPBOARD \u2713' : 'COPY AS TEXT FOR CV \u2192',
+      wNow: wNow.toFixed(1),
+      wDelta: (wd > 0 ? '+' : '') + wd.toFixed(1) + ' KG',
+      weightBars,
+      wInput: this.state.wInput,
+      onWInput: (e) => this.setState({ wInput: e.target.value }),
+      logWeight: () => this.logWeight(),
+      sleepBars, moodBars, medRows,
+      isToday: scr === 'today', isGoals: scr === 'goals', isCalendar: scr === 'calendar',
+      isGym: scr === 'gym', isFinance: scr === 'finance', isReview: scr === 'review', isAssistant: scr === 'assistant',
+      navItems,
+      nudgeOn: (this.props.showNudge ?? true) === true,
+      nudgeText: '3 nights under 6 h 30 m sleep \u2014 on similar weeks you skip 40% of evening blocks. Today\u2019s 16:00 study session is most at risk; 13:00\u201314:30 is free if you want to pull it earlier.',
+      goAssistant: () => this.setScreen('assistant'),
+      goGym: () => this.setScreen('gym'),
+      todayEvents, tasks, habits,
+      taskCount: tasksOpen + ' open',
+      habitCount: habitsDone + ' / ' + this.state.habits.length,
+      budgets, budgetTotF: this.fmt(budgetTot) + ' / ' + this.fmt(budgetCap),
+      expAmt: this.state.expAmt,
+      onExpAmt: (e) => this.setState({ expAmt: e.target.value }),
+      expCat: this.state.expCat,
+      onExpCat: (e) => this.setState({ expCat: e.target.value }),
+      addExpense: () => this.addExpense(),
+      workoutSummary, exercises, setsDone, setsTotal: allSets.length,
+      prs, benchBars, gymWeek,
+      horizons, calDays, legend,
+      nwF: this.fmt(29342), nwDeltaF: this.fmt(643), nwBars, accounts, savings, expenses,
+      revStats, highlights, pastReviews,
+      revBtnLabel: this.state.reviewDone ? 'REVIEW COMPLETED \u2713' : 'COMPLETE REVIEW',
+      revBtnBg: this.state.reviewDone ? '#ffffff' : '#1a1a18',
+      revBtnCl: this.state.reviewDone ? '#1a1a18' : '#ffffff',
+      completeReview: () => this.setState({ reviewDone: true }),
+      chat, chips,
+      chatInput: this.state.chatInput,
+      onChatInput: (e) => this.setState({ chatInput: e.target.value }),
+      onChatKey: (e) => { if (e.key === 'Enter') this.sendChatMsg(); },
+      sendChat: () => this.sendChatMsg()
+    };
+  }
+}
+</script>
+</body>
+</html>
