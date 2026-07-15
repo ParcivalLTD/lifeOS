@@ -14,7 +14,8 @@ export default async function Home() {
           <div className="flex flex-col gap-2 px-3 py-3">
             <p className="text-[12.5px]">
               The Today dashboard ships at the end of Phase 1. Live now:{" "}
-              <Link href="/tasks">Tasks</Link> and <Link href="/habits">Habits</Link>.
+              <Link href="/tasks">Tasks</Link>, <Link href="/habits">Habits</Link>,
+              and the <Link href="/calendar">Calendar</Link>.
             </p>
             <p className="font-mono text-[10px] uppercase tracking-[.06em] text-faint">
               Capture target: any log in under 10 seconds

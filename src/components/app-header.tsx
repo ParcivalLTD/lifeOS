@@ -5,6 +5,7 @@ const TABS = [
   { key: "today", href: "/", label: "TODAY" },
   { key: "tasks", href: "/tasks", label: "TASKS" },
   { key: "habits", href: "/habits", label: "HABITS" },
+  { key: "calendar", href: "/calendar", label: "CALENDAR" },
 ] as const;
 
 export type TabKey = (typeof TABS)[number]["key"];
