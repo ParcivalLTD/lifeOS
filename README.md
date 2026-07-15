@@ -68,6 +68,45 @@ docker run -d --name lifeos-pg \
 npm run db:shim      # stubs auth.uid() + roles — local only, NEVER on Supabase
 ```
 
+## Backups & export (NFR-4)
+
+Every run dumps **all nine core tables into one JSON document**
+(`{ version, generatedAt, counts, data }`):
+
+- **Nightly**: Vercel Cron (see `vercel.json`) calls `GET /api/backup` at
+  02:00 UTC with `Authorization: Bearer $CRON_SECRET`; the dump lands in the
+  private `backups` Storage bucket (auto-created).
+- **Manual**: Settings → "Export my data" downloads the JSON;
+  "Back up to storage now" writes the same dump to the bucket. Recent
+  backups are listed on the settings page.
+
+## Deploying to Vercel
+
+1. **Supabase project**: create one, then under Authentication → Sign In / Up
+   disable **"Allow new users to sign up"** (mirrors `supabase/config.toml`).
+2. **Migrate + owner**: with `DATABASE_URL` pointing at the project (use the
+   **transaction pooler** URI, port 6543 — the app already sets
+   `prepare: false`), run `npm run db:migrate`, then `npm run
+   auth:create-owner` (needs `OWNER_EMAIL`/`OWNER_PASSWORD`/service key).
+   Optionally `SEED_USER_ID=<owner id> npm run db:seed`.
+3. **Vercel**: import the repo; `vercel.json` registers the nightly backup
+   cron. Set the environment variables:
+
+| Env var | Where | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Vercel + local | Project Settings → API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Vercel + local | Project Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | Vercel + local | server-only: backups + owner script |
+| `DATABASE_URL` | Vercel + local | transaction-pooler URI (port 6543) |
+| `CRON_SECRET` | Vercel + local | bearer for `/api/backup`; any long random string |
+| `OWNER_EMAIL` / `OWNER_PASSWORD` | local only | consumed by `auth:create-owner` |
+| `SEED_USER_ID` | local only | consumed by `db:seed` |
+
+4. **Install on your phone** (PWA, NFR-2): the deployed site serves a valid
+   manifest (`standalone`, 192/512 + maskable icons) and a 180px
+   apple-touch-icon — Android Chrome offers "Add to Home screen" install;
+   on iOS Safari use Share → "Add to Home Screen".
+
 ## Scripts
 
 | Script | What it does |

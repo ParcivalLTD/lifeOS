@@ -12,6 +12,6 @@ export const config = {
      * must stay reachable for installability checks). Everything matched here
      * requires a session, except the public paths in lib/supabase/middleware.
      */
-    "/((?!_next/static|_next/image|favicon\\.ico|icon\\.png|icons/|manifest\\.webmanifest).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|icon\\.png|apple-icon\\.png|icons/|manifest\\.webmanifest).*)",
   ],
 };

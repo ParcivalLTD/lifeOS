@@ -80,5 +80,9 @@ writeFileSync(join(iconsDir, "icon-512.png"), icon(512, 1));
 // maskable: glyph inside the safe zone so launcher masks don't clip it
 writeFileSync(join(iconsDir, "icon-maskable-512.png"), icon(512, 0.62));
 writeFileSync(join(root, "src", "app", "icon.png"), icon(64, 1));
+// iOS Add-to-Home-Screen icon (Next serves it as <link rel="apple-touch-icon">)
+writeFileSync(join(root, "src", "app", "apple-icon.png"), icon(180, 1));
 
-console.log("icons written: public/icons/{icon-192,icon-512,icon-maskable-512}.png + src/app/icon.png");
+console.log(
+  "icons written: public/icons/{icon-192,icon-512,icon-maskable-512}.png + src/app/{icon,apple-icon}.png",
+);
