@@ -7,8 +7,9 @@ import { createClient } from "@/lib/supabase/server";
  * credential detail leaks).
  */
 export async function POST(request: Request) {
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? request.url;
   const redirectTo = (path: string) =>
-    NextResponse.redirect(new URL(path, request.url), { status: 303 });
+    NextResponse.redirect(new URL(path, base), { status: 303 });
 
   const form = await request.formData();
   const email = String(form.get("email") ?? "").trim();
@@ -27,3 +28,4 @@ export async function POST(request: Request) {
 
   return redirectTo("/");
 }
+
