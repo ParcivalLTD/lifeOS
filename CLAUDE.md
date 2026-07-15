@@ -31,10 +31,12 @@ We are building **Phase 1 and nothing else** (spec §11):
   even though Phase 1 UIs only exercise Tasks, Habits, and Events. The
   hub-and-spoke core is real from day one; the other entities simply have no UI
   yet.
-- **Today dashboard** — the app's home route. Phase 1 shows **only the live
-  panels**: Schedule (today's Events, all domains), Tasks, and Habits checklist.
-  Do **not** render placeholder panels for Budget, Workout, or the assistant
-  nudge — those arrive with their phases.
+- **Today dashboard** — the app's home route. Live panels: Schedule (today's
+  Events, all domains), top-3 Tasks, and Habits checklist — all actionable
+  inline. Deferred slots render as **honest placeholders** (decided
+  2026-07-15, superseding the earlier no-placeholder rule): a static inverted
+  assistant-nudge banner marked PHASE 4, and Budget/Workout cards as
+  "ships with Phase 2" empty states with ghost bars — never fake data.
 - **Tasks** — list with due dates, priorities (1–3), recurrence.
 - **Habits** — tracker with completion log, streaks, adherence %.
 - **Unified calendar** — month/week/day views of all Events regardless of
@@ -223,3 +225,9 @@ gym:      oklch(0.62 0.13 55)    health:   oklch(0.55 0.13 20)
 - Sign-up stays disabled; never build multi-user features (NG1).
 - Keep the mockup (`docs/design/LifeOS.dc.html`) as the visual reference for
   every screen; open questions live in spec §13.
+
+RLS bypass rule: server-side Drizzle connects as `postgres` and BYPASSES RLS. Every
+Drizzle query that reads or writes user-scoped tables MUST filter by the session user's
+id explicitly — RLS does not protect this path. Prefer a single helper (e.g. a
+`db.forUser(userId)` wrapper or a required `userId` arg on all data functions) so the
+filter can't be forgotten. Treat a user-scoped query without a user_id filter as a bug.
