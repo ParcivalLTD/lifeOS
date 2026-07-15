@@ -1,5 +1,5 @@
-import { and, eq } from "drizzle-orm";
-import { db } from "@/db";
+import { eq } from "drizzle-orm";
+import { forUser } from "@/db";
 import { tasks } from "@/db/schema";
 import { todayISO } from "@/lib/dates";
 import { nextDueISO } from "@/lib/recurrence";
@@ -17,10 +17,9 @@ const toItem = (row: typeof tasks.$inferSelect): TaskItem => ({
 });
 
 export async function listTasks(userId: string): Promise<TaskItem[]> {
-  const rows = await db
-    .select()
-    .from(tasks)
-    .where(and(eq(tasks.userId, userId), eq(tasks.archived, false)));
+  const rows = await forUser(userId).select(tasks, {
+    where: eq(tasks.archived, false),
+  });
   return sortTasks(rows.map(toItem));
 }
 
@@ -34,17 +33,13 @@ export async function createTask(
     recurrence: string | null;
   },
 ): Promise<TaskItem> {
-  const [row] = await db
-    .insert(tasks)
-    .values({
-      userId,
-      title: input.title,
-      domain: input.domain,
-      dueDate: input.dueDate,
-      priority: input.priority,
-      recurrence: input.recurrence,
-    })
-    .returning();
+  const [row] = await forUser(userId).insert(tasks, {
+    title: input.title,
+    domain: input.domain,
+    dueDate: input.dueDate,
+    priority: input.priority,
+    recurrence: input.recurrence,
+  });
   return toItem(row);
 }
 
@@ -58,16 +53,12 @@ export async function setTaskStatus(
   taskId: string,
   status: TaskStatus,
 ): Promise<void> {
-  const [current] = await db
-    .select()
-    .from(tasks)
-    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)));
+  const udb = forUser(userId);
+
+  const [current] = await udb.select(tasks, { where: eq(tasks.id, taskId) });
   if (!current) return;
 
-  await db
-    .update(tasks)
-    .set({ status })
-    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)));
+  await udb.update(tasks, { status }, eq(tasks.id, taskId));
 
   if (status === "done" && current.status !== "done" && current.recurrence) {
     const today = todayISO();
@@ -75,8 +66,7 @@ export async function setTaskStatus(
       current.dueDate && current.dueDate > today ? current.dueDate : today;
     const nextDue = nextDueISO(current.recurrence, from);
     if (nextDue) {
-      await db.insert(tasks).values({
-        userId,
+      await udb.insert(tasks, {
         domain: current.domain,
         title: current.title,
         notes: current.notes,

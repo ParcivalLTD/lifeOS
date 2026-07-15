@@ -3,7 +3,7 @@
  * document, plus upload into the private `backups` Storage bucket.
  * Single-tenant, so the dump is unfiltered — it captures the whole schema.
  */
-import { db } from "@/db";
+import { fullExportDb } from "@/db";
 import {
   events,
   goals,
@@ -37,6 +37,8 @@ export type BackupDocument = {
 };
 
 export async function buildExport(): Promise<BackupDocument> {
+  // Deliberately unscoped: single-tenant whole-database dump (NFR-4).
+  const db = fullExportDb("nfr4-full-export");
   const names = Object.keys(TABLES) as (keyof typeof TABLES)[];
   const results = await Promise.all(
     names.map((name) => db.select().from(TABLES[name])),
