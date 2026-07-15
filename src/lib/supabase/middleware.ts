@@ -52,10 +52,10 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const redirectWithCookies = (path: string) => {
-    const url = request.nextUrl.clone();
-    url.pathname = path;
-    url.search = "";
-    const redirect = NextResponse.redirect(url);
+    // Behind the Traefik proxy nextUrl carries the internal host; prefer the
+    // configured public URL so Location headers point at the real origin.
+    const base = process.env.NEXT_PUBLIC_SITE_URL ?? request.nextUrl.origin;
+    const redirect = NextResponse.redirect(new URL(path, base));
     // Carry refreshed session cookies across the redirect.
     supabaseResponse.cookies
       .getAll()
