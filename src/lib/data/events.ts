@@ -1,5 +1,5 @@
 import { and, eq, gte, lt } from "drizzle-orm";
-import { db } from "@/db";
+import { forUser } from "@/db";
 import { events } from "@/db/schema";
 import { parseISODate, toISODate } from "@/lib/dates";
 import type { EventItem, EventKind } from "@/lib/event-utils";
@@ -29,18 +29,14 @@ export async function listEventsInRange(
   fromISO: string,
   toISOExclusive: string,
 ): Promise<EventItem[]> {
-  const rows = await db
-    .select()
-    .from(events)
-    .where(
-      and(
-        eq(events.userId, userId),
-        eq(events.archived, false),
-        gte(events.start, parseISODate(fromISO)),
-        lt(events.start, parseISODate(toISOExclusive)),
-      ),
-    )
-    .orderBy(events.start);
+  const rows = await forUser(userId).select(events, {
+    where: and(
+      eq(events.archived, false),
+      gte(events.start, parseISODate(fromISO)),
+      lt(events.start, parseISODate(toISOExclusive)),
+    ),
+    orderBy: [events.start],
+  });
   return rows.map(toItem);
 }
 
@@ -48,10 +44,9 @@ export async function getEvent(
   userId: string,
   eventId: string,
 ): Promise<EventItem | null> {
-  const [row] = await db
-    .select()
-    .from(events)
-    .where(and(eq(events.id, eventId), eq(events.userId, userId)));
+  const [row] = await forUser(userId).select(events, {
+    where: eq(events.id, eventId),
+  });
   return row && !row.archived ? toItem(row) : null;
 }
 
@@ -85,18 +80,14 @@ export async function createEvent(
   input: EventInput,
 ): Promise<EventItem> {
   const { start, end, allDay } = toTimestamps(input);
-  const [row] = await db
-    .insert(events)
-    .values({
-      userId,
-      title: input.title,
-      domain: input.domain,
-      kind: input.kind,
-      start,
-      end,
-      allDay,
-    })
-    .returning();
+  const [row] = await forUser(userId).insert(events, {
+    title: input.title,
+    domain: input.domain,
+    kind: input.kind,
+    start,
+    end,
+    allDay,
+  });
   return toItem(row);
 }
 
@@ -107,23 +98,21 @@ export async function updateEvent(
   input: EventInput,
 ): Promise<void> {
   const { start, end, allDay } = toTimestamps(input);
-  await db
-    .update(events)
-    .set({
+  await forUser(userId).update(
+    events,
+    {
       title: input.title,
       domain: input.domain,
       kind: input.kind,
       start,
       end,
       allDay,
-    })
-    .where(and(eq(events.id, eventId), eq(events.userId, userId)));
+    },
+    eq(events.id, eventId),
+  );
 }
 
 /** Soft delete — archived events disappear from every view but stay in the DB. */
 export async function archiveEvent(userId: string, eventId: string): Promise<void> {
-  await db
-    .update(events)
-    .set({ archived: true })
-    .where(and(eq(events.id, eventId), eq(events.userId, userId)));
+  await forUser(userId).update(events, { archived: true }, eq(events.id, eventId));
 }

@@ -1,5 +1,5 @@
 import { and, eq, gte } from "drizzle-orm";
-import { db } from "@/db";
+import { forUser } from "@/db";
 import { habitCompletions, habits, type HabitSchedule } from "@/db/schema";
 import { addDaysISO } from "@/lib/dates";
 import {
@@ -38,25 +38,16 @@ export async function listHabitsWithStats(
   userId: string,
   today: string,
 ): Promise<HabitsOverview> {
-  const habitRows = await db
-    .select()
-    .from(habits)
-    .where(and(eq(habits.userId, userId), eq(habits.archived, false)))
-    .orderBy(habits.createdAt);
+  const udb = forUser(userId);
 
-  const completions = await db
-    .select({
-      habitId: habitCompletions.habitId,
-      date: habitCompletions.date,
-      status: habitCompletions.status,
-    })
-    .from(habitCompletions)
-    .where(
-      and(
-        eq(habitCompletions.userId, userId),
-        gte(habitCompletions.date, addDaysISO(today, -HISTORY_DAYS)),
-      ),
-    );
+  const habitRows = await udb.select(habits, {
+    where: eq(habits.archived, false),
+    orderBy: [habits.createdAt],
+  });
+
+  const completions = await udb.select(habitCompletions, {
+    where: gte(habitCompletions.date, addDaysISO(today, -HISTORY_DAYS)),
+  });
 
   const doneByHabit = new Map<string, Set<string>>();
   for (const c of completions) {
@@ -108,8 +99,7 @@ export async function createHabit(
   userId: string,
   input: { title: string; domain: Domain; schedule: HabitSchedule },
 ): Promise<void> {
-  await db.insert(habits).values({
-    userId,
+  await forUser(userId).insert(habits, {
     title: input.title,
     domain: input.domain,
     schedule: input.schedule,
@@ -123,29 +113,29 @@ export async function setHabitCompletion(
   dateISO: string,
   done: boolean,
 ): Promise<void> {
-  const [habit] = await db
-    .select({ id: habits.id })
-    .from(habits)
-    .where(and(eq(habits.id, habitId), eq(habits.userId, userId)));
+  const udb = forUser(userId);
+
+  const [habit] = await udb.select(habits, { where: eq(habits.id, habitId) });
   if (!habit) return;
 
   if (done) {
-    await db
-      .insert(habitCompletions)
-      .values({ userId, habitId, date: dateISO, status: "done" })
-      .onConflictDoUpdate({
-        target: [habitCompletions.habitId, habitCompletions.date],
-        set: { status: "done" },
-      });
+    await udb.insert(
+      habitCompletions,
+      { habitId, date: dateISO, status: "done" },
+      {
+        onConflict: {
+          target: [habitCompletions.habitId, habitCompletions.date],
+          set: { status: "done" },
+        },
+      },
+    );
   } else {
-    await db
-      .delete(habitCompletions)
-      .where(
-        and(
-          eq(habitCompletions.userId, userId),
-          eq(habitCompletions.habitId, habitId),
-          eq(habitCompletions.date, dateISO),
-        ),
-      );
+    await udb.delete(
+      habitCompletions,
+      and(
+        eq(habitCompletions.habitId, habitId),
+        eq(habitCompletions.date, dateISO),
+      ),
+    );
   }
 }
