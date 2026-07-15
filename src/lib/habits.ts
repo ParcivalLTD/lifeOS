@@ -57,18 +57,26 @@ export function streak(
   doneDates: ReadonlySet<string>,
   today: string,
 ): number {
+  // schedule.since bounds the walk: history before a schedule edit belongs to
+  // the old schedule and is neither credited nor penalised under the new one.
+  const since = schedule.since;
+
   if (schedule.type === "times_per_week") {
     let count = 0;
     let start = weekStart(today);
     // current week: count if already met, otherwise it's pending — skip it.
-    let doneThisWeek = 0;
-    for (let d = start, i = 0; i < 7; i++, d = addDaysISO(d, 1)) {
-      if (doneDates.has(d)) doneThisWeek++;
+    // A week straddling `since` is partial under this schedule: skip it too.
+    if (!since || start >= since) {
+      let doneThisWeek = 0;
+      for (let d = start, i = 0; i < 7; i++, d = addDaysISO(d, 1)) {
+        if (doneDates.has(d)) doneThisWeek++;
+      }
+      if (doneThisWeek >= schedule.times) count++;
     }
-    if (doneThisWeek >= schedule.times) count++;
     // walk completed weeks backwards
     for (let w = 1; w < MAX_WALK_DAYS / 7; w++) {
       start = addDaysISO(start, -7);
+      if (since && start < since) break;
       let done = 0;
       for (let d = start, i = 0; i < 7; i++, d = addDaysISO(d, 1)) {
         if (doneDates.has(d)) done++;
@@ -86,6 +94,7 @@ export function streak(
     day = addDaysISO(day, -1);
   }
   for (let i = 0; i < MAX_WALK_DAYS; i++, day = addDaysISO(day, -1)) {
+    if (since && day < since) break;
     if (!isScheduledOn(schedule, day)) continue;
     if (doneDates.has(day)) count++;
     else break;
@@ -103,11 +112,18 @@ export function adherenceWindow(
   today: string,
 ): { done: number; expected: number } {
   const windowDays: string[] = [];
-  for (let i = 6; i >= 0; i--) windowDays.push(addDaysISO(today, -i));
+  for (let i = 6; i >= 0; i--) {
+    const d = addDaysISO(today, -i);
+    // days before a schedule edit are judged by the old schedule, not this one
+    if (schedule.since && d < schedule.since) continue;
+    windowDays.push(d);
+  }
 
   if (schedule.type === "times_per_week") {
+    // prorate the weekly quota when the window is clipped by `since`
+    const expected = Math.min(schedule.times, windowDays.length);
     const done = windowDays.filter((d) => doneDates.has(d)).length;
-    return { done: Math.min(done, schedule.times), expected: schedule.times };
+    return { done: Math.min(done, expected), expected };
   }
 
   const scheduled = windowDays.filter((d) => isScheduledOn(schedule, d));

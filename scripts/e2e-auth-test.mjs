@@ -94,7 +94,12 @@ check("session cookies set (sb-*)", [...jar.keys()].some((k) => k.startsWith("sb
 
 r = await app("/");
 const homeHtml = await r.text();
-check("/ renders for signed-in owner", r.status === 200 && homeHtml.includes(EMAIL), `status=${r.status}`);
+// The home route is the Today dashboard (renders the app shell, not the email).
+check(
+  "/ renders the app for signed-in owner",
+  r.status === 200 && homeHtml.includes("LIFEOS") && homeHtml.includes("TODAY"),
+  `status=${r.status}`,
+);
 
 r = await app("/login");
 check("/login redirects home when signed in", isRedirect(r) && loc(r) === "/");

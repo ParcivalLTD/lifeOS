@@ -1,12 +1,16 @@
 /**
- * Negative compile test — every statement below MUST be a TypeScript error.
- * Run: npx tsc --noEmit  (expect exactly these failures, then delete file)
+ * Compile-time guard for the RLS-bypass rule (CLAUDE.md). Every statement
+ * marked `@ts-expect-error` below MUST remain a type error: if any stops
+ * erroring, `tsc` fails with "unused '@ts-expect-error' directive", so the
+ * regular build (which type-checks this file) is the assertion. Not executed.
  */
 import { pgTable, text, uuid } from "drizzle-orm/pg-core";
 // @ts-expect-error — raw db is module-private; unscoped queries are impossible
 import { db } from "@/db";
 import { forUser } from "@/db";
 import { tasks } from "@/db/schema";
+
+void db; // silence unused-var lint; the import line above is the assertion
 
 const udb = forUser("00000000-0000-0000-0000-000000000001");
 

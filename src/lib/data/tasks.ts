@@ -16,6 +16,51 @@ const toItem = (row: typeof tasks.$inferSelect): TaskItem => ({
   recurrence: row.recurrence,
 });
 
+/** TaskItem plus the fields only the edit page needs. */
+export type TaskDetail = TaskItem & { notes: string | null };
+
+export async function getTask(
+  userId: string,
+  taskId: string,
+): Promise<TaskDetail | null> {
+  const [row] = await forUser(userId).select(tasks, {
+    where: eq(tasks.id, taskId),
+  });
+  return row && !row.archived ? { ...toItem(row), notes: row.notes } : null;
+}
+
+/** Edits the FR-PERS.1 fields. Status is not touched here (tick flow owns it). */
+export async function updateTask(
+  userId: string,
+  taskId: string,
+  input: {
+    title: string;
+    notes: string | null;
+    domain: Domain;
+    dueDate: string | null;
+    priority: number;
+    recurrence: string | null;
+  },
+): Promise<void> {
+  await forUser(userId).update(
+    tasks,
+    {
+      title: input.title,
+      notes: input.notes,
+      domain: input.domain,
+      dueDate: input.dueDate,
+      priority: input.priority,
+      recurrence: input.recurrence,
+    },
+    eq(tasks.id, taskId),
+  );
+}
+
+/** Soft delete — archived tasks leave every list but stay for reviews. */
+export async function archiveTask(userId: string, taskId: string): Promise<void> {
+  await forUser(userId).update(tasks, { archived: true }, eq(tasks.id, taskId));
+}
+
 export async function listTasks(userId: string): Promise<TaskItem[]> {
   const rows = await forUser(userId).select(tasks, {
     where: eq(tasks.archived, false),

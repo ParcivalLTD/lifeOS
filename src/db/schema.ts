@@ -102,14 +102,21 @@ export const entityTypeEnum = pgEnum("entity_type", [
 // Shared payload / JSON types
 // ---------------------------------------------------------------------------
 
-/** Habit.schedule shapes (spec §7.3: daily, Mon/Wed/Fri, 3×/week). */
-export type HabitSchedule =
+/**
+ * Habit.schedule shapes (spec §7.3: daily, Mon/Wed/Fri, 3×/week).
+ * `since` is set when the schedule is EDITED: stats (streak, adherence) are
+ * computed only from that date forward, so the new schedule never
+ * reinterprets history recorded under the old one. The completion log itself
+ * is immutable fact and survives schedule changes untouched.
+ */
+export type HabitSchedule = (
   | { type: "daily" }
   | {
       type: "weekly_days";
       days: ("mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun")[];
     }
-  | { type: "times_per_week"; times: number };
+  | { type: "times_per_week"; times: number }
+) & { since?: string };
 
 export type GymSetLog = { kg: number; reps: number; done?: boolean };
 
