@@ -89,9 +89,15 @@ export async function createTask(
 }
 
 /**
- * Sets a task's status. Completing a recurring task spawns the next
- * occurrence: due = next per rule, counted from the later of (due date,
- * today) so overdue recurring tasks don't pile up a backlog.
+ * Sets a task's status.
+ *
+ * Completing a *recurring* task rolls it forward in place: the due date
+ * advances to the next occurrence (counted from the later of due date and
+ * today, so overdue tasks don't backfill) and the task stays open. This
+ * replaces the earlier "mark done + insert a clone" behaviour, which left two
+ * rows and read as the task duplicating on click. One row, no clone.
+ *
+ * Dropping a recurring task ends the series normally (status → dropped).
  */
 export async function setTaskStatus(
   userId: string,
@@ -103,23 +109,18 @@ export async function setTaskStatus(
   const [current] = await udb.select(tasks, { where: eq(tasks.id, taskId) });
   if (!current) return;
 
-  await udb.update(tasks, { status }, eq(tasks.id, taskId));
-
-  if (status === "done" && current.status !== "done" && current.recurrence) {
+  if (status === "done" && current.status === "open" && current.recurrence) {
     const today = todayISO();
     const from =
       current.dueDate && current.dueDate > today ? current.dueDate : today;
     const nextDue = nextDueISO(current.recurrence, from);
     if (nextDue) {
-      await udb.insert(tasks, {
-        domain: current.domain,
-        title: current.title,
-        notes: current.notes,
-        priority: current.priority,
-        dueDate: nextDue,
-        recurrence: current.recurrence,
-        goalId: current.goalId,
-      });
+      // roll forward in place; task remains open at its next occurrence
+      await udb.update(tasks, { dueDate: nextDue }, eq(tasks.id, taskId));
+      return;
     }
+    // unparseable rule → fall through and mark it done like a normal task
   }
+
+  await udb.update(tasks, { status }, eq(tasks.id, taskId));
 }

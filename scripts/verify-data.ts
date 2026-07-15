@@ -138,6 +138,7 @@ async function main() {
     (await listTasks(OWNER)).find((t) => t.id === created.id)?.status === "open",
   );
 
+  // Recurring completion rolls forward IN PLACE (no clone, no duplicate row).
   const recurring = await createTask(OWNER, {
     title: `${FIXTURE_PREFIX}recurring`,
     domain: "personal",
@@ -145,21 +146,37 @@ async function main() {
     priority: 2,
     recurrence: "FREQ=DAILY",
   });
+  const beforeRecur = (await listTasks(OWNER)).length;
   await setTaskStatus(OWNER, recurring.id, "done");
   list = await listTasks(OWNER);
-  const clone = list.find(
-    (t) => t.title === `${FIXTURE_PREFIX}recurring` && t.status === "open",
-  );
-  check("recurring complete: spawns next occurrence", Boolean(clone));
+  const rolled = list.find((t) => t.id === recurring.id);
   check(
-    "recurring clone: due tomorrow, rule carried",
-    clone?.dueDate === addDaysISO(today, 1) && clone?.recurrence === "FREQ=DAILY",
-    JSON.stringify(clone),
+    "recurring complete: no new row (rolls in place)",
+    list.length === beforeRecur &&
+      list.filter((t) => t.title === `${FIXTURE_PREFIX}recurring`).length === 1,
+    `count ${list.filter((t) => t.title === `${FIXTURE_PREFIX}recurring`).length}, total ${list.length} vs ${beforeRecur}`,
   );
-  await setTaskStatus(OWNER, recurring.id, "done"); // idempotent
   check(
-    "recurring re-complete: no second clone",
-    (await listTasks(OWNER)).filter((t) => t.title === `${FIXTURE_PREFIX}recurring`).length === 2,
+    "recurring complete: same row stays open, due advanced to tomorrow",
+    rolled?.status === "open" && rolled?.dueDate === addDaysISO(today, 1) &&
+      rolled?.recurrence === "FREQ=DAILY",
+    JSON.stringify(rolled),
+  );
+  await setTaskStatus(OWNER, recurring.id, "done"); // roll again
+  const rolled2 = (await listTasks(OWNER)).find((t) => t.id === recurring.id);
+  check(
+    "recurring re-complete: advances again, still one row",
+    rolled2?.dueDate === addDaysISO(today, 2) &&
+      (await listTasks(OWNER)).filter((t) => t.title === `${FIXTURE_PREFIX}recurring`).length === 1,
+    `due ${rolled2?.dueDate}`,
+  );
+  check(
+    "recurring drop: ends the series (status dropped, no roll)",
+    await (async () => {
+      await setTaskStatus(OWNER, recurring.id, "dropped");
+      const t = (await listTasks(OWNER)).find((x) => x.id === recurring.id);
+      return t?.status === "dropped";
+    })(),
   );
 
   // scoping through the wrapper

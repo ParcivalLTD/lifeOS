@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SwipeNav } from "@/components/swipe-nav";
 import { headerDate } from "@/lib/dates";
 
 const TABS = [
@@ -51,6 +52,7 @@ export function AppHeader({ active }: { active: TabKey }) {
           </Link>
         ))}
       </nav>
+      <SwipeNav />
     </header>
   );
 }

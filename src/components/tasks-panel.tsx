@@ -13,7 +13,7 @@ import {
   taskFilterActive,
   type TaskFilter,
 } from "@/lib/list-filters";
-import { recurrenceLabel } from "@/lib/recurrence";
+import { nextDueISO, recurrenceLabel } from "@/lib/recurrence";
 import type { TaskItem, TaskStatus } from "@/lib/task-utils";
 
 const inputCls =
@@ -24,7 +24,8 @@ const isOptimistic = (id: string) => id.startsWith("optimistic-");
 
 type Patch =
   | { type: "add"; item: TaskItem }
-  | { type: "status"; id: string; status: TaskStatus };
+  | { type: "status"; id: string; status: TaskStatus }
+  | { type: "roll"; id: string; dueDate: string | null };
 
 export function TasksPanel({
   initialTasks,
@@ -36,10 +37,15 @@ export function TasksPanel({
   const [, startTransition] = useTransition();
   const [tasks, patch] = useOptimistic(
     initialTasks,
-    (state: TaskItem[], p: Patch) =>
-      p.type === "add"
-        ? [...state, p.item]
-        : state.map((t) => (t.id === p.id ? { ...t, status: p.status } : t)),
+    (state: TaskItem[], p: Patch) => {
+      if (p.type === "add") return [...state, p.item];
+      if (p.type === "roll") {
+        return state.map((t) =>
+          t.id === p.id ? { ...t, status: "open" as const, dueDate: p.dueDate } : t,
+        );
+      }
+      return state.map((t) => (t.id === p.id ? { ...t, status: p.status } : t));
+    },
   );
 
   const [showDone, setShowDone] = useState(false);
@@ -67,10 +73,26 @@ export function TasksPanel({
   );
   const active = taskFilterActive(filter);
 
-  const setTaskStatusOptimistic = (id: string, next: TaskStatus) => {
+  // Checkbox: open⇄done. Completing a recurring task rolls it forward in place
+  // (advance due date, stay open) so the row is stable — matching the server —
+  // rather than disappearing and a clone taking its place.
+  const toggleComplete = (t: TaskItem) => {
+    const goingDone = t.status === "open";
     startTransition(async () => {
-      patch({ type: "status", id, status: next });
-      await setTaskStatusAction(id, next);
+      if (goingDone && t.recurrence) {
+        const from = t.dueDate && t.dueDate > today ? t.dueDate : today;
+        patch({ type: "roll", id: t.id, dueDate: nextDueISO(t.recurrence, from) ?? t.dueDate });
+      } else {
+        patch({ type: "status", id: t.id, status: goingDone ? "done" : "open" });
+      }
+      await setTaskStatusAction(t.id, goingDone ? "done" : "open");
+    });
+  };
+
+  const drop = (id: string) => {
+    startTransition(async () => {
+      patch({ type: "status", id, status: "dropped" });
+      await setTaskStatusAction(id, "dropped");
     });
   };
 
@@ -220,9 +242,7 @@ export function TasksPanel({
             <CheckButton
               checked={t.status === "done"}
               label={t.status === "done" ? `Reopen "${t.title}"` : `Complete "${t.title}"`}
-              onToggle={() =>
-                setTaskStatusOptimistic(t.id, t.status === "open" ? "done" : "open")
-              }
+              onToggle={() => toggleComplete(t)}
             />
             {editable ? (
               <Link
@@ -241,7 +261,7 @@ export function TasksPanel({
               <button
                 type="button"
                 aria-label={`Drop "${t.title}"`}
-                onClick={() => setTaskStatusOptimistic(t.id, "dropped")}
+                onClick={() => drop(t.id)}
                 className="-m-1.5 flex-none cursor-pointer border-0 bg-transparent p-1.5 font-mono text-[11px] leading-none text-faintest"
               >
                 ✕
