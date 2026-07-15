@@ -13,7 +13,8 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:shim": "tsx scripts/apply-local-auth-shim.ts",
     "auth:create-owner": "tsx scripts/create-owner.ts",
-    "test:auth": "node scripts/e2e-auth-test.mjs"
+    "test:auth": "node scripts/e2e-auth-test.mjs",
+    "test:data": "tsx scripts/verify-data.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.1",

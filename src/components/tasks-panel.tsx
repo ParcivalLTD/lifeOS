@@ -1,21 +1,31 @@
 "use client";
 
-import { useMemo, useOptimistic, useTransition } from "react";
+import Link from "next/link";
+import { useMemo, useOptimistic, useState, useTransition } from "react";
 import { addTaskAction, setTaskStatusAction } from "@/app/tasks/actions";
 import { CheckButton } from "@/components/check-button";
+import { FilterBar, FilterSelect, FilterToggle } from "@/components/filter-bar";
 import { Panel } from "@/components/panel";
 import { dueLabel } from "@/lib/dates";
 import { DOMAIN_DOT_CLASS, DOMAINS, isDomain } from "@/lib/domains";
-import { recurrenceLabel } from "@/lib/recurrence";
+import {
+  filterTasks,
+  taskFilterActive,
+  type TaskFilter,
+} from "@/lib/list-filters";
+import { nextDueISO, recurrenceLabel } from "@/lib/recurrence";
 import type { TaskItem, TaskStatus } from "@/lib/task-utils";
 
 const inputCls =
   "border border-border-input bg-subtle px-2.5 py-2 text-[12.5px]";
 const selectCls = "border border-border-input bg-subtle px-1.5 py-2 text-[12px]";
 
+const isOptimistic = (id: string) => id.startsWith("optimistic-");
+
 type Patch =
   | { type: "add"; item: TaskItem }
-  | { type: "status"; id: string; status: TaskStatus };
+  | { type: "status"; id: string; status: TaskStatus }
+  | { type: "roll"; id: string; dueDate: string | null };
 
 export function TasksPanel({
   initialTasks,
@@ -27,21 +37,62 @@ export function TasksPanel({
   const [, startTransition] = useTransition();
   const [tasks, patch] = useOptimistic(
     initialTasks,
-    (state: TaskItem[], p: Patch) =>
-      p.type === "add"
-        ? [...state, p.item]
-        : state.map((t) => (t.id === p.id ? { ...t, status: p.status } : t)),
+    (state: TaskItem[], p: Patch) => {
+      if (p.type === "add") return [...state, p.item];
+      if (p.type === "roll") {
+        return state.map((t) =>
+          t.id === p.id ? { ...t, status: "open" as const, dueDate: p.dueDate } : t,
+        );
+      }
+      return state.map((t) => (t.id === p.id ? { ...t, status: p.status } : t));
+    },
+  );
+
+  const [showDone, setShowDone] = useState(false);
+  const [status, setStatus] = useState<TaskFilter["status"]>("all");
+  const [priority, setPriority] = useState<"all" | "1" | "2" | "3">("all");
+  const [due, setDue] = useState<TaskFilter["due"]>("all");
+
+  const filter: TaskFilter = useMemo(
+    () => ({
+      showDone,
+      status,
+      priority: priority === "all" ? "all" : (Number(priority) as 1 | 2 | 3),
+      due,
+    }),
+    [showDone, status, priority, due],
   );
 
   const openCount = useMemo(
     () => tasks.filter((t) => t.status === "open").length,
     [tasks],
   );
+  const visible = useMemo(
+    () => filterTasks(tasks, filter, today),
+    [tasks, filter, today],
+  );
+  const active = taskFilterActive(filter);
 
-  const setStatus = (id: string, status: TaskStatus) => {
+  // Checkbox: open⇄done. Completing a recurring task rolls it forward in place
+  // (advance due date, stay open) so the row is stable — matching the server —
+  // rather than disappearing and a clone taking its place.
+  const toggleComplete = (t: TaskItem) => {
+    const goingDone = t.status === "open";
     startTransition(async () => {
-      patch({ type: "status", id, status });
-      await setTaskStatusAction(id, status);
+      if (goingDone && t.recurrence) {
+        const from = t.dueDate && t.dueDate > today ? t.dueDate : today;
+        patch({ type: "roll", id: t.id, dueDate: nextDueISO(t.recurrence, from) ?? t.dueDate });
+      } else {
+        patch({ type: "status", id: t.id, status: goingDone ? "done" : "open" });
+      }
+      await setTaskStatusAction(t.id, goingDone ? "done" : "open");
+    });
+  };
+
+  const drop = (id: string) => {
+    startTransition(async () => {
+      patch({ type: "status", id, status: "dropped" });
+      await setTaskStatusAction(id, "dropped");
     });
   };
 
@@ -68,7 +119,7 @@ export function TasksPanel({
   return (
     <Panel
       label="Tasks"
-      value={`${openCount} open`}
+      value={active ? `${visible.length} shown · ${openCount} open` : `${openCount} open`}
       footer={
         <form
           action={add}
@@ -116,15 +167,73 @@ export function TasksPanel({
         </form>
       }
     >
-      {tasks.length === 0 && (
+      <FilterBar>
+        <FilterToggle label="Show done" checked={showDone} onChange={setShowDone} />
+        <FilterSelect
+          label="Prio"
+          value={priority}
+          onChange={setPriority}
+          options={[
+            { value: "all", label: "ALL" },
+            { value: "1", label: "P1" },
+            { value: "2", label: "P2" },
+            { value: "3", label: "P3" },
+          ]}
+        />
+        <FilterSelect
+          label="Due"
+          value={due}
+          onChange={setDue}
+          options={[
+            { value: "all", label: "ALL" },
+            { value: "overdue", label: "OVERDUE" },
+            { value: "today", label: "TODAY" },
+            { value: "week", label: "≤7D" },
+          ]}
+        />
+        <FilterSelect
+          label="Status"
+          value={status}
+          onChange={setStatus}
+          options={[
+            { value: "all", label: "ALL" },
+            { value: "open", label: "OPEN" },
+            { value: "done", label: "DONE" },
+            { value: "dropped", label: "DROPPED" },
+          ]}
+        />
+      </FilterBar>
+
+      {visible.length === 0 && (
         <p className="px-3 py-2 font-mono text-[10px] uppercase tracking-[.06em] text-faint">
-          No tasks — add one below
+          {tasks.length === 0
+            ? "No tasks — add one below"
+            : "No tasks match the current filters"}
         </p>
       )}
-      {tasks.map((t) => {
+      {visible.map((t) => {
         const settled = t.status !== "open";
-        const due = t.dueDate ? dueLabel(t.dueDate, today) : null;
+        const dueMeta = t.dueDate ? dueLabel(t.dueDate, today) : null;
         const repeat = recurrenceLabel(t.recurrence);
+        const editable = !isOptimistic(t.id);
+        const meta = (
+          <>
+            <div className={`text-[12.5px] ${settled ? "line-through" : ""}`}>
+              {t.title}
+            </div>
+            <div className="flex flex-wrap items-baseline gap-x-1.5 font-mono text-[10px] uppercase tracking-[.04em] text-faint">
+              <span className={`inline-block h-[7px] w-[7px] self-center ${DOMAIN_DOT_CLASS[t.domain]}`} />
+              <span>{t.domain}</span>
+              {t.status === "dropped" && <span>· DROPPED</span>}
+              {dueMeta && (
+                <span className={dueMeta.overdue && t.status === "open" ? "text-status-bad" : ""}>
+                  · {dueMeta.text}
+                </span>
+              )}
+              {repeat && <span>· ↻ {repeat}</span>}
+            </div>
+          </>
+        );
         return (
           <div
             key={t.id}
@@ -133,26 +242,18 @@ export function TasksPanel({
             <CheckButton
               checked={t.status === "done"}
               label={t.status === "done" ? `Reopen "${t.title}"` : `Complete "${t.title}"`}
-              onToggle={() => setStatus(t.id, t.status === "open" ? "done" : "open")}
+              onToggle={() => toggleComplete(t)}
             />
-            <div className={`min-w-0 flex-1 ${settled ? "opacity-50" : ""}`}>
-              <div
-                className={`text-[12.5px] ${settled ? "line-through" : ""}`}
+            {editable ? (
+              <Link
+                href={`/tasks/${t.id}`}
+                className={`min-w-0 flex-1 no-underline ${settled ? "opacity-50" : ""}`}
               >
-                {t.title}
-              </div>
-              <div className="flex flex-wrap items-baseline gap-x-1.5 font-mono text-[10px] uppercase tracking-[.04em] text-faint">
-                <span className={`inline-block h-[7px] w-[7px] self-center ${DOMAIN_DOT_CLASS[t.domain]}`} />
-                <span>{t.domain}</span>
-                {t.status === "dropped" && <span>· DROPPED</span>}
-                {due && (
-                  <span className={due.overdue && t.status === "open" ? "text-status-bad" : ""}>
-                    · {due.text}
-                  </span>
-                )}
-                {repeat && <span>· ↻ {repeat}</span>}
-              </div>
-            </div>
+                {meta}
+              </Link>
+            ) : (
+              <div className={`min-w-0 flex-1 ${settled ? "opacity-50" : ""}`}>{meta}</div>
+            )}
             <span className="flex-none border border-border-outer px-[5px] py-px font-mono text-[10px] font-semibold text-muted">
               P{t.priority}
             </span>
@@ -160,7 +261,7 @@ export function TasksPanel({
               <button
                 type="button"
                 aria-label={`Drop "${t.title}"`}
-                onClick={() => setStatus(t.id, "dropped")}
+                onClick={() => drop(t.id)}
                 className="-m-1.5 flex-none cursor-pointer border-0 bg-transparent p-1.5 font-mono text-[11px] leading-none text-faintest"
               >
                 ✕

@@ -7,6 +7,7 @@ import { CheckButton } from "@/components/check-button";
 import { Panel } from "@/components/panel";
 import { dueLabel } from "@/lib/dates";
 import { DOMAIN_DOT_CLASS } from "@/lib/domains";
+import { nextDueISO } from "@/lib/recurrence";
 import type { TaskItem } from "@/lib/task-utils";
 
 /** Top-3 tasks (FR-DASH.1), completable inline (FR-DASH.2). */
@@ -22,17 +23,28 @@ export function TasksCard({
   const [, startTransition] = useTransition();
   const [tasks, patch] = useOptimistic(
     initialTasks,
-    (state: TaskItem[], p: { id: string; done: boolean }) =>
+    (
+      state: TaskItem[],
+      p: { id: string; status: TaskItem["status"]; dueDate?: string | null },
+    ) =>
       state.map((t) =>
-        t.id === p.id ? { ...t, status: p.done ? "done" : "open" } : t,
+        t.id === p.id
+          ? { ...t, status: p.status, ...(p.dueDate !== undefined ? { dueDate: p.dueDate } : {}) }
+          : t,
       ),
   );
 
+  // Recurring completion rolls forward in place (see TasksPanel); others toggle.
   const toggle = (t: TaskItem) => {
-    const done = t.status !== "done";
+    const goingDone = t.status !== "done";
     startTransition(async () => {
-      patch({ id: t.id, done });
-      await setTaskStatusAction(t.id, done ? "done" : "open");
+      if (goingDone && t.recurrence) {
+        const from = t.dueDate && t.dueDate > today ? t.dueDate : today;
+        patch({ id: t.id, status: "open", dueDate: nextDueISO(t.recurrence, from) ?? t.dueDate });
+      } else {
+        patch({ id: t.id, status: goingDone ? "done" : "open" });
+      }
+      await setTaskStatusAction(t.id, goingDone ? "done" : "open");
     });
   };
 

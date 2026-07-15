@@ -122,3 +122,8 @@ export function fullExportDb(reason: "nfr4-full-export"): Db {
   void reason;
   return db;
 }
+
+/** For scripts/tests only: closes the shared connection so the process exits. */
+export async function closeDb(): Promise<void> {
+  await pgClient.end();
+}
