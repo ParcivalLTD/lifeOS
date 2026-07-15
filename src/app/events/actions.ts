@@ -37,6 +37,7 @@ export async function createEventAction(formData: FormData): Promise<void> {
 
   await createEvent(user.id, input);
   revalidatePath("/calendar");
+  revalidatePath("/");
 }
 
 export async function updateEventAction(formData: FormData): Promise<void> {
@@ -48,6 +49,7 @@ export async function updateEventAction(formData: FormData): Promise<void> {
 
   await updateEvent(user.id, id, input);
   revalidatePath("/calendar");
+  revalidatePath("/");
   redirect(`/calendar?view=day&date=${input.dateISO}`);
 }
 
@@ -59,6 +61,7 @@ export async function deleteEventAction(formData: FormData): Promise<void> {
 
   await archiveEvent(user.id, id);
   revalidatePath("/calendar");
+  revalidatePath("/");
   redirect(
     `/calendar?view=day&date=${isValidISODate(backDate) ? backDate : todayISO()}`,
   );

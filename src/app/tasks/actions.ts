@@ -44,6 +44,7 @@ export async function addTaskAction(formData: FormData): Promise<void> {
     recurrence: repeatToRule(String(formData.get("repeat") ?? ""), dueDate),
   });
   revalidatePath("/tasks");
+  revalidatePath("/");
 }
 
 export async function setTaskStatusAction(
@@ -56,4 +57,5 @@ export async function setTaskStatusAction(
 
   await setTaskStatus(user.id, taskId, status);
   revalidatePath("/tasks");
+  revalidatePath("/");
 }

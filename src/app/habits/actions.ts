@@ -37,6 +37,7 @@ export async function addHabitAction(formData: FormData): Promise<void> {
     schedule,
   });
   revalidatePath("/habits");
+  revalidatePath("/");
 }
 
 export async function toggleHabitAction(
@@ -53,4 +54,5 @@ export async function toggleHabitAction(
 
   await setHabitCompletion(user.id, habitId, dateISO, done);
   revalidatePath("/habits");
+  revalidatePath("/");
 }

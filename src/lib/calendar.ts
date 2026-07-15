@@ -9,6 +9,10 @@ const DOW_MON_FIRST = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
 export type CalendarView = "month" | "week" | "day";
 
+/** Full month name of a date, e.g. "JULY". */
+export const monthNameOf = (iso: string): string =>
+  MONTHS_FULL[parseISODate(iso).getMonth()];
+
 export const isCalendarView = (v: string): v is CalendarView =>
   v === "month" || v === "week" || v === "day";
 
