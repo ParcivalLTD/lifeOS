@@ -24,11 +24,16 @@ const toItem = (row: typeof events.$inferSelect): EventItem => ({
 });
 
 /**
- * Excludes workout templates — Events carrying payload.isTemplate=true are
- * reusable definitions, not scheduled occurrences, so they never appear on the
- * calendar or dashboard (the Gym module fetches them separately).
+ * Keeps only real scheduled occurrences on the calendar/dashboard. Excludes
+ * module "definition" Events that live in the Event table but aren't dated
+ * occurrences: gym templates (payload.isTemplate=true) and finance records —
+ * accounts, budgets, expenses, savings, bill definitions (payload has a `fin`
+ * key). Generated bill occurrences carry no `fin` key, so they stay visible.
  */
-export const notATemplate = sql`(${events.payload} ->> 'isTemplate') is distinct from 'true'`;
+export const calendarVisible = sql`
+  (${events.payload} ->> 'isTemplate') is distinct from 'true'
+  and (${events.payload} is null or not jsonb_exists(${events.payload}, 'fin'))
+`;
 
 /** Events starting within [fromISO, toISOExclusive), oldest first. */
 export async function listEventsInRange(
@@ -39,7 +44,7 @@ export async function listEventsInRange(
   const rows = await forUser(userId).select(events, {
     where: and(
       eq(events.archived, false),
-      notATemplate,
+      calendarVisible,
       gte(events.start, parseISODate(fromISO)),
       lt(events.start, parseISODate(toISOExclusive)),
     ),

@@ -608,6 +608,61 @@ async function main() {
   }
   await db.insert(schema.events).values(priorSessions);
 
+  // --- finance module data (FR-FIN.1–4) --------------------------------------
+  // Accounts, budgets, savings goals and recurring bill definitions are Events
+  // with a `fin` payload discriminator (excluded from the calendar); generated
+  // bill occurrences (the seeded kind=bill events above) stay on the calendar.
+  const finRecord = (
+    title: string,
+    payload: Record<string, unknown>,
+    start: Date,
+  ) => ({ userId: OWNER, domain: "finance" as const, kind: "other" as const, title, start, payload });
+
+  await db.insert(schema.events).values([
+    // accounts — balances sum to ≈ net worth 29,342 (FR-FIN.1)
+    finRecord("Everyday — Up", { fin: "account", balance: 2412.18 }, day(-30)),
+    finRecord("Bills — Up", { fin: "account", balance: 640 }, day(-30)),
+    finRecord("HISA — house deposit", { fin: "account", balance: 7350 }, day(-30)),
+    finRecord("Super — Hostplus", { fin: "account", balance: 18940 }, day(-30)),
+    // monthly budgets by category (FR-FIN.2)
+    finRecord("Budget — Groceries", { fin: "budget", category: "Groceries", cap: 550 }, day(-30)),
+    finRecord("Budget — Eating out", { fin: "budget", category: "Eating out", cap: 200 }, day(-30)),
+    finRecord("Budget — Transport", { fin: "budget", category: "Transport", cap: 160 }, day(-30)),
+    finRecord("Budget — Subscriptions", { fin: "budget", category: "Subscriptions", cap: 70 }, day(-30)),
+    finRecord("Budget — Other", { fin: "budget", category: "Other", cap: 250 }, day(-30)),
+    // savings goals — funds→ link to a life goal is a stub label for now (FR-FIN.3)
+    finRecord("House deposit", { fin: "savings", current: 7350, target: 12000, fundsLabel: "FUNDS → LONG-TERM FINANCIAL SECURITY" }, day(-30)),
+    finRecord("Japan — Dec 2026", { fin: "savings", current: 1120, target: 3000, fundsLabel: "FUNDS → TRAVEL" }, day(-30)),
+    // recurring bill register (FR-FIN.4)
+    finRecord("Rent", { fin: "bill", amount: 620, category: "Other", recurrence: "FREQ=MONTHLY", nextDue: iso(day(3)) }, day(-30)),
+    finRecord("Netflix", { fin: "bill", amount: 22.99, category: "Subscriptions", recurrence: "FREQ=MONTHLY", nextDue: iso(day(-1)) }, day(-30)),
+    finRecord("Spotify", { fin: "bill", amount: 12.99, category: "Subscriptions", recurrence: "FREQ=MONTHLY", nextDue: iso(day(8)) }, day(-30)),
+    finRecord("Gym membership", { fin: "bill", amount: 240, category: "Other", recurrence: "FREQ=YEARLY", nextDue: iso(day(20)) }, day(-30)),
+  ]);
+
+  // this-month expenses (category sums match the mockup budget actuals)
+  const expense = (desc: string, amount: number, category: string, off: number) =>
+    finRecord(desc, { fin: "expense", amount, category }, at(off, 12));
+  await db.insert(schema.events).values([
+    expense("Coles — groceries", 68.4, "Groceries", 0),
+    expense("Coles — groceries", 91.2, "Groceries", -3),
+    expense("Woolworths", 152.8, "Groceries", -6),
+    expense("Dinner — Marrickville", 42.5, "Eating out", -2),
+    expense("Thai — takeaway", 45, "Eating out", -5),
+    expense("Cafe", 18, "Eating out", -4),
+    expense("Pub — Friday", 43, "Eating out", -8),
+    expense("Opal top-up", 20, "Transport", -1),
+    expense("Uber", 36, "Transport", -7),
+    expense("Opal top-up", 30, "Transport", -9),
+    expense("Spotify", 12.99, "Subscriptions", -2),
+    expense("iCloud", 4.49, "Subscriptions", -5),
+    expense("Netflix", 22.99, "Subscriptions", -10),
+    expense("ChatGPT Plus", 23.5, "Subscriptions", -6),
+    expense("Chemist Warehouse", 14.95, "Other", -1),
+    expense("Gift — mum", 50, "Other", -4),
+    expense("Misc", 31.85, "Other", -9),
+  ]);
+
   // --- metrics (§7.5) + datapoints -------------------------------------------
   // Gym lift e1RMs (FR-GYM.3) are named "<Lift> e1RM" so the Gym module owns
   // them; datapoints below trace an 8-week progression per the mockup.

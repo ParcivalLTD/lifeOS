@@ -22,9 +22,10 @@ system. Single tenant, no sharing, no monetisation (spec §3 non-goals).
 
 ## ⚠️ Current scope: PHASE 1 (done) + PHASE 2 in progress
 
-Phase 1 ("Spine") is complete. **Phase 2 has begun** (owner-directed,
-2026-07-16): the **Gym module** is built (spec §8.8) — the first Phase-2
-module. Finance and the goal-engine UI remain deferred (see table). The
+Phase 1 ("Spine") is complete. **Phase 2 is in progress** (owner-directed):
+the **Gym module** (spec §8.8) and **Finance module** (spec §8.7) are built.
+The goal-engine UI remains deferred (see table) and is next — it will wire the
+savings-goal `funds→` life-goal Links that Finance currently stubs. The
 Phase-1 scope below stays as the baseline the app must keep satisfying.
 
 Phase 1 ("Spine"), all shipped (spec §11):
@@ -55,8 +56,8 @@ to-do + calendar apps.
 | Deferred | Phase |
 |---|---|
 | ~~Gym module (programs, session logging, PRs/1RM, adherence)~~ — **BUILT** (Phase 2) | 2 |
-| Finance module (accounts, net worth, budgets, expenses, savings goals, bills) | 2 |
-| Goal engine **UI** (Goals page, goal detail, progress roll-ups) | 2 |
+| ~~Finance module (accounts, net worth, budgets, expenses, savings goals, bills)~~ — **BUILT** (Phase 2) | 2 |
+| Goal engine **UI** (Goals page, goal detail, progress roll-ups) — **NEXT** | 2 |
 | Academic module (courses, assessments, study hours, pace flags) | 3 |
 | Work module (projects, achievements log, career goals, time tracking) | 3 |
 | Review system (weekly/monthly reviews, timeline) | 3 |
@@ -79,6 +80,23 @@ table itself) is fine — user-facing features are not.
   sourced `gym:<sessionId>` (idempotent). PRs = max datapoint per lift.
 - **Adherence** counts gym session Events per week (planned = exists,
   completed = has a logged set). All queries go through `forUser`.
+
+### Finance module → core mapping (hub-and-spoke, no private tables)
+
+- **Accounts, budgets, expenses, savings goals, and recurring bill
+  definitions are Events** (`domain=finance`) with a `payload.fin`
+  discriminator (`account|budget|expense|savings|bill`). These aren't dated
+  occurrences, so `calendarVisible` (in data/events.ts) excludes any Event
+  whose payload has a `fin` key. **Generated bill occurrences** are ordinary
+  `kind=bill` Events with `{amount,currency}` (no `fin` key) → they stay on
+  the calendar as reminders (FR-FIN.4).
+- **Net worth is a Metric** ("Net worth", domain finance): changing an
+  account recomputes today's datapoint = Σ balances (source `accounts`);
+  history gives the trend chart (FR-FIN.1).
+- **Budget vs actual** = each budget's cap vs Σ this-month expense amounts in
+  that category. Expense capture is the app's fastest flow (optimistic).
+- **Savings `funds→` life-goal Link is stubbed** (a `fundsLabel` string) until
+  the goal engine wires real §7.7 Links.
 
 ## Product principles (spec §5)
 
