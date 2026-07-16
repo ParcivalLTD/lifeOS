@@ -23,6 +23,7 @@ import {
   netWorthDelta,
   netWorthSeries,
 } from "@/lib/data/finance";
+import { savingsFundsGoals } from "@/lib/data/goals";
 import { parseISODate, todayISO } from "@/lib/dates";
 import { clampPct, currentMonthKey, fmtMoney } from "@/lib/finance";
 import { recurrenceLabel } from "@/lib/recurrence";
@@ -44,7 +45,7 @@ export default async function FinancePage() {
   const user = await requireUser();
   const month = currentMonthKey();
 
-  const [accounts, savings, bva, expenses, series, nw, delta, bills, budgets] =
+  const [accounts, savings, bva, expenses, series, nw, delta, bills, budgets, fundsGoals] =
     await Promise.all([
       listAccounts(user.id),
       listSavings(user.id),
@@ -56,6 +57,7 @@ export default async function FinancePage() {
       netWorthDelta(user.id),
       listBills(user.id),
       listBudgets(user.id),
+      savingsFundsGoals(user.id),
     ]);
 
   const categories = [...new Set([...budgets.map((b) => b.category), "Groceries", "Eating out", "Transport", "Subscriptions", "Other"])];
@@ -126,9 +128,13 @@ export default async function FinancePage() {
                 <div className="mt-1.5 h-1 bg-track">
                   <div className="h-1" style={{ width: `${clampPct((s.current / s.target) * 100)}%`, background: savingsFill }} />
                 </div>
-                {s.fundsLabel && (
-                  <div className="mt-1 font-mono text-[10px] uppercase tracking-[.03em] text-faint">{s.fundsLabel}</div>
-                )}
+                {(() => {
+                  const funded = fundsGoals.get(s.id);
+                  const label = funded ? `FUNDS → ${funded.title}` : s.fundsLabel;
+                  return label ? (
+                    <div className="mt-1 font-mono text-[10px] uppercase tracking-[.03em] text-faint">{label}</div>
+                  ) : null;
+                })()}
               </Link>
             ))}
           </Panel>

@@ -630,15 +630,22 @@ async function main() {
     finRecord("Budget — Transport", { fin: "budget", category: "Transport", cap: 160 }, day(-30)),
     finRecord("Budget — Subscriptions", { fin: "budget", category: "Subscriptions", cap: 70 }, day(-30)),
     finRecord("Budget — Other", { fin: "budget", category: "Other", cap: 250 }, day(-30)),
-    // savings goals — funds→ link to a life goal is a stub label for now (FR-FIN.3)
-    finRecord("House deposit", { fin: "savings", current: 7350, target: 12000, fundsLabel: "FUNDS → LONG-TERM FINANCIAL SECURITY" }, day(-30)),
-    finRecord("Japan — Dec 2026", { fin: "savings", current: 1120, target: 3000, fundsLabel: "FUNDS → TRAVEL" }, day(-30)),
     // recurring bill register (FR-FIN.4)
     finRecord("Rent", { fin: "bill", amount: 620, category: "Other", recurrence: "FREQ=MONTHLY", nextDue: iso(day(3)) }, day(-30)),
     finRecord("Netflix", { fin: "bill", amount: 22.99, category: "Subscriptions", recurrence: "FREQ=MONTHLY", nextDue: iso(day(-1)) }, day(-30)),
     finRecord("Spotify", { fin: "bill", amount: 12.99, category: "Subscriptions", recurrence: "FREQ=MONTHLY", nextDue: iso(day(8)) }, day(-30)),
     finRecord("Gym membership", { fin: "bill", amount: 240, category: "Other", recurrence: "FREQ=YEARLY", nextDue: iso(day(20)) }, day(-30)),
   ]);
+
+  // savings goals (FR-FIN.3) — inserted with returning so the funds→ life-goal
+  // Link (wired by the goal engine) can reference the House-deposit event id.
+  const [houseSaving] = await db
+    .insert(schema.events)
+    .values([
+      finRecord("House deposit", { fin: "savings", current: 7350, target: 12000 }, day(-30)),
+      finRecord("Japan — Dec 2026", { fin: "savings", current: 1120, target: 3000, fundsLabel: "FUNDS → TRAVEL" }, day(-30)),
+    ])
+    .returning();
 
   // this-month expenses (category sums match the mockup budget actuals)
   const expense = (desc: string, amount: number, category: string, off: number) =>
@@ -794,6 +801,16 @@ async function main() {
       domain: "finance",
       fromId: gDeposit.id,
       fromType: "goal",
+      toId: gFinsec.id,
+      toType: "goal",
+      relation: "funds",
+    },
+    {
+      // Finance savings goal (an Event) funds→ a life goal (goal engine wiring)
+      userId: OWNER,
+      domain: "finance",
+      fromId: houseSaving.id,
+      fromType: "event",
       toId: gFinsec.id,
       toType: "goal",
       relation: "funds",

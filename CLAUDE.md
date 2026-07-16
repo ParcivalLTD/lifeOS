@@ -22,11 +22,12 @@ system. Single tenant, no sharing, no monetisation (spec §3 non-goals).
 
 ## ⚠️ Current scope: PHASE 1 (done) + PHASE 2 in progress
 
-Phase 1 ("Spine") is complete. **Phase 2 is in progress** (owner-directed):
-the **Gym module** (spec §8.8) and **Finance module** (spec §8.7) are built.
-The goal-engine UI remains deferred (see table) and is next — it will wire the
-savings-goal `funds→` life-goal Links that Finance currently stubs. The
-Phase-1 scope below stays as the baseline the app must keep satisfying.
+Phase 1 ("Spine") is complete. **Phase 2 is complete** (owner-directed): the
+**Gym module** (§8.8), **Finance module** (§8.7), and **universal goal
+engine** (§8.2) are all built. The goal engine wired the savings-goal `funds→`
+life-goal Links that Finance had stubbed. Phase 2's remaining span (Academic,
+Work, review system — Phase 3) is not started. The Phase-1 scope below stays
+as the baseline the app must keep satisfying.
 
 Phase 1 ("Spine"), all shipped (spec §11):
 
@@ -57,7 +58,7 @@ to-do + calendar apps.
 |---|---|
 | ~~Gym module (programs, session logging, PRs/1RM, adherence)~~ — **BUILT** (Phase 2) | 2 |
 | ~~Finance module (accounts, net worth, budgets, expenses, savings goals, bills)~~ — **BUILT** (Phase 2) | 2 |
-| Goal engine **UI** (Goals page, goal detail, progress roll-ups) — **NEXT** | 2 |
+| ~~Goal engine UI (Goals page, goal detail, progress roll-ups)~~ — **BUILT** (Phase 2) | 2 |
 | Academic module (courses, assessments, study hours, pace flags) | 3 |
 | Work module (projects, achievements log, career goals, time tracking) | 3 |
 | Review system (weekly/monthly reviews, timeline) | 3 |
@@ -95,8 +96,23 @@ table itself) is fine — user-facing features are not.
   history gives the trend chart (FR-FIN.1).
 - **Budget vs actual** = each budget's cap vs Σ this-month expense amounts in
   that category. Expense capture is the app's fastest flow (optimistic).
-- **Savings `funds→` life-goal Link is stubbed** (a `fundsLabel` string) until
-  the goal engine wires real §7.7 Links.
+- **Savings `funds→` life-goal Link** is now wired: a savings goal (Event)
+  —funds→ a Goal via a §7.7 Link (`fromType=event`, `toType=goal`). The
+  Finance page reads it (`savingsFundsGoals`); edit a savings goal to pick the
+  life goal it funds.
+
+### Goal engine → core mapping (§8.2, no private tables)
+
+- **Goals nest** via `parent_goal_id` (milestones = child goals). **Cross-
+  domain links** use the §7.7 Link table with `from_type`/`to_type` and a
+  relation (`funds|supports|blocks|relates-to`).
+- **Progress is computed, never fabricated**: a goal's % is the mean of real
+  signals — child-goal rollup (milestones), linked-Habit adherence
+  (`habit.goal_id`), linked-Metric value vs a target parsed from the goal's
+  title/success text (Link `metric —relates-to→ goal`), and funding-savings
+  progress. `basis` records which signal drove it. See `src/lib/data/goals.ts`.
+- Habits attach to a goal via `habit.goal_id`; metrics via a `relates-to`
+  Link. All queries go through `forUser`.
 
 ## Product principles (spec §5)
 

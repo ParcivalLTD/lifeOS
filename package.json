@@ -16,7 +16,8 @@
     "test:auth": "node scripts/e2e-auth-test.mjs",
     "test:data": "tsx scripts/verify-data.ts",
     "test:gym": "tsx scripts/verify-gym.ts",
-    "test:finance": "tsx scripts/verify-finance.ts"
+    "test:finance": "tsx scripts/verify-finance.ts",
+    "test:goals": "tsx scripts/verify-goals.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.1",

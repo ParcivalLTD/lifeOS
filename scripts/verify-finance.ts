@@ -60,7 +60,15 @@ async function main() {
   const savings = await fin.listSavings(OWNER);
   check("savings: 2 goals", savings.length === 2, `got ${savings.length}`);
   const house = savings.find((s) => s.name === "House deposit");
-  check("savings: house 7350/12000 + funds→ stub label", house?.current === 7350 && house?.target === 12000 && Boolean(house?.fundsLabel), JSON.stringify(house));
+  check("savings: house 7350/12000", house?.current === 7350 && house?.target === 12000, JSON.stringify(house));
+  // funds→ is a real §7.7 Link now (goal engine), not a payload label
+  const { savingsFundsGoals } = await import("@/lib/data/goals");
+  const funded = await savingsFundsGoals(OWNER);
+  check(
+    "savings: house funds→ life goal via Link (event→goal)",
+    funded.get(house!.id)?.title === "Long-term financial security",
+    JSON.stringify([...funded.entries()]),
+  );
 
   // --- FR-FIN.4 bills --------------------------------------------------------
   const bills = await fin.listBills(OWNER);

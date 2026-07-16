@@ -287,8 +287,8 @@ export async function listSavings(userId: string): Promise<SavingsGoal[]> {
 export async function createSavings(
   userId: string,
   input: { name: string; target: number; current?: number; fundsLabel?: string },
-): Promise<void> {
-  await forUser(userId).insert(events, {
+): Promise<string> {
+  const [row] = await forUser(userId).insert(events, {
     domain: "finance",
     kind: "other",
     title: input.name,
@@ -297,10 +297,11 @@ export async function createSavings(
       fin: "savings",
       current: round2(input.current ?? 0),
       target: round2(input.target),
-      // funds→ link to a life goal is a stub until the goal engine wires it
+      // funds→ life-goal Link is wired by the goal engine (setSavingsFundsGoal)
       fundsLabel: input.fundsLabel,
     } satisfies SavingsPayload,
   });
+  return row.id;
 }
 
 export async function updateSavings(

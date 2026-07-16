@@ -18,6 +18,7 @@ import {
   updateSavings,
   upsertBudget,
 } from "@/lib/data/finance";
+import { setSavingsFundsGoal } from "@/lib/data/goals";
 import { isValidISODate, todayISO } from "@/lib/dates";
 
 const revalidateFinance = () => {
@@ -111,10 +112,17 @@ export async function saveSavingsAction(formData: FormData): Promise<void> {
   const name = str(formData.get("name"));
   const target = num(formData.get("target"), 0, 1e9);
   const current = num(formData.get("current"), 0, 1e9);
-  const fundsLabel = str(formData.get("fundsLabel"), 80) || undefined;
+  const fundsGoalId = str(formData.get("fundsGoalId"), 64);
   if (!name || target <= 0) return;
-  if (okId(id)) await updateSavings(user.id, id, { name, target, current, fundsLabel });
-  else await createSavings(user.id, { name, target, current, fundsLabel });
+
+  let savingsId = id;
+  if (okId(id)) await updateSavings(user.id, id, { name, target, current });
+  else savingsId = await createSavings(user.id, { name, target, current });
+
+  // funds→ life-goal Link (FR-FIN.3 finished by the goal engine)
+  if (okId(savingsId)) {
+    await setSavingsFundsGoal(user.id, savingsId, okId(fundsGoalId) ? fundsGoalId : null);
+  }
   revalidateFinance();
   redirect("/finance");
 }

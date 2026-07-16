@@ -4,6 +4,7 @@ import { headerDate } from "@/lib/dates";
 
 const TABS = [
   { key: "today", href: "/", label: "TODAY" },
+  { key: "goals", href: "/goals", label: "GOALS" },
   { key: "tasks", href: "/tasks", label: "TASKS" },
   { key: "habits", href: "/habits", label: "HABITS" },
   { key: "calendar", href: "/calendar", label: "CALENDAR" },

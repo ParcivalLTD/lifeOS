@@ -7,6 +7,8 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { Panel } from "@/components/panel";
 import { requireUser } from "@/lib/auth";
 import { getSavingsGoal } from "@/lib/data/finance";
+import { goalOptions, savingsFundsGoals } from "@/lib/data/goals";
+import { HORIZON_LABEL } from "@/lib/goals";
 
 export const metadata: Metadata = { title: "LIFEOS — SAVINGS GOAL" };
 
@@ -16,8 +18,13 @@ const labelCls = "font-mono text-[10px] font-semibold uppercase tracking-[.08em]
 export default async function EditSavingsPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
-  const goal = await getSavingsGoal(user.id, id);
+  const [goal, options, funded] = await Promise.all([
+    getSavingsGoal(user.id, id),
+    goalOptions(user.id),
+    savingsFundsGoals(user.id),
+  ]);
   if (!goal) notFound();
+  const linkedGoalId = funded.get(id)?.goalId ?? "";
 
   return (
     <>
@@ -41,15 +48,22 @@ export default async function EditSavingsPage({ params }: { params: Promise<{ id
               </label>
             </div>
             <label className="flex flex-col gap-1.5">
-              <span className={labelCls}>Funds → (label)</span>
-              <input name="fundsLabel" defaultValue={goal.fundsLabel ?? ""} placeholder="FUNDS → …" className={inputCls} />
+              <span className={labelCls}>Funds → life goal</span>
+              <select name="fundsGoalId" defaultValue={linkedGoalId} className={inputCls}>
+                <option value="">— none —</option>
+                {options.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    [{HORIZON_LABEL[o.horizon]}] {o.title}
+                  </option>
+                ))}
+              </select>
             </label>
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <button type="submit" className="cursor-pointer border-0 bg-ink px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-[.06em] text-[#ffffff]">Save</button>
               <ConfirmButton label="Delete" confirmLabel="Confirm delete?" formAction={archiveSavingsAction} />
               <Link href="/finance" className="px-2 font-mono text-[10px] uppercase tracking-[.06em] text-faint">Cancel</Link>
             </div>
-            <p className="font-mono text-[9px] uppercase tracking-[.06em] text-faintest">The funds→ link to a life goal is wired by the goal engine (next phase).</p>
+            <p className="font-mono text-[9px] uppercase tracking-[.06em] text-faintest">Funds→ creates a §7.7 Link from this savings goal to a life goal.</p>
           </form>
         </Panel>
       </main>
