@@ -20,9 +20,14 @@ The value is not any individual module; it is the **cross-domain intelligence**
 and the **review cadence** that are only possible when everything lives in one
 system. Single tenant, no sharing, no monetisation (spec §3 non-goals).
 
-## ⚠️ Current scope: PHASE 1 ONLY ("Spine")
+## ⚠️ Current scope: PHASE 1 (done) + PHASE 2 in progress
 
-We are building **Phase 1 and nothing else** (spec §11):
+Phase 1 ("Spine") is complete. **Phase 2 has begun** (owner-directed,
+2026-07-16): the **Gym module** is built (spec §8.8) — the first Phase-2
+module. Finance and the goal-engine UI remain deferred (see table). The
+Phase-1 scope below stays as the baseline the app must keep satisfying.
+
+Phase 1 ("Spine"), all shipped (spec §11):
 
 - **Auth** — Supabase email+password, public sign-up **disabled**; the single
   owner account is created manually in Supabase. Standard session security +
@@ -49,7 +54,7 @@ to-do + calendar apps.
 
 | Deferred | Phase |
 |---|---|
-| Gym module (programs, session logging, PRs/1RM, adherence) | 2 |
+| ~~Gym module (programs, session logging, PRs/1RM, adherence)~~ — **BUILT** (Phase 2) | 2 |
 | Finance module (accounts, net worth, budgets, expenses, savings goals, bills) | 2 |
 | Goal engine **UI** (Goals page, goal detail, progress roll-ups) | 2 |
 | Academic module (courses, assessments, study hours, pace flags) | 3 |
@@ -58,9 +63,22 @@ to-do + calendar apps.
 | AI assistant (chat, plans, daily nudge) | 4 |
 | External integrations (Google Calendar, bank feeds/Basiq, health import) | 4 |
 
-If a Phase 1 task appears to require one of these, stop and flag it rather than
-building ahead. Schema-level support (e.g. `goal_id` FKs, the `goals` table
-itself) is fine — user-facing features are not.
+If a task appears to require a still-deferred module, stop and flag it rather
+than building ahead. Schema-level support (e.g. `goal_id` FKs, the `goals`
+table itself) is fine — user-facing features are not.
+
+### Gym module → core mapping (hub-and-spoke, no private tables)
+
+- **Templates & sessions are Events** (`kind=session`, `domain=gym`). A
+  template carries `payload.isTemplate=true` + target exercises; it is a
+  reusable definition, not a dated occurrence, so `listEventsInRange`
+  excludes it (`notATemplate`) and it never hits the calendar/dashboard. A
+  logged session carries `payload.exercises[].sets[] = {kg,reps,done}`.
+- **e1RM / PRs are Metrics** (`<Lift> e1RM`, domain gym): logging a set
+  recomputes the session's contribution per lift (Epley), one datapoint
+  sourced `gym:<sessionId>` (idempotent). PRs = max datapoint per lift.
+- **Adherence** counts gym session Events per week (planned = exists,
+  completed = has a logged set). All queries go through `forUser`.
 
 ## Product principles (spec §5)
 

@@ -13,7 +13,7 @@ import { useEffect, useRef } from "react";
  * marked [data-no-swipe] are ignored so they keep their own behaviour.
  * Nested routes (e.g. /tasks/[id]) aren't in the order, so they don't swipe.
  */
-const ORDER = ["/", "/tasks", "/habits", "/calendar", "/settings"] as const;
+const ORDER = ["/", "/tasks", "/habits", "/calendar", "/gym", "/settings"] as const;
 
 const THRESHOLD_PX = 70; // min horizontal distance
 const DOMINANCE = 2; // horizontal must beat vertical by this factor

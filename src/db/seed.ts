@@ -211,7 +211,7 @@ async function main() {
   ];
   const lowerA: [string, number, number, number][] = [
     ["Squat", 4, 5, 110],
-    ["Romanian Deadlift", 3, 8, 90],
+    ["Deadlift", 3, 5, 130],
     ["Leg Press", 3, 10, 180],
     ["Calf Raise", 3, 12, 60],
   ];
@@ -553,54 +553,109 @@ async function main() {
   });
   await db.insert(schema.habitCompletions).values(completionRows);
 
+  // --- gym templates (FR-GYM.1) + prior-week session history (FR-GYM.4) ------
+  // Templates are Events (kind=session) marked isTemplate — excluded from the
+  // calendar, fetched only by the Gym module (hub-and-spoke, no private table).
+  const tmplExercises = (rows: [string, number, number, number][]) =>
+    rows.map(([name, targetSets, targetReps, targetKg]) => ({
+      name,
+      targetSets,
+      targetReps,
+      targetKg,
+    }));
+  await db.insert(schema.events).values([
+    {
+      userId: OWNER,
+      domain: "gym",
+      kind: "session",
+      title: "Upper A",
+      start: day(-60),
+      payload: { isTemplate: true, exercises: tmplExercises(upperA) },
+    },
+    {
+      userId: OWNER,
+      domain: "gym",
+      kind: "session",
+      title: "Lower A",
+      start: day(-60),
+      payload: { isTemplate: true, exercises: tmplExercises(lowerA) },
+    },
+  ]);
+
+  // 7 prior weeks × (upper + lower), all logged — feeds adherence over 8 weeks.
+  const priorSessions = [];
+  for (let w = 7; w >= 1; w--) {
+    priorSessions.push({
+      userId: OWNER,
+      domain: "gym" as const,
+      kind: "session" as const,
+      title: "Gym — Upper A",
+      start: at(-w * 7, 7),
+      end: at(-w * 7, 8),
+      goalId: gBench.id,
+      payload: gymPayload("Upper A", upperA, true),
+    });
+    priorSessions.push({
+      userId: OWNER,
+      domain: "gym" as const,
+      kind: "session" as const,
+      title: "Gym — Lower A",
+      start: at(-w * 7 + 3, 7),
+      end: at(-w * 7 + 3, 8),
+      goalId: gStrong.id,
+      payload: gymPayload("Lower A", lowerA, true),
+    });
+  }
+  await db.insert(schema.events).values(priorSessions);
+
   // --- metrics (§7.5) + datapoints -------------------------------------------
-  const [mWeight, mSleep, mBench, mNetWorth, mWam, mEatOut] = await db
-    .insert(schema.metrics)
-    .values([
-      {
-        userId: OWNER,
-        domain: "health",
-        name: "Body weight",
-        unit: "kg",
-        direction: "lower-better",
-      },
-      {
-        userId: OWNER,
-        domain: "health",
-        name: "Sleep hours",
-        unit: "h",
-        direction: "target-range",
-      },
-      {
-        userId: OWNER,
-        domain: "gym",
-        name: "Bench press e1RM",
-        unit: "kg",
-        direction: "higher-better",
-      },
-      {
-        userId: OWNER,
-        domain: "finance",
-        name: "Net worth",
-        unit: "AUD",
-        direction: "higher-better",
-      },
-      {
-        userId: OWNER,
-        domain: "academic",
-        name: "WAM",
-        unit: "%",
-        direction: "higher-better",
-      },
-      {
-        userId: OWNER,
-        domain: "finance",
-        name: "Eating out — monthly spend",
-        unit: "AUD",
-        direction: "lower-better",
-      },
-    ])
-    .returning();
+  // Gym lift e1RMs (FR-GYM.3) are named "<Lift> e1RM" so the Gym module owns
+  // them; datapoints below trace an 8-week progression per the mockup.
+  const [mWeight, mSleep, mBench, mSquat, mDeadlift, mOhp, mNetWorth, mWam, mEatOut] =
+    await db
+      .insert(schema.metrics)
+      .values([
+        {
+          userId: OWNER,
+          domain: "health",
+          name: "Body weight",
+          unit: "kg",
+          direction: "lower-better",
+        },
+        {
+          userId: OWNER,
+          domain: "health",
+          name: "Sleep hours",
+          unit: "h",
+          direction: "target-range",
+        },
+        { userId: OWNER, domain: "gym", name: "Bench Press e1RM", unit: "kg", direction: "higher-better" },
+        { userId: OWNER, domain: "gym", name: "Squat e1RM", unit: "kg", direction: "higher-better" },
+        { userId: OWNER, domain: "gym", name: "Deadlift e1RM", unit: "kg", direction: "higher-better" },
+        { userId: OWNER, domain: "gym", name: "Overhead Press e1RM", unit: "kg", direction: "higher-better" },
+        {
+          userId: OWNER,
+          domain: "finance",
+          name: "Net worth",
+          unit: "AUD",
+          direction: "higher-better",
+        },
+        {
+          userId: OWNER,
+          domain: "academic",
+          name: "WAM",
+          unit: "%",
+          direction: "higher-better",
+        },
+        {
+          userId: OWNER,
+          domain: "finance",
+          name: "Eating out — monthly spend",
+          unit: "AUD",
+          direction: "lower-better",
+        },
+      ])
+      .returning();
 
   const dp = (
     metricId: string,
@@ -617,12 +672,20 @@ async function main() {
 
   const weights = [79.6, 79.4, 79.1, 79.0, 78.7, 78.6, 78.4, 78.2];
   const bench = [87.5, 88.5, 90, 90, 91.5, 92.5, 94, 95];
+  const squat = [110, 112.5, 115, 117.5, 120, 122.5, 123, 125];
+  const deadlift = [140, 142.5, 145, 147.5, 150, 152.5, 153, 155];
+  const ohp = [55, 56, 57.5, 58, 60, 61, 62, 62.5];
   const netWorth = [24100, 24800, 25600, 26300, 27100, 27900, 28700, 29342];
   const sleep = [6.9, 8.1, 5.9, 7.0, 6.1, 7.4, 6.2]; // oldest → newest
+  const liftPts = (series: number[]) =>
+    series.map((v, i): [Date, number] => [at(-7 * (series.length - 1 - i), 8), v]);
 
   await db.insert(schema.metricDatapoints).values([
     ...dp(mWeight.id, weights.map((v, i) => [at(-7 * (weights.length - 1 - i), 7), v])),
-    ...dp(mBench.id, bench.map((v, i) => [at(-7 * (bench.length - 1 - i), 8), v]), "gym-log"),
+    ...dp(mBench.id, liftPts(bench), "gym-log"),
+    ...dp(mSquat.id, liftPts(squat), "gym-log"),
+    ...dp(mDeadlift.id, liftPts(deadlift), "gym-log"),
+    ...dp(mOhp.id, liftPts(ohp), "gym-log"),
     ...dp(mNetWorth.id, netWorth.map((v, i) => [at(-30 * (netWorth.length - 1 - i), 9), v])),
     ...dp(mSleep.id, sleep.map((v, i) => [at(-(sleep.length - i), 7), v])),
     ...dp(mWam.id, [

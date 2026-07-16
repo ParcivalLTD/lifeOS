@@ -7,6 +7,7 @@ const TABS = [
   { key: "tasks", href: "/tasks", label: "TASKS" },
   { key: "habits", href: "/habits", label: "HABITS" },
   { key: "calendar", href: "/calendar", label: "CALENDAR" },
+  { key: "gym", href: "/gym", label: "GYM" },
   { key: "settings", href: "/settings", label: "SETTINGS" },
 ] as const;
 

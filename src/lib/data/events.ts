@@ -1,4 +1,4 @@
-import { and, eq, gte, lt } from "drizzle-orm";
+import { and, eq, gte, lt, sql } from "drizzle-orm";
 import { forUser } from "@/db";
 import { events } from "@/db/schema";
 import { parseISODate, toISODate } from "@/lib/dates";
@@ -23,6 +23,13 @@ const toItem = (row: typeof events.$inferSelect): EventItem => ({
   hasPayload: row.payload != null,
 });
 
+/**
+ * Excludes workout templates — Events carrying payload.isTemplate=true are
+ * reusable definitions, not scheduled occurrences, so they never appear on the
+ * calendar or dashboard (the Gym module fetches them separately).
+ */
+export const notATemplate = sql`(${events.payload} ->> 'isTemplate') is distinct from 'true'`;
+
 /** Events starting within [fromISO, toISOExclusive), oldest first. */
 export async function listEventsInRange(
   userId: string,
@@ -32,6 +39,7 @@ export async function listEventsInRange(
   const rows = await forUser(userId).select(events, {
     where: and(
       eq(events.archived, false),
+      notATemplate,
       gte(events.start, parseISODate(fromISO)),
       lt(events.start, parseISODate(toISOExclusive)),
     ),
