@@ -106,6 +106,15 @@ export async function updateTaskAction(formData: FormData): Promise<void> {
   redirect("/tasks");
 }
 
+/** Swipe-to-delete from the list: archive without leaving the page. */
+export async function archiveTaskInlineAction(taskId: string): Promise<void> {
+  const user = await requireUser();
+  if (typeof taskId !== "string" || !taskId || taskId.length > 64) return;
+  await archiveTask(user.id, taskId);
+  revalidatePath("/tasks");
+  revalidatePath("/");
+}
+
 export async function archiveTaskAction(formData: FormData): Promise<void> {
   const user = await requireUser();
   const id = String(formData.get("id") ?? "");

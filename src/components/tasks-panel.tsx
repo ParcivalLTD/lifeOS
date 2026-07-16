@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useOptimistic, useState, useTransition } from "react";
-import { addTaskAction, setTaskStatusAction } from "@/app/tasks/actions";
+import { addTaskAction, archiveTaskInlineAction, setTaskStatusAction } from "@/app/tasks/actions";
+import { SwipeableRow } from "@/components/swipeable-row";
 import { CheckButton } from "@/components/check-button";
 import { FilterBar, FilterSelect, FilterToggle } from "@/components/filter-bar";
 import { Panel } from "@/components/panel";
@@ -25,7 +26,8 @@ const isOptimistic = (id: string) => id.startsWith("optimistic-");
 type Patch =
   | { type: "add"; item: TaskItem }
   | { type: "status"; id: string; status: TaskStatus }
-  | { type: "roll"; id: string; dueDate: string | null };
+  | { type: "roll"; id: string; dueDate: string | null }
+  | { type: "remove"; id: string };
 
 export function TasksPanel({
   initialTasks,
@@ -39,6 +41,7 @@ export function TasksPanel({
     initialTasks,
     (state: TaskItem[], p: Patch) => {
       if (p.type === "add") return [...state, p.item];
+      if (p.type === "remove") return state.filter((t) => t.id !== p.id);
       if (p.type === "roll") {
         return state.map((t) =>
           t.id === p.id ? { ...t, status: "open" as const, dueDate: p.dueDate } : t,
@@ -93,6 +96,14 @@ export function TasksPanel({
     startTransition(async () => {
       patch({ type: "status", id, status: "dropped" });
       await setTaskStatusAction(id, "dropped");
+    });
+  };
+
+  // swipe-to-delete: archive (soft; row leaves the list, stays for reviews)
+  const archive = (id: string) => {
+    startTransition(async () => {
+      patch({ type: "remove", id });
+      await archiveTaskInlineAction(id);
     });
   };
 
@@ -235,8 +246,24 @@ export function TasksPanel({
           </>
         );
         return (
-          <div
+          <SwipeableRow
             key={t.id}
+            leftAction={
+              isOptimistic(t.id)
+                ? undefined
+                : {
+                    label: t.status === "done" ? "Reopen" : "Done",
+                    tone: "ink",
+                    onAction: () => toggleComplete(t),
+                  }
+            }
+            rightAction={
+              isOptimistic(t.id)
+                ? undefined
+                : { label: "Delete", tone: "bad", onAction: () => archive(t.id) }
+            }
+          >
+          <div
             className="flex items-baseline gap-2.5 border-b border-border-row px-3 py-2"
           >
             <CheckButton
@@ -270,6 +297,7 @@ export function TasksPanel({
               <span className="w-[14px] flex-none" />
             )}
           </div>
+          </SwipeableRow>
         );
       })}
     </Panel>

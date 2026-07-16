@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useOptimistic, useState, useTransition } from "react";
-import { addHabitAction, toggleHabitAction } from "@/app/habits/actions";
+import { addHabitAction, archiveHabitInlineAction, toggleHabitAction } from "@/app/habits/actions";
+import { SwipeableRow } from "@/components/swipeable-row";
 import { CheckButton } from "@/components/check-button";
 import { FilterBar, FilterSelect, FilterToggle } from "@/components/filter-bar";
 import { HabitScheduleFields } from "@/components/habit-schedule-fields";
@@ -22,7 +23,10 @@ const inputCls =
   "border border-border-input bg-subtle px-2.5 py-2 text-[12.5px]";
 const selectCls = "border border-border-input bg-subtle px-1.5 py-2 text-[12px]";
 
-type Patch = { type: "toggle"; id: string; done: boolean } | { type: "add"; item: HabitItem };
+type Patch =
+  | { type: "toggle"; id: string; done: boolean }
+  | { type: "add"; item: HabitItem }
+  | { type: "remove"; id: string };
 
 /** Optimistic HabitItem from the add-form's fields (server recomputes stats). */
 function optimisticHabit(formData: FormData): HabitItem | null {
@@ -69,6 +73,7 @@ export function HabitsPanel({
     initialHabits,
     (state: HabitItem[], p: Patch) => {
       if (p.type === "add") return [...state, p.item];
+      if (p.type === "remove") return state.filter((h) => h.id !== p.id);
       return state.map((h) =>
         h.id === p.id
           ? {
@@ -113,6 +118,14 @@ export function HabitsPanel({
     const item = optimisticHabit(formData);
     if (item) patch({ type: "add", item });
     await addHabitAction(formData);
+  };
+
+  // swipe-to-delete: archive (completion history is retained for reviews)
+  const archive = (id: string) => {
+    startTransition(async () => {
+      patch({ type: "remove", id });
+      await archiveHabitInlineAction(id);
+    });
   };
 
   return (
@@ -178,9 +191,26 @@ export function HabitsPanel({
           </>
         );
         const bodyCls = `min-w-0 flex-1 no-underline ${h.doneToday ? "opacity-50" : ""}`;
+        const optimistic = h.id.startsWith("optimistic-");
         return (
-          <div
+          <SwipeableRow
             key={h.id}
+            leftAction={
+              optimistic
+                ? undefined
+                : {
+                    label: h.doneToday ? "Untick" : "Tick",
+                    tone: "ink",
+                    onAction: () => toggle(h),
+                  }
+            }
+            rightAction={
+              optimistic
+                ? undefined
+                : { label: "Delete", tone: "bad", onAction: () => archive(h.id) }
+            }
+          >
+          <div
             className="flex items-baseline gap-2.5 border-b border-border-row px-3 py-2"
           >
             <CheckButton
@@ -199,6 +229,7 @@ export function HabitsPanel({
               ×{h.streak}
             </span>
           </div>
+          </SwipeableRow>
         );
       })}
     </Panel>

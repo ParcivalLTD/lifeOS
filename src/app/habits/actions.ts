@@ -76,6 +76,15 @@ export async function updateHabitAction(formData: FormData): Promise<void> {
   redirect("/habits");
 }
 
+/** Swipe-to-delete from the list: archive without leaving the page. */
+export async function archiveHabitInlineAction(habitId: string): Promise<void> {
+  const user = await requireUser();
+  if (typeof habitId !== "string" || !habitId || habitId.length > 64) return;
+  await archiveHabit(user.id, habitId);
+  revalidatePath("/habits");
+  revalidatePath("/");
+}
+
 export async function archiveHabitAction(formData: FormData): Promise<void> {
   const user = await requireUser();
   const id = String(formData.get("id") ?? "");

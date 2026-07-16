@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { SwipeNav } from "@/components/swipe-nav";
 import { headerDate } from "@/lib/dates";
 
 /** Flat 16px house glyph — squared joins per the design system. */
@@ -86,7 +85,6 @@ export function AppHeader({ active }: { active: TabKey }) {
           );
         })}
       </nav>
-      <SwipeNav />
     </header>
   );
 }
