@@ -239,12 +239,11 @@ export async function archiveExpense(userId: string, id: string): Promise<void> 
   await forUser(userId).update(events, { archived: true }, and(eq(events.id, id), finIs("expense")));
 }
 
-/** Per-budget spend vs cap for a month (default current). */
-export async function budgetVsActual(
-  userId: string,
-  month = currentMonthKey(),
-): Promise<{ rows: BudgetActual[]; spent: number; cap: number }> {
-  const [budgets, expenses] = await Promise.all([listBudgets(userId), listExpenses(userId, { monthKey: month })]);
+/** Pure: per-budget spend vs cap from already-fetched budgets + expenses. */
+export function computeBudgetVsActual(
+  budgets: Budget[],
+  expenses: Expense[],
+): { rows: BudgetActual[]; spent: number; cap: number } {
   const spentByCat = new Map<string, number>();
   for (const e of expenses) spentByCat.set(e.category, round2((spentByCat.get(e.category) ?? 0) + e.amount));
 
@@ -254,6 +253,18 @@ export async function budgetVsActual(
     spent: round2(rows.reduce((s, r) => s + r.spent, 0)),
     cap: round2(rows.reduce((s, r) => s + r.cap, 0)),
   };
+}
+
+/** Per-budget spend vs cap for a month (default current). */
+export async function budgetVsActual(
+  userId: string,
+  month = currentMonthKey(),
+): Promise<{ rows: BudgetActual[]; spent: number; cap: number }> {
+  const [budgets, expenses] = await Promise.all([
+    listBudgets(userId),
+    listExpenses(userId, { monthKey: month }),
+  ]);
+  return computeBudgetVsActual(budgets, expenses);
 }
 
 /** Total spend per month over the last `months`, oldest→newest (spend chart). */

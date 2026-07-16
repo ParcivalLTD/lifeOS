@@ -66,3 +66,18 @@ export function monthBounds(key: string): { from: string; to: string } {
 const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 export const monthLabel = (key: string): string => MONTHS[Number(key.split("-")[1]) - 1];
 export const monthLabelOf = (iso: string): string => MONTHS[parseISODate(iso).getMonth()];
+
+/**
+ * Net-worth delta this month, computed from an already-fetched monthly series
+ * + current value (no extra queries): current minus the last point before the
+ * current month.
+ */
+export function netWorthDeltaFrom(
+  series: { monthKey: string; value: number }[],
+  current: number,
+): number {
+  const thisMonth = currentMonthKey();
+  const prior = series.filter((p) => p.monthKey < thisMonth);
+  const base = prior.length ? prior[prior.length - 1].value : series[0]?.value ?? current;
+  return round2(current - base);
+}

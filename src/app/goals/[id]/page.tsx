@@ -31,14 +31,14 @@ const RELATION_LABEL: Record<string, string> = { funds: "funds", supports: "supp
 export default async function GoalDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
-  const detail = await getGoalDetail(user.id, id);
-  if (!detail) notFound();
-
-  const [habitOpts, metricOpts, goalOpts] = await Promise.all([
+  // all four are independent — one parallel round (was detail-then-options)
+  const [detail, habitOpts, metricOpts, goalOpts] = await Promise.all([
+    getGoalDetail(user.id, id),
     goalHabitOptions(user.id),
     goalMetricOptions(user.id),
     goalOptions(user.id),
   ]);
+  if (!detail) notFound();
   const linkedHabitIds = new Set(detail.habits.map((h) => h.id));
   const linkedMetricIds = new Set(detail.metrics.map((m) => m.metricId));
   const unlinkedHabits = habitOpts.filter((h) => !linkedHabitIds.has(h.id));

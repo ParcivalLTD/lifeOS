@@ -10,7 +10,7 @@ import { WorkoutCard } from "@/components/dashboard/workout-card";
 import { requireUser } from "@/lib/auth";
 import { listEventsInRange } from "@/lib/data/events";
 import { budgetVsActual } from "@/lib/data/finance";
-import { activeGoalCount, topActiveGoals } from "@/lib/data/goals";
+import { topActiveGoals } from "@/lib/data/goals";
 import { listSessions, thisWeekDays } from "@/lib/data/gym";
 import { listHabitsWithStats } from "@/lib/data/habits";
 import { listTasks } from "@/lib/data/tasks";
@@ -25,13 +25,12 @@ export default async function TodayDashboard() {
   const month = currentMonthKey();
 
   // one parallel round trip — the dashboard is the product (FR-DASH.3)
-  const [tasks, habitsOverview, todaysEvents, goals, goalCount, bva, sessions, gymWeek] =
+  const [tasks, habitsOverview, todaysEvents, goalsTop, bva, sessions, gymWeek] =
     await Promise.all([
       listTasks(user.id),
       listHabitsWithStats(user.id, today),
       listEventsInRange(user.id, today, addDaysISO(today, 1)),
       topActiveGoals(user.id, 4),
-      activeGoalCount(user.id),
       budgetVsActual(user.id, month),
       listSessions(user.id, 5),
       thisWeekDays(user.id),
@@ -52,7 +51,7 @@ export default async function TodayDashboard() {
           <SchedulePanel events={todaysEvents} nowHM={nowHM} />
           <TasksCard tasks={openTasks.slice(0, 3)} openCount={openTasks.length} today={today} />
           <HabitsCard habits={scheduledHabits} adherence7={habitsOverview.adherence7} />
-          <GoalsCard goals={goals} activeCount={goalCount} />
+          <GoalsCard goals={goalsTop.goals} activeCount={goalsTop.activeCount} />
           <BudgetCard rows={bva.rows} spent={bva.spent} cap={bva.cap} monthKey={month} />
           <WorkoutCard today={todaySession} weekDays={gymWeek} />
         </div>

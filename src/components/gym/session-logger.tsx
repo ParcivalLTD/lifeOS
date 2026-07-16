@@ -7,7 +7,9 @@ import { Panel } from "@/components/panel";
 import type { GymSetLog } from "@/db/schema";
 import { sessionSetCounts, targetLabel, type SessionExercise } from "@/lib/gym";
 
-type SetPatch = { exIdx: number; setIdx: number; patch: Partial<GymSetLog> };
+type SetPatch =
+  | { type: "set"; exIdx: number; setIdx: number; patch: Partial<GymSetLog> }
+  | { type: "add"; exIdx: number };
 
 const numCls =
   "w-[52px] border border-border-input bg-subtle px-1.5 py-1 text-center font-mono text-[12px]";
@@ -34,34 +36,38 @@ export function SessionLogger({
   const [exercises, applyPatch] = useOptimistic(
     initial,
     (state: SessionExercise[], p: SetPatch) =>
-      state.map((ex, i) =>
-        i !== p.exIdx
-          ? ex
-          : {
-              ...ex,
-              sets: ex.sets.map((s, j) => (j !== p.setIdx ? s : { ...s, ...p.patch })),
-            },
-      ),
+      state.map((ex, i) => {
+        if (i !== p.exIdx) return ex;
+        if (p.type === "add") {
+          const last = ex.sets[ex.sets.length - 1];
+          return {
+            ...ex,
+            sets: [
+              ...ex.sets,
+              { kg: last?.kg ?? ex.targetKg ?? 0, reps: last?.reps ?? ex.targetReps, done: false },
+            ],
+          };
+        }
+        return {
+          ...ex,
+          sets: ex.sets.map((s, j) => (j !== p.setIdx ? s : { ...s, ...p.patch })),
+        };
+      }),
   );
 
   const { done, total } = sessionSetCounts(exercises);
 
   const commit = (exIdx: number, setIdx: number, patch: Partial<GymSetLog>) => {
     startTransition(async () => {
-      applyPatch({ exIdx, setIdx, patch });
+      applyPatch({ type: "set", exIdx, setIdx, patch });
       await logSetAction(sessionId, exIdx, setIdx, patch);
     });
   };
 
+  // the new row appears instantly (mirrors the server's copy-last-set rule)
   const addSet = (exIdx: number) => {
-    const last = exercises[exIdx].sets.at(-1);
     startTransition(async () => {
-      applyPatch({
-        exIdx,
-        setIdx: exercises[exIdx].sets.length,
-        patch: {}, // optimistic count bump happens via server revalidation
-      });
-      void last;
+      applyPatch({ type: "add", exIdx });
       await addSetAction(sessionId, exIdx);
     });
   };

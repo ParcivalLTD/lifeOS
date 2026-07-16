@@ -1,4 +1,5 @@
 import { createEventAction } from "@/app/events/actions";
+import { SubmitButton } from "@/components/submit-button";
 import { DOMAINS } from "@/lib/domains";
 import { EVENT_KINDS, KIND_LABEL } from "@/lib/event-utils";
 
@@ -57,12 +58,7 @@ export function QuickAddEvent({ defaultDate }: { defaultDate: string }) {
           </option>
         ))}
       </select>
-      <button
-        type="submit"
-        className="cursor-pointer border-0 bg-ink px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[.06em] text-[#ffffff]"
-      >
-        Add
-      </button>
+      <SubmitButton>Add</SubmitButton>
     </form>
   );
 }

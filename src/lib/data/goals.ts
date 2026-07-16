@@ -221,19 +221,20 @@ export async function goalsByHorizon(
   })).filter((group) => group.goals.length > 0);
 }
 
-/** Top active goals for the Today dashboard, most-progressed first. */
-export async function topActiveGoals(userId: string, limit = 5): Promise<GoalListItem[]> {
+/** Top active goals + total count for the Today dashboard (one context load). */
+export async function topActiveGoals(
+  userId: string,
+  limit = 5,
+): Promise<{ goals: GoalListItem[]; activeCount: number }> {
   const ctx = await loadContext(userId);
-  return ctx.goalRows
-    .filter((g) => g.status === "active")
-    .map((g) => toItem(ctx, g))
-    .sort((a, b) => HORIZONS.indexOf(a.horizon) - HORIZONS.indexOf(b.horizon) || b.pct - a.pct)
-    .slice(0, limit);
-}
-
-export async function activeGoalCount(userId: string): Promise<number> {
-  const rows = await forUser(userId).select(goals, { where: and(eq(goals.archived, false), eq(goals.status, "active")) });
-  return rows.length;
+  const active = ctx.goalRows.filter((g) => g.status === "active");
+  return {
+    activeCount: active.length,
+    goals: active
+      .map((g) => toItem(ctx, g))
+      .sort((a, b) => HORIZONS.indexOf(a.horizon) - HORIZONS.indexOf(b.horizon) || b.pct - a.pct)
+      .slice(0, limit),
+  };
 }
 
 export async function getGoalDetail(userId: string, id: string): Promise<GoalDetail | null> {

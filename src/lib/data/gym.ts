@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { forUser } from "@/db";
 import { events, metricDatapoints, metrics, type GymSetLog } from "@/db/schema";
 import { addDaysISO, parseISODate, toISODate } from "@/lib/dates";
@@ -337,11 +337,18 @@ export async function recomputeSessionMetrics(
 export async function listPRs(userId: string): Promise<PR[]> {
   const udb = forUser(userId);
   const byLift = await gymLiftMetrics(udb);
+  if (byLift.size === 0) return [];
+  // one query for all lifts' datapoints — was one query per lift (serial)
+  const allPoints = await udb.select(metricDatapoints, {
+    where: inArray(metricDatapoints.metricId, [...byLift.values()].map((m) => m.id)),
+  });
+  const byMetric = new Map<string, typeof allPoints>();
+  for (const p of allPoints) {
+    (byMetric.get(p.metricId) ?? byMetric.set(p.metricId, []).get(p.metricId)!).push(p);
+  }
   const prs: PR[] = [];
   for (const [lift, metric] of byLift) {
-    const points = await udb.select(metricDatapoints, {
-      where: eq(metricDatapoints.metricId, metric.id),
-    });
+    const points = byMetric.get(metric.id) ?? [];
     if (points.length === 0) continue;
     const top = points.reduce((a, b) => (b.value > a.value ? b : a));
     prs.push({ lift, e1rm: top.value, whenISO: toISODate(top.timestamp) });
@@ -396,15 +403,24 @@ async function gymSessionsInRange(
 export async function weeklyAdherence(userId: string, weeks = 8): Promise<AdherenceWeek[]> {
   const udb = forUser(userId);
   const thisWeek = weekStartISO(toISODate(new Date()));
+  const rangeStart = addDaysISO(thisWeek, -7 * (weeks - 1));
+  // one range query, bucketed in JS — was one query per week (serial waterfall)
+  const sessions = await gymSessionsInRange(udb, rangeStart, addDaysISO(thisWeek, 7));
+
+  const buckets = new Map<string, { planned: number; completed: number }>();
+  for (const s of sessions) {
+    const week = weekStartISO(s.dateISO);
+    const b = buckets.get(week) ?? { planned: 0, completed: 0 };
+    b.planned += 1;
+    if (s.logged) b.completed += 1;
+    buckets.set(week, b);
+  }
+
   const out: AdherenceWeek[] = [];
   for (let i = weeks - 1; i >= 0; i--) {
     const start = addDaysISO(thisWeek, -7 * i);
-    const sessions = await gymSessionsInRange(udb, start, addDaysISO(start, 7));
-    out.push({
-      weekStartISO: start,
-      planned: sessions.length,
-      completed: sessions.filter((s) => s.logged).length,
-    });
+    const b = buckets.get(start) ?? { planned: 0, completed: 0 };
+    out.push({ weekStartISO: start, planned: b.planned, completed: b.completed });
   }
   return out;
 }

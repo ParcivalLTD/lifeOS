@@ -58,7 +58,15 @@ export default async function GymPage({
     sessions[0] ??
     null;
 
-  const prev = active ? await previousSession(user.id, active) : null;
+  const lifts = prs.map((p) => p.lift);
+  const chartLift = liftParam && lifts.includes(liftParam) ? liftParam : lifts[0] ?? null;
+
+  // independent of each other — fetch in parallel (was sequential)
+  const [prev, series] = await Promise.all([
+    active ? previousSession(user.id, active) : Promise.resolve(null),
+    chartLift ? liftSeries(user.id, chartLift, 8) : Promise.resolve([]),
+  ]);
+
   const lastByExercise: Record<string, string | null> = {};
   if (active && prev) {
     for (const ex of active.exercises) {
@@ -66,10 +74,6 @@ export default async function GymPage({
       lastByExercise[ex.name] = p ? lastSetsSummary(p.sets) : null;
     }
   }
-
-  const lifts = prs.map((p) => p.lift);
-  const chartLift = liftParam && lifts.includes(liftParam) ? liftParam : lifts[0] ?? null;
-  const series = chartLift ? await liftSeries(user.id, chartLift, 8) : [];
 
   const last8 = aggregateAdherence(weeks);
   const thisWeek = weeks[weeks.length - 1] ?? { planned: 0, completed: 0 };

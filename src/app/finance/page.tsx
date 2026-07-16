@@ -8,24 +8,24 @@ import {
   upsertBudgetAction,
 } from "@/app/finance/actions";
 import { AppHeader } from "@/components/app-header";
+import { SubmitButton } from "@/components/submit-button";
 import { BudgetExpenses } from "@/components/finance/budget-expenses";
 import { NetWorthChart } from "@/components/finance/net-worth-chart";
 import { Panel } from "@/components/panel";
 import { requireUser } from "@/lib/auth";
 import {
-  budgetVsActual,
+  computeBudgetVsActual,
   currentNetWorth,
   listAccounts,
   listBills,
   listBudgets,
   listExpenses,
   listSavings,
-  netWorthDelta,
   netWorthSeries,
 } from "@/lib/data/finance";
 import { savingsFundsGoals } from "@/lib/data/goals";
 import { parseISODate, todayISO } from "@/lib/dates";
-import { clampPct, currentMonthKey, fmtMoney } from "@/lib/finance";
+import { clampPct, currentMonthKey, fmtMoney, netWorthDeltaFrom } from "@/lib/finance";
 import { recurrenceLabel } from "@/lib/recurrence";
 
 export const metadata: Metadata = { title: "LIFEOS — FINANCE" };
@@ -45,22 +45,23 @@ export default async function FinancePage() {
   const user = await requireUser();
   const month = currentMonthKey();
 
-  const [accounts, savings, bva, expenses, series, nw, delta, bills, budgets, fundsGoals] =
+  // one parallel gather; budget-vs-actual and the net-worth delta derive
+  // purely from what's already fetched — no duplicate or serial queries
+  const [accounts, savings, expenses, budgets, series, nw, bills, fundsGoals] =
     await Promise.all([
       listAccounts(user.id),
       listSavings(user.id),
-      budgetVsActual(user.id, month),
-      // full month so category spend is exact; the component shows the latest 12
       listExpenses(user.id, { monthKey: month }),
+      listBudgets(user.id),
       netWorthSeries(user.id, 7),
       currentNetWorth(user.id),
-      netWorthDelta(user.id),
       listBills(user.id),
-      listBudgets(user.id),
       savingsFundsGoals(user.id),
     ]);
+  const bva = computeBudgetVsActual(budgets, expenses);
+  const delta = netWorthDeltaFrom(series, nw);
 
-  const categories = [...new Set([...budgets.map((b) => b.category), "Groceries", "Eating out", "Transport", "Subscriptions", "Other"])];
+  const categories = [...new Set([...bva.rows.map((b) => b.category), "Groceries", "Eating out", "Transport", "Subscriptions", "Other"])];
 
   return (
     <>
@@ -88,7 +89,7 @@ export default async function FinancePage() {
               <form action={saveAccountAction} className="flex flex-wrap gap-1.5 border-t border-border-header p-3">
                 <input name="name" required placeholder="Account name" aria-label="Account name" autoComplete="off" className={`${inputCls} min-w-0 flex-[2_1_120px]`} />
                 <input name="balance" required inputMode="decimal" placeholder="0.00" aria-label="Balance" className={numCls} />
-                <button type="submit" className={addBtn}>Add</button>
+                <SubmitButton className={`${addBtn} disabled:opacity-50`}>Add</SubmitButton>
               </form>
             }
           >
@@ -112,7 +113,7 @@ export default async function FinancePage() {
                 <input name="name" required placeholder="Goal" aria-label="Savings goal name" autoComplete="off" className={`${inputCls} min-w-0 flex-[2_1_110px]`} />
                 <input name="current" inputMode="decimal" placeholder="now" aria-label="Current amount" className={`${numCls} w-[70px]`} />
                 <input name="target" required inputMode="decimal" placeholder="target" aria-label="Target amount" className={`${numCls} w-[70px]`} />
-                <button type="submit" className={addBtn}>Add</button>
+                <SubmitButton className={`${addBtn} disabled:opacity-50`}>Add</SubmitButton>
               </form>
             }
           >
@@ -163,7 +164,7 @@ export default async function FinancePage() {
                   <option value="monthly">MONTHLY</option>
                   <option value="yearly">YEARLY</option>
                 </select>
-                <button type="submit" className={addBtn}>Add</button>
+                <SubmitButton className={`${addBtn} disabled:opacity-50`}>Add</SubmitButton>
               </form>
             }
           >
@@ -181,9 +182,9 @@ export default async function FinancePage() {
                 <span className="font-mono text-[12px] font-semibold">{fmtMoney(b.amount, { cents: true })}</span>
                 <form action={generateBillAction}>
                   <input type="hidden" name="id" value={b.id} />
-                  <button type="submit" className="cursor-pointer border border-border-input bg-subtle px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-[.06em]">
+                  <SubmitButton className="cursor-pointer border border-border-input bg-subtle px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-[.06em] disabled:opacity-50">
                     Log
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
             ))}
@@ -198,7 +199,7 @@ export default async function FinancePage() {
                 ))}
               </select>
               <input name="cap" required inputMode="decimal" placeholder="cap" aria-label="Monthly cap" className={numCls} />
-              <button type="submit" className={addBtn}>Set</button>
+              <SubmitButton className={`${addBtn} disabled:opacity-50`}>Set</SubmitButton>
             </form>
             <p className="px-3 pb-3 font-mono text-[9px] uppercase tracking-[.06em] text-faintest">
               Setting a category updates its monthly cap in budget-vs-actual.
