@@ -64,16 +64,15 @@
   }
 
   /*
-   * iOS Safari (and every iOS browser — all WebKit) auto-zooms the page when
-   * a focused field's font-size is under 16px. `-webkit-touch-callout` only
-   * exists on iOS WebKit, so this targets exactly the browsers with that
-   * behaviour: fields render ≥16px there, while desktop/Android keep the
-   * design system's dense 12–12.5px sizes. !important intentionally outranks
-   * per-component utility sizes (e.g. text-[12px]) so a new field can never
-   * reintroduce the zoom. Pinch-zoom stays enabled — the viewport meta is
-   * untouched (accessibility).
+   * Mobile field sizing: iOS auto-zooms the page when a focused field's
+   * font-size is under 16px. `pointer: coarse` targets touch-primary devices
+   * (phones and tablets, any OS, any orientation) — fields render ≥16px
+   * there, while mouse-driven desktop keeps the design system's dense
+   * 12–12.5px sizes. !important intentionally outranks per-component utility
+   * sizes (e.g. text-[12px]) so a new field can never reintroduce the zoom.
+   * Pinch-zoom stays enabled — the viewport meta is untouched (a11y).
    */
-  @supports (-webkit-touch-callout: none) {
+  @media (pointer: coarse) {
     input,
     select,
     textarea {

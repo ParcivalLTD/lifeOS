@@ -1,22 +1,19 @@
 import type { Metadata } from "next";
+import { TasksContent } from "@/app/tasks/content";
 import { AppHeader } from "@/components/app-header";
-import { TasksPanel } from "@/components/tasks-panel";
+import { TabShell } from "@/components/tab-shell";
 import { requireUser } from "@/lib/auth";
-import { listTasks } from "@/lib/data/tasks";
-import { todayISO } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "LIFEOS — TASKS" };
 
 export default async function TasksPage() {
   const user = await requireUser();
-  const tasks = await listTasks(user.id);
-
   return (
     <>
       <AppHeader active="tasks" />
-      <main className="mx-auto w-full max-w-[720px] p-4">
-        <TasksPanel initialTasks={tasks} today={todayISO()} />
-      </main>
+      <TabShell active="tasks" userId={user.id} email={user.email ?? ""}>
+        <TasksContent userId={user.id} />
+      </TabShell>
     </>
   );
 }
