@@ -1,12 +1,12 @@
 import { AppHeader } from "@/components/app-header";
 import { SkeletonPanel } from "@/components/skeleton";
 
-/** Goal-detail skeleton (detail routes keep tap-nav skeletons; tab routes
- * don't — the TabTrack swap must stay seamless). */
+/** Goal-detail skeleton (detail routes keep tap-nav skeletons; track tabs
+ * don't — the co-mounted TabsApp swap must stay seamless). */
 export default function GoalDetailLoading() {
   return (
     <>
-      <AppHeader active="goals" />
+      <AppHeader />
       <main className="mx-auto grid w-full max-w-[1280px] grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3 p-4">
       <SkeletonPanel label="Goal" rows={3} />
       <SkeletonPanel label="Milestones" rows={3} />

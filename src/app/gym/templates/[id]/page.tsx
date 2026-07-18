@@ -20,7 +20,7 @@ export default async function EditTemplatePage({
 
   return (
     <>
-      <AppHeader active="gym" />
+      <AppHeader />
       <main className="mx-auto w-full max-w-[640px] p-4">
         <TemplateEditor
           action={updateTemplateAction}

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { CalendarContent } from "@/app/calendar/content";
 import { AppHeader } from "@/components/app-header";
-import { TabShell } from "@/components/tab-shell";
+import { TabsApp } from "@/components/tabs/tabs-app";
 import { requireUser } from "@/lib/auth";
+import { buildInitialTrio } from "@/lib/data/tab-data-server";
 
 export const metadata: Metadata = { title: "LIFEOS — CALENDAR" };
 
@@ -15,10 +15,11 @@ export default async function CalendarPage({
   const { view, date } = await searchParams;
   return (
     <>
-      <AppHeader active="calendar" />
-      <TabShell active="calendar" userId={user.id} email={user.email ?? ""}>
-        <CalendarContent userId={user.id} view={view} date={date} />
-      </TabShell>
+      <AppHeader />
+      <TabsApp
+        initialTab="calendar"
+        initialData={await buildInitialTrio(user.id, "calendar", { view, date })}
+      />
     </>
   );
 }

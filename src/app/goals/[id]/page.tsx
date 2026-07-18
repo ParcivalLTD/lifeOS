@@ -47,7 +47,7 @@ export default async function GoalDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <>
-      <AppHeader active="goals" />
+      <AppHeader />
       <main className="mx-auto grid w-full max-w-[1280px] grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3 p-4">
         {/* outcome + progress */}
         <Panel

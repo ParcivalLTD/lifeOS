@@ -10,7 +10,7 @@ export default async function NewTemplatePage() {
   await requireUser();
   return (
     <>
-      <AppHeader active="gym" />
+      <AppHeader />
       <main className="mx-auto w-full max-w-[640px] p-4">
         <TemplateEditor action={createTemplateAction} />
       </main>

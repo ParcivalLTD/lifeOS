@@ -1,0 +1,136 @@
+/**
+ * DTO contracts for the co-mounted tab track. Everything here must be
+ * JSON-serializable (crosses the server-action / RSC-prop boundary).
+ * Fetching lives in lib/data/tab-data-server.ts; these types are shared by
+ * the server fetchers and the client views.
+ */
+import type { EventItem } from "./event-utils";
+import type { TaskItem } from "./task-utils";
+import type { HabitItem } from "./data/habits";
+import type { GoalListItem } from "./data/goals";
+import type {
+  AdherenceWeek,
+  GymSession,
+  GymTemplate,
+  GymWeekDay,
+  LiftPoint,
+  PR,
+} from "./data/gym";
+import type {
+  Account,
+  Bill,
+  BudgetActual,
+  Expense,
+  NetWorthPoint,
+  SavingsGoal,
+} from "./data/finance";
+import type { Horizon } from "./goals";
+
+export type TrackTabKey =
+  | "today"
+  | "goals"
+  | "tasks"
+  | "habits"
+  | "calendar"
+  | "gym"
+  | "finance";
+
+export const TRACK_TABS: { key: TrackTabKey; href: string; title: string }[] = [
+  { key: "today", href: "/", title: "LIFEOS — TODAY" },
+  { key: "goals", href: "/goals", title: "LIFEOS — GOALS" },
+  { key: "tasks", href: "/tasks", title: "LIFEOS — TASKS" },
+  { key: "habits", href: "/habits", title: "LIFEOS — HABITS" },
+  { key: "calendar", href: "/calendar", title: "LIFEOS — CALENDAR" },
+  { key: "gym", href: "/gym", title: "LIFEOS — GYM" },
+  { key: "finance", href: "/finance", title: "LIFEOS — FINANCE" },
+];
+
+export const trackIndex = (key: TrackTabKey): number =>
+  TRACK_TABS.findIndex((t) => t.key === key);
+
+// --- per-tab DTOs --------------------------------------------------------------
+
+export type TodayData = {
+  todayISO: string;
+  nowHM: string;
+  events: EventItem[];
+  topTasks: TaskItem[];
+  openCount: number;
+  habits: HabitItem[];
+  adherence7: number;
+  goals: GoalListItem[];
+  activeGoalCount: number;
+  budgetRows: BudgetActual[];
+  budgetSpent: number;
+  budgetCap: number;
+  monthKey: string;
+  gymSession: GymSession | null;
+  gymWeek: GymWeekDay[];
+};
+
+export type GoalsData = {
+  groups: { horizon: Horizon; label: string; goals: GoalListItem[] }[];
+};
+
+export type TasksData = { tasks: TaskItem[]; todayISO: string };
+
+export type HabitsData = { habits: HabitItem[]; adherence7: number };
+
+export type CalendarData = {
+  view: "month" | "week" | "day";
+  date: string;
+  todayISO: string;
+  events: EventItem[];
+};
+
+export type GymData = {
+  todayISO: string;
+  templates: GymTemplate[];
+  sessions: GymSession[];
+  prs: PR[];
+  weeks: AdherenceWeek[];
+  weekDays: GymWeekDay[];
+  activeSessionId: string | null;
+  /** deep-linked ?lift= selection, validated server-side (null = first PR lift). */
+  chartLift: string | null;
+  lastByExercise: Record<string, string | null>;
+  seriesByLift: Record<string, LiftPoint[]>;
+};
+
+export type FinanceData = {
+  monthKey: string;
+  todayISO: string;
+  accounts: Account[];
+  savings: SavingsGoal[];
+  expenses: Expense[];
+  budgetRows: BudgetActual[];
+  budgetSpent: number;
+  budgetCap: number;
+  categories: string[];
+  series: NetWorthPoint[];
+  netWorth: number;
+  delta: number;
+  bills: Bill[];
+  /** savings event id → funded goal (Map flattened for serialization). */
+  fundsGoals: Record<string, { goalId: string; title: string }>;
+};
+
+export type TabDataMap = {
+  today: TodayData;
+  goals: GoalsData;
+  tasks: TasksData;
+  habits: HabitsData;
+  calendar: CalendarData;
+  gym: GymData;
+  finance: FinanceData;
+};
+
+export type AnyTabData = TabDataMap[TrackTabKey];
+
+/** Params a deep link can contribute to its tab's initial data. */
+export type TabParams = {
+  view?: string;
+  date?: string;
+  session?: string;
+  lift?: string;
+};

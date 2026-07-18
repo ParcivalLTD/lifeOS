@@ -27,7 +27,7 @@ export default async function EventEditPage({
 
   return (
     <>
-      <AppHeader active="calendar" />
+      <AppHeader />
       <main className="mx-auto w-full max-w-[560px] p-4">
         <Panel label="Event — edit" value={KIND_LABEL[event.kind]}>
           <form action={updateEventAction} className="flex flex-col gap-3 p-4">

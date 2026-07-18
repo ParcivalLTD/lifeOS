@@ -30,7 +30,7 @@ export default async function TaskEditPage({
 
   return (
     <>
-      <AppHeader active="tasks" />
+      <AppHeader />
       <main className="mx-auto w-full max-w-[560px] p-4">
         <Panel label="Task — edit" value={`P${task.priority}`}>
           <form action={updateTaskAction} className="flex flex-col gap-3 p-4">

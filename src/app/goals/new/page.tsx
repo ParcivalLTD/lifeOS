@@ -18,7 +18,7 @@ export default async function NewGoalPage({
 
   return (
     <>
-      <AppHeader active="goals" />
+      <AppHeader />
       <main className="mx-auto w-full max-w-[560px] p-4">
         <GoalForm action={createGoalAction} parentOptions={parents} defaultParentId={parent} />
       </main>

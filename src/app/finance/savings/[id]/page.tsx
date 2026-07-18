@@ -28,7 +28,7 @@ export default async function EditSavingsPage({ params }: { params: Promise<{ id
 
   return (
     <>
-      <AppHeader active="finance" />
+      <AppHeader />
       <main className="mx-auto w-full max-w-[480px] p-4">
         <Panel label="Savings goal — edit">
           <form action={saveSavingsAction} className="flex flex-col gap-3 p-4">

@@ -27,7 +27,7 @@ export default async function EditBillPage({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <AppHeader active="finance" />
+      <AppHeader />
       <main className="mx-auto w-full max-w-[480px] p-4">
         <Panel label="Bill — edit">
           <form action={saveBillAction} className="flex flex-col gap-3 p-4">

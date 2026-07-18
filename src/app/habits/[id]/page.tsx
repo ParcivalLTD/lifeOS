@@ -29,7 +29,7 @@ export default async function HabitEditPage({
 
   return (
     <>
-      <AppHeader active="habits" />
+      <AppHeader />
       <main className="mx-auto w-full max-w-[560px] p-4">
         <Panel label="Habit — edit" value={scheduleLabel(habit.schedule)}>
           <form action={updateHabitAction} className="flex flex-col gap-3 p-4">

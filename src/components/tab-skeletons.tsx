@@ -2,10 +2,10 @@ import { Panel } from "@/components/panel";
 import { SkeletonChart, SkeletonPanel, SkeletonRows } from "@/components/skeleton";
 
 /**
- * Per-tab skeleton bodies (page frame without data). Used as Suspense
- * fallbacks for pre-rendered NEIGHBOR tabs in the TabTrack: if a heavy
- * neighbor's data hasn't streamed in yet when a swipe starts, the finger
- * drags this frame instead of a blank — never a white flash.
+ * Per-tab skeleton bodies (page frame without data). Used by the co-mounted
+ * TabsApp track as cache-miss fallbacks: if a neighbor's data hasn't been
+ * fetched yet when a swipe starts, the finger drags this frame instead of a
+ * blank — never a white flash.
  */
 export function TodaySkeleton() {
   return (

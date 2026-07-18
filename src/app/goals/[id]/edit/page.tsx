@@ -16,7 +16,7 @@ export default async function EditGoalPage({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <AppHeader active="goals" />
+      <AppHeader />
       <main className="mx-auto w-full max-w-[560px] p-4">
         <GoalForm
           action={updateGoalAction}

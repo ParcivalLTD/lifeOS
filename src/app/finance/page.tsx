@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { FinanceContent } from "@/app/finance/content";
 import { AppHeader } from "@/components/app-header";
-import { TabShell } from "@/components/tab-shell";
+import { TabsApp } from "@/components/tabs/tabs-app";
 import { requireUser } from "@/lib/auth";
+import { buildInitialTrio } from "@/lib/data/tab-data-server";
 
 export const metadata: Metadata = { title: "LIFEOS — FINANCE" };
 
@@ -10,10 +10,8 @@ export default async function FinancePage() {
   const user = await requireUser();
   return (
     <>
-      <AppHeader active="finance" />
-      <TabShell active="finance" userId={user.id} email={user.email ?? ""}>
-        <FinanceContent userId={user.id} />
-      </TabShell>
+      <AppHeader />
+      <TabsApp initialTab="finance" initialData={await buildInitialTrio(user.id, "finance")} />
     </>
   );
 }

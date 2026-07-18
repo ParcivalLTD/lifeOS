@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { GoalsContent } from "@/app/goals/content";
 import { AppHeader } from "@/components/app-header";
-import { TabShell } from "@/components/tab-shell";
+import { TabsApp } from "@/components/tabs/tabs-app";
 import { requireUser } from "@/lib/auth";
+import { buildInitialTrio } from "@/lib/data/tab-data-server";
 
 export const metadata: Metadata = { title: "LIFEOS — GOALS" };
 
@@ -10,10 +10,8 @@ export default async function GoalsPage() {
   const user = await requireUser();
   return (
     <>
-      <AppHeader active="goals" />
-      <TabShell active="goals" userId={user.id} email={user.email ?? ""}>
-        <GoalsContent userId={user.id} />
-      </TabShell>
+      <AppHeader />
+      <TabsApp initialTab="goals" initialData={await buildInitialTrio(user.id, "goals")} />
     </>
   );
 }
