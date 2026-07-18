@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { getTabsDataAction } from "@/app/tabs-actions";
 import {
+  AcademicSkeleton,
   CalendarSkeleton,
   FinanceSkeleton,
   GoalsSkeleton,
@@ -13,6 +14,7 @@ import {
   TasksSkeleton,
   TodaySkeleton,
 } from "@/components/tab-skeletons";
+import { AcademicViewTab } from "@/components/tabs/views/academic-view";
 import { CalendarViewTab } from "@/components/tabs/views/calendar-view";
 import { FinanceViewTab } from "@/components/tabs/views/finance-view";
 import { GoalsView } from "@/components/tabs/views/goals-view";
@@ -91,6 +93,8 @@ function TabView({
       ) : (
         <CalendarSkeleton />
       );
+    case "academic":
+      return cache.academic ? <AcademicViewTab data={cache.academic} /> : <AcademicSkeleton />;
     case "gym":
       return cache.gym ? <GymViewTab data={cache.gym} /> : <GymSkeleton />;
     case "finance":

@@ -20,14 +20,15 @@ The value is not any individual module; it is the **cross-domain intelligence**
 and the **review cadence** that are only possible when everything lives in one
 system. Single tenant, no sharing, no monetisation (spec §3 non-goals).
 
-## ⚠️ Current scope: PHASE 1 (done) + PHASE 2 in progress
+## ⚠️ Current scope: PHASES 1–2 done + PHASE 3 in progress
 
 Phase 1 ("Spine") is complete. **Phase 2 is complete** (owner-directed): the
 **Gym module** (§8.8), **Finance module** (§8.7), and **universal goal
 engine** (§8.2) are all built. The goal engine wired the savings-goal `funds→`
-life-goal Links that Finance had stubbed. Phase 2's remaining span (Academic,
-Work, review system — Phase 3) is not started. The Phase-1 scope below stays
-as the baseline the app must keep satisfying.
+life-goal Links that Finance had stubbed. **Phase 3 is in progress**
+(owner-directed): the **Academic module** (§8.5) is built; Work and the
+review system are not started. The Phase-1 scope below stays as the baseline
+the app must keep satisfying.
 
 Phase 1 ("Spine"), all shipped (spec §11):
 
@@ -59,7 +60,7 @@ to-do + calendar apps.
 | ~~Gym module (programs, session logging, PRs/1RM, adherence)~~ — **BUILT** (Phase 2) | 2 |
 | ~~Finance module (accounts, net worth, budgets, expenses, savings goals, bills)~~ — **BUILT** (Phase 2) | 2 |
 | ~~Goal engine UI (Goals page, goal detail, progress roll-ups)~~ — **BUILT** (Phase 2) | 2 |
-| Academic module (courses, assessments, study hours, pace flags) | 3 |
+| ~~Academic module (courses, assessments, study hours, pace flags)~~ — **BUILT** (Phase 3) | 3 |
 | Work module (projects, achievements log, career goals, time tracking) | 3 |
 | Review system (weekly/monthly reviews, timeline) | 3 |
 | AI assistant (chat, plans, daily nudge) | 4 |
@@ -100,6 +101,31 @@ table itself) is fine — user-facing features are not.
   —funds→ a Goal via a §7.7 Link (`fromType=event`, `toType=goal`). The
   Finance page reads it (`savingsFundsGoals`); edit a savings goal to pick the
   life goal it funds.
+
+### Academic module → core mapping (hub-and-spoke, no private tables)
+
+- **Courses are Events** (`domain=academic`, `payload.acad="course"` with
+  code/semester/targetGrade/plannedHours) — definitions, not occurrences, so
+  `calendarVisible` excludes any Event whose payload has an `acad` key.
+  A course's `goal_id` points at its course Goal.
+- **Assessments are Events** (`kind=deadline`, payload
+  `{courseId, name, weight, grade?}`) → they STAY on the unified calendar.
+  **Study sessions are Events** (`kind=session`, payload `{courseId, hours}`)
+  → calendar blocks; weekly actuals vs the course's `plannedHours`
+  (FR-ACAD.3).
+- **Course grades are Metrics** (`<CODE> grade`, domain academic): grading
+  recomputes a weighted current grade over GRADED work only, one datapoint
+  per day sourced `acad:<courseId>` (idempotent), auto-linked
+  `—relates-to→` the course Goal so engine progress uses it.
+- **FR-ACAD.1 reuses the goal engine**: direction (life) → year → semester →
+  course goals nest via `parent_goal_id`; no parallel structure. Course-goal
+  titles must not contain digits other than the target grade (`parseTarget`
+  takes the max number — "COMP3888" would read as target 3888).
+- **Pace (FR-ACAD.4) is computed, never fabricated** (`src/lib/academic.ts`):
+  AT RISK = ungraded item due/overdue OR target mathematically unreachable
+  at 100% on remaining weight; TIGHT = needs > 85% avg on remaining; the
+  `basis` string (shown in the UI) states the exact arithmetic, weights
+  coverage, and which inputs are missing.
 
 ### Goal engine → core mapping (§8.2, no private tables)
 

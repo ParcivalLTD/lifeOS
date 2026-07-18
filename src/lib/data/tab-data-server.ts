@@ -4,6 +4,7 @@
  * transport to the client changed, not the data access).
  */
 import { isCalendarView, viewRange, type CalendarView } from "@/lib/calendar";
+import { academicOverview } from "@/lib/data/academic";
 import { listEventsInRange } from "@/lib/data/events";
 import {
   computeBudgetVsActual,
@@ -32,6 +33,7 @@ import { addDaysISO, isValidISODate, todayISO } from "@/lib/dates";
 import { currentMonthKey, netWorthDeltaFrom } from "@/lib/finance";
 import { lastSetsSummary } from "@/lib/gym";
 import type {
+  AcademicData,
   AnyTabData,
   CalendarData,
   FinanceData,
@@ -107,6 +109,17 @@ export async function buildCalendarData(
   const { from, to } = viewRange(view, date);
   const events = await listEventsInRange(userId, from, to);
   return { view, date, todayISO: today, events };
+}
+
+export async function buildAcademicData(userId: string): Promise<AcademicData> {
+  const [overview, groups] = await Promise.all([
+    academicOverview(userId),
+    goalsByHorizon(userId),
+  ]);
+  return {
+    ...overview,
+    goals: groups.flatMap((g) => g.goals).filter((g) => g.domain === "academic"),
+  };
 }
 
 export async function buildGymData(
@@ -204,6 +217,7 @@ const BUILDERS: {
   tasks: buildTasksData,
   habits: buildHabitsData,
   calendar: buildCalendarData,
+  academic: buildAcademicData,
   gym: buildGymData,
   finance: buildFinanceData,
 };

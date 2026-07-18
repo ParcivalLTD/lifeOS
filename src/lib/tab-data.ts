@@ -4,6 +4,7 @@
  * Fetching lives in lib/data/tab-data-server.ts; these types are shared by
  * the server fetchers and the client views.
  */
+import type { AcademicOverview } from "./data/academic";
 import type { EventItem } from "./event-utils";
 import type { TaskItem } from "./task-utils";
 import type { HabitItem } from "./data/habits";
@@ -32,6 +33,7 @@ export type TrackTabKey =
   | "tasks"
   | "habits"
   | "calendar"
+  | "academic"
   | "gym"
   | "finance";
 
@@ -41,6 +43,7 @@ export const TRACK_TABS: { key: TrackTabKey; href: string; title: string }[] = [
   { key: "tasks", href: "/tasks", title: "LIFEOS — TASKS" },
   { key: "habits", href: "/habits", title: "LIFEOS — HABITS" },
   { key: "calendar", href: "/calendar", title: "LIFEOS — CALENDAR" },
+  { key: "academic", href: "/academic", title: "LIFEOS — ACADEMIC" },
   { key: "gym", href: "/gym", title: "LIFEOS — GYM" },
   { key: "finance", href: "/finance", title: "LIFEOS — FINANCE" },
 ];
@@ -115,12 +118,19 @@ export type FinanceData = {
   fundsGoals: Record<string, { goalId: string; title: string }>;
 };
 
+export type AcademicData = AcademicOverview & {
+  /** academic-domain active goals via the goal engine (FR-ACAD.1 — reused,
+   * not rebuilt), horizon order preserved */
+  goals: GoalListItem[];
+};
+
 export type TabDataMap = {
   today: TodayData;
   goals: GoalsData;
   tasks: TasksData;
   habits: HabitsData;
   calendar: CalendarData;
+  academic: AcademicData;
   gym: GymData;
   finance: FinanceData;
 };

@@ -295,11 +295,13 @@ export async function getGoalDetail(userId: string, id: string): Promise<GoalDet
 }
 
 /** All active goals as flat options (parent pickers, link pickers). */
-export async function goalOptions(userId: string): Promise<{ id: string; title: string; horizon: Horizon }[]> {
+export async function goalOptions(
+  userId: string,
+): Promise<{ id: string; title: string; horizon: Horizon; domain: Domain }[]> {
   const rows = await forUser(userId).select(goals, { where: and(eq(goals.archived, false), eq(goals.status, "active")) });
   return rows
     .sort((a, b) => HORIZONS.indexOf(a.horizon) - HORIZONS.indexOf(b.horizon))
-    .map((g) => ({ id: g.id, title: g.title, horizon: g.horizon }));
+    .map((g) => ({ id: g.id, title: g.title, horizon: g.horizon, domain: g.domain }));
 }
 
 export async function getGoal(userId: string, id: string): Promise<GoalRowDb | null> {

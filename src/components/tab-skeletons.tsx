@@ -67,6 +67,22 @@ export function CalendarSkeleton() {
   );
 }
 
+export function AcademicSkeleton() {
+  return (
+    <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 p-4">
+      <div className="h-4 w-64 bg-track" />
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3">
+        <SkeletonPanel label="Course" rows={4} />
+        <SkeletonPanel label="Course" rows={4} />
+        <div className="flex flex-col gap-3">
+          <SkeletonPanel label="Study hours — this week" rows={3} />
+          <SkeletonPanel label="Goals" rows={3} />
+        </div>
+      </div>
+    </main>
+  );
+}
+
 export function GymSkeleton() {
   return (
     <main className="mx-auto grid w-full max-w-[1280px] grid-cols-[repeat(auto-fit,minmax(330px,1fr))] items-start gap-3 p-4">

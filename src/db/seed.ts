@@ -10,7 +10,7 @@
  * Supabase auth.users id when seeding a Supabase project.
  */
 import { config } from "dotenv";
-import { eq, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
@@ -72,7 +72,7 @@ async function main() {
   await db.delete(schema.goals).where(eq(schema.goals.userId, OWNER));
 
   // --- goals (§7.1): life → yearly → quarterly → monthly -------------------
-  const [gCareer, gFinsec, gStrong] = await db
+  const [gCareer, gFinsec, gStrong, gAcadDir] = await db
     .insert(schema.goals)
     .values([
       {
@@ -96,6 +96,15 @@ async function main() {
         horizon: "life",
         successCriteria: "Training 3×+/week at 60; no chronic injuries",
       },
+      {
+        // FR-ACAD.1: the academic direction IS a life-horizon Goal;
+        // semester/course goals nest under it via the goal engine.
+        userId: OWNER,
+        domain: "academic",
+        title: "Graduate with first-class honours in CS",
+        horizon: "life",
+        successCriteria: "Honours class I standing at graduation (WAM ≥ 80)",
+      },
     ])
     .returning();
 
@@ -107,7 +116,7 @@ async function main() {
         domain: "academic",
         title: "Finish Year 3 with ≥ 80 WAM",
         horizon: "yearly",
-        parentGoalId: gCareer.id,
+        parentGoalId: gAcadDir.id,
         targetDate: `${today.getFullYear()}-12-15`,
         successCriteria: "WAM ≥ 80.0 after semester 2 results",
       },
@@ -181,6 +190,52 @@ async function main() {
     targetDate: iso(day(17)),
     successCriteria: "16 logged gym sessions this calendar month",
   });
+
+  // semester + course goals (FR-ACAD.1): direction → year → semester → course.
+  // Titles avoid digits other than the target so parseTarget (max number in
+  // title+criteria) reads the intended grade, not a course code.
+  const [gSemester, gCourseCapstone, gCourseAI, gCourseGeo] = await db
+    .insert(schema.goals)
+    .values([
+      {
+        userId: OWNER,
+        domain: "academic",
+        title: "Semester: every unit at its target grade",
+        horizon: "quarterly",
+        parentGoalId: gWam.id,
+        targetDate: iso(day(130)),
+        successCriteria: "All course goals below achieved",
+      },
+      {
+        userId: OWNER,
+        domain: "academic",
+        title: "Capstone unit ≥ 75",
+        horizon: "quarterly",
+        successCriteria: "Final grade ≥ 75%",
+      },
+      {
+        userId: OWNER,
+        domain: "academic",
+        title: "Intro to AI unit ≥ 75",
+        horizon: "quarterly",
+        successCriteria: "Final grade ≥ 75%",
+      },
+      {
+        userId: OWNER,
+        domain: "academic",
+        title: "Geometry & Topology unit ≥ 70",
+        horizon: "quarterly",
+        successCriteria: "Final grade ≥ 70%",
+      },
+    ])
+    .returning();
+  // nest the course goals under the semester goal (parent inserted same batch)
+  await db
+    .update(schema.goals)
+    .set({ parentGoalId: gSemester.id })
+    .where(
+      inArray(schema.goals.id, [gCourseCapstone.id, gCourseAI.id, gCourseGeo.id]),
+    );
 
   // --- events (§7.4): past week, today, next week ---------------------------
   const gymPayload = (
@@ -381,15 +436,6 @@ async function main() {
       },
       {
         userId: OWNER,
-        domain: "academic",
-        title: "COMP3888 proposal due",
-        start: at(38, 0),
-        allDay: true,
-        kind: "deadline",
-        goalId: gCapstone.id,
-      },
-      {
-        userId: OWNER,
         domain: "health",
         title: "Flu shot — booked",
         start: at(8, 11),
@@ -583,6 +629,16 @@ async function main() {
   ]);
 
   // 7 prior weeks × (upper + lower), all logged — feeds adherence over 8 weeks.
+  // Anchored to each week's MONDAY (+ Thursday), not today's weekday: pairs
+  // anchored off `today` straddle a Mon-week boundary when seeding Fri–Sun.
+  const monday = new Date(today);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  const atWeekday = (weeksAgo: number, weekday: number, h: number): Date => {
+    const d = new Date(monday);
+    d.setDate(d.getDate() - weeksAgo * 7 + weekday);
+    d.setHours(h, 0, 0, 0);
+    return d;
+  };
   const priorSessions = [];
   for (let w = 7; w >= 1; w--) {
     priorSessions.push({
@@ -590,8 +646,8 @@ async function main() {
       domain: "gym" as const,
       kind: "session" as const,
       title: "Gym — Upper A",
-      start: at(-w * 7, 7),
-      end: at(-w * 7, 8),
+      start: atWeekday(w, 0, 7),
+      end: atWeekday(w, 0, 8),
       goalId: gBench.id,
       payload: gymPayload("Upper A", upperA, true),
     });
@@ -600,8 +656,8 @@ async function main() {
       domain: "gym" as const,
       kind: "session" as const,
       title: "Gym — Lower A",
-      start: at(-w * 7 + 3, 7),
-      end: at(-w * 7 + 3, 8),
+      start: atWeekday(w, 3, 7),
+      end: atWeekday(w, 3, 8),
       goalId: gStrong.id,
       payload: gymPayload("Lower A", lowerA, true),
     });
@@ -668,6 +724,121 @@ async function main() {
     expense("Chemist Warehouse", 14.95, "Other", -1),
     expense("Gift — mum", 50, "Other", -4),
     expense("Misc", 31.85, "Other", -9),
+  ]);
+
+  // --- academic module data (FR-ACAD.1–4) -------------------------------------
+  // Courses are Events with an `acad` payload discriminator (excluded from the
+  // calendar); assessments are kind=deadline Events with payload.courseId
+  // (VISIBLE on the calendar); study sessions are kind=session Events with
+  // payload {courseId, hours}. Mirrors the mockup's three S2 courses.
+  const semester = `S2 ${today.getFullYear()}`;
+  const [cCapstone, cAI, cGeo] = await db
+    .insert(schema.events)
+    .values([
+      {
+        userId: OWNER,
+        domain: "academic",
+        kind: "other",
+        title: "CS Capstone",
+        start: day(-14),
+        goalId: gCourseCapstone.id,
+        payload: { acad: "course", code: "COMP3888", semester, targetGrade: 75, plannedHours: 4 },
+      },
+      {
+        userId: OWNER,
+        domain: "academic",
+        kind: "other",
+        title: "Intro to AI (Adv)",
+        start: day(-14),
+        goalId: gCourseAI.id,
+        payload: { acad: "course", code: "COMP3608", semester, targetGrade: 75, plannedHours: 3 },
+      },
+      {
+        userId: OWNER,
+        domain: "academic",
+        kind: "other",
+        title: "Geometry & Topology",
+        start: day(-14),
+        goalId: gCourseGeo.id,
+        payload: { acad: "course", code: "MATH3061", semester, targetGrade: 70, plannedHours: 2 },
+      },
+    ])
+    .returning();
+
+  // assessments (FR-ACAD.2): weight %, due date, grade — calendar deadlines.
+  // Two graded items back the pace math; the ungraded form due today drives
+  // the mockup's COMP3888 AT RISK flag.
+  const assessment = (
+    course: { id: string; goalId: string | null },
+    code: string,
+    name: string,
+    weight: number | null,
+    dueOffset: number,
+    grade?: number,
+  ) => ({
+    userId: OWNER,
+    domain: "academic" as const,
+    kind: "deadline" as const,
+    title: `${code} — ${name}`,
+    start: at(dueOffset, 12),
+    allDay: true,
+    goalId: course.goalId,
+    payload: { courseId: course.id, name, weight, ...(grade != null ? { grade } : {}) },
+  });
+  const capstoneRef = { id: cCapstone.id, goalId: gCourseCapstone.id };
+  const aiRef = { id: cAI.id, goalId: gCourseAI.id };
+  const geoRef = { id: cGeo.id, goalId: gCourseGeo.id };
+  await db.insert(schema.events).values([
+    assessment(capstoneRef, "COMP3888", "Project preference form", null, 0),
+    assessment(capstoneRef, "COMP3888", "Proposal", 15, 34),
+    assessment(capstoneRef, "COMP3888", "Demo 1", 25, 69),
+    assessment(aiRef, "COMP3608", "Quiz 0", 5, -3, 84),
+    assessment(aiRef, "COMP3608", "Assignment 1", 20, 41),
+    assessment(aiRef, "COMP3608", "Quiz 1", 10, 48),
+    assessment(aiRef, "COMP3608", "Final exam", 50, 121),
+    assessment(geoRef, "MATH3061", "Assignment 1", 15, -7, 78),
+    assessment(geoRef, "MATH3061", "Mid-semester exam", 25, 62),
+    assessment(geoRef, "MATH3061", "Final exam", 60, 125),
+  ]);
+
+  // study sessions logged today (FR-ACAD.3) — actual hours land in the current
+  // week whatever weekday the seed runs on: 2.5 / 3 / 0.5 h per the mockup
+  const study = (course: { id: string }, code: string, h: number, m: number, hours: number) => ({
+    userId: OWNER,
+    domain: "academic" as const,
+    kind: "session" as const,
+    title: `Study — ${code}`,
+    start: at(0, h, m),
+    end: new Date(at(0, h, m).getTime() + hours * 3_600_000),
+    payload: { courseId: course.id, hours },
+  });
+  await db.insert(schema.events).values([
+    study(cCapstone, "COMP3888", 9, 0, 1.5),
+    study(cCapstone, "COMP3888", 13, 0, 1),
+    study(cAI, "COMP3608", 14, 0, 3),
+    study(cGeo, "MATH3061", 17, 30, 0.5),
+  ]);
+
+  // course-grade Metrics (FR-ACAD.2 "Events + Metrics"): weighted current
+  // grade per course, one datapoint sourced acad:<courseId> — exactly what
+  // recomputeCourseGrade writes when a grade is entered in the app
+  const [mGradeAI, mGradeGeo] = await db
+    .insert(schema.metrics)
+    .values([
+      { userId: OWNER, domain: "academic", name: "COMP3608 grade", unit: "%", direction: "higher-better" },
+      { userId: OWNER, domain: "academic", name: "MATH3061 grade", unit: "%", direction: "higher-better" },
+    ])
+    .returning();
+  await db.insert(schema.metricDatapoints).values([
+    { userId: OWNER, metricId: mGradeAI.id, timestamp: at(-3, 12), value: 84, source: `acad:${cAI.id}` },
+    { userId: OWNER, metricId: mGradeGeo.id, timestamp: at(-7, 12), value: 78, source: `acad:${cGeo.id}` },
+  ]);
+  await db.insert(schema.links).values([
+    // grade metric —relates-to→ course goal: goal-engine progress (FR-ACAD.1/4)
+    { userId: OWNER, domain: "academic", fromId: mGradeAI.id, fromType: "metric", toId: gCourseAI.id, toType: "goal", relation: "relates-to" },
+    { userId: OWNER, domain: "academic", fromId: mGradeGeo.id, fromType: "metric", toId: gCourseGeo.id, toType: "goal", relation: "relates-to" },
+    // the academic direction supports the career life goal
+    { userId: OWNER, domain: "academic", fromId: gAcadDir.id, fromType: "goal", toId: gCareer.id, toType: "goal", relation: "supports" },
   ]);
 
   // --- metrics (§7.5) + datapoints -------------------------------------------
