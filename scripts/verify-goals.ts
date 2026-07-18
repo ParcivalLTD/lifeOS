@@ -37,9 +37,9 @@ async function main() {
   const byHorizon = await g.goalsByHorizon(OWNER);
   check("grouped into 4 horizons", byHorizon.map((h) => h.horizon).join(",") === "life,yearly,quarterly,monthly", byHorizon.map((h) => h.horizon).join(","));
   const counts = Object.fromEntries(byHorizon.map((h) => [h.horizon, h.goals.length]));
-  check("horizon counts life4/yearly4/quarterly7/monthly1", counts.life === 4 && counts.yearly === 4 && counts.quarterly === 7 && counts.monthly === 1, JSON.stringify(counts));
+  check("horizon counts life4/yearly6/quarterly8/monthly1", counts.life === 4 && counts.yearly === 6 && counts.quarterly === 8 && counts.monthly === 1, JSON.stringify(counts));
   const allGoals = byHorizon.flatMap((h) => h.goals);
-  check("16 active goals total", allGoals.length === 16, `${allGoals.length}`);
+  check("19 active goals total", allGoals.length === 19, `${allGoals.length}`);
   check("every pct in [0,100]", allGoals.every((x) => x.pct >= 0 && x.pct <= 100));
   const byTitle = new Map(allGoals.map((x) => [x.title, x]));
 

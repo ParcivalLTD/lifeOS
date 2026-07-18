@@ -237,6 +237,45 @@ async function main() {
       inArray(schema.goals.id, [gCourseCapstone.id, gCourseAI.id, gCourseGeo.id]),
     );
 
+  // career + project goals (FR-WORK.1/2): career life goal → yearly career
+  // goals → a quarterly project goal that Work-module projects link to
+  const [, gShipML] = await db
+    .insert(schema.goals)
+    .values([
+      {
+        userId: OWNER,
+        domain: "work",
+        title: "Land ML engineering internship — summer 26/27",
+        horizon: "yearly",
+        parentGoalId: gCareer.id,
+        targetDate: `${today.getFullYear()}-11-30`,
+        successCriteria: "Signed internship offer for an ML role",
+      },
+      {
+        userId: OWNER,
+        domain: "work",
+        title: "Ship two production ML features at Atlas",
+        horizon: "yearly",
+        parentGoalId: gCareer.id,
+        successCriteria: "Two ML features live in production with my name on them",
+      },
+    ])
+    .returning();
+  const [gAtlasProj] = await db
+    .insert(schema.goals)
+    .values([
+      {
+        userId: OWNER,
+        domain: "work",
+        title: "Atlas API migration shipped",
+        horizon: "quarterly",
+        parentGoalId: gShipML.id,
+        targetDate: iso(day(14)),
+        successCriteria: "Old API fully cut over; zero rollbacks",
+      },
+    ])
+    .returning();
+
   // --- events (§7.4): past week, today, next week ---------------------------
   const gymPayload = (
     template: string,
@@ -500,6 +539,68 @@ async function main() {
         dueDate: iso(day(5)),
         priority: 2,
         recurrence: "FREQ=WEEKLY;BYDAY=SU",
+        goalId: gLifeos.id,
+      },
+      // next actions for Work projects (FR-WORK.2): plain Tasks on the
+      // project goal — the Work page derives "Next:" and done/total from them
+      {
+        userId: OWNER,
+        domain: "work",
+        title: "Finish auth middleware tests",
+        dueDate: iso(day(1)),
+        priority: 1,
+        goalId: gAtlasProj.id,
+      },
+      {
+        userId: OWNER,
+        domain: "work",
+        title: "Write rollout plan for API cutover",
+        dueDate: iso(day(4)),
+        priority: 2,
+        goalId: gAtlasProj.id,
+      },
+      {
+        userId: OWNER,
+        domain: "work",
+        title: "Add integration tests for auth flows",
+        dueDate: iso(day(-2)),
+        priority: 2,
+        status: "done",
+        goalId: gAtlasProj.id,
+      },
+      {
+        userId: OWNER,
+        domain: "work",
+        title: "Ship rate-limiter config",
+        dueDate: iso(day(-5)),
+        priority: 2,
+        status: "done",
+        goalId: gAtlasProj.id,
+      },
+      {
+        userId: OWNER,
+        domain: "work",
+        title: "Draft cutover comms",
+        dueDate: iso(day(-1)),
+        priority: 3,
+        status: "done",
+        goalId: gAtlasProj.id,
+      },
+      {
+        userId: OWNER,
+        domain: "personal",
+        title: "Habit streak calculation — edge cases",
+        dueDate: iso(day(2)),
+        priority: 2,
+        goalId: gLifeos.id,
+      },
+      {
+        userId: OWNER,
+        domain: "personal",
+        title: "Polish PWA manifest + icons",
+        dueDate: iso(day(-3)),
+        priority: 3,
+        status: "done",
         goalId: gLifeos.id,
       },
     ])
@@ -839,6 +940,71 @@ async function main() {
     { userId: OWNER, domain: "academic", fromId: mGradeGeo.id, fromType: "metric", toId: gCourseGeo.id, toType: "goal", relation: "relates-to" },
     // the academic direction supports the career life goal
     { userId: OWNER, domain: "academic", fromId: gAcadDir.id, fromType: "goal", toId: gCareer.id, toType: "goal", relation: "supports" },
+  ]);
+
+  // --- work module data (FR-WORK.1–4) ------------------------------------------
+  // Projects are Events (kind=deadline, payload.work="project" — VISIBLE on
+  // the calendar as deadlines); achievements are Events (payload.work=
+  // "achievement" — log entries, excluded); per-project time is a Metric
+  // whose datapoints are individual entries sourced work:<projectId>.
+  const [mAtlasHours, mLifeosHours] = await db
+    .insert(schema.metrics)
+    .values([
+      { userId: OWNER, domain: "work", name: "Atlas API migration hours", unit: "h", direction: "higher-better" },
+      { userId: OWNER, domain: "work", name: "LifeOS Phase 1 hours", unit: "h", direction: "higher-better" },
+    ])
+    .returning();
+
+  const [pAtlas, pLifeos] = await db
+    .insert(schema.events)
+    .values([
+      {
+        userId: OWNER,
+        domain: "work",
+        kind: "deadline",
+        title: "Atlas API migration",
+        start: at(14, 12),
+        allDay: true,
+        goalId: gAtlasProj.id,
+        payload: { work: "project", metricId: mAtlasHours.id },
+      },
+      {
+        userId: OWNER,
+        domain: "work",
+        kind: "deadline",
+        title: "LifeOS Phase 1",
+        start: at(28, 12),
+        allDay: true,
+        goalId: gLifeos.id,
+        payload: { work: "project", metricId: mLifeosHours.id },
+      },
+    ])
+    .returning();
+
+  // achievements log (FR-WORK.3) — dated wins with context, per the mockup
+  const win = (offset: number, title: string, context: string) => ({
+    userId: OWNER,
+    domain: "work" as const,
+    kind: "other" as const,
+    title,
+    start: at(offset, 12),
+    allDay: true,
+    payload: { work: "achievement", context },
+  });
+  await db.insert(schema.events).values([
+    win(-9, "Led incident response on Atlas outage; service restored in 40 min", "Atlas"),
+    win(-18, "Shipped Atlas search rewrite — p95 latency down 60%", "Atlas"),
+    win(-36, "Mentored new intern through first production PR", "Team"),
+    win(-51, "Proposed API migration plan; signed off by staff eng", "Atlas"),
+  ]);
+
+  // time entries logged today (FR-WORK.4) — land in the current week whatever
+  // weekday the seed runs on: Atlas 11.5 h + LifeOS 4 h = 15.5 h this week
+  await db.insert(schema.metricDatapoints).values([
+    { userId: OWNER, metricId: mAtlasHours.id, timestamp: at(0, 10), value: 4, source: `work:${pAtlas.id}` },
+    { userId: OWNER, metricId: mAtlasHours.id, timestamp: at(0, 14), value: 4, source: `work:${pAtlas.id}` },
+    { userId: OWNER, metricId: mAtlasHours.id, timestamp: at(0, 18), value: 3.5, source: `work:${pAtlas.id}` },
+    { userId: OWNER, metricId: mLifeosHours.id, timestamp: at(0, 20), value: 4, source: `work:${pLifeos.id}` },
   ]);
 
   // --- metrics (§7.5) + datapoints -------------------------------------------

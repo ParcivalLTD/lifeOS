@@ -5,6 +5,7 @@
  * the server fetchers and the client views.
  */
 import type { AcademicOverview } from "./data/academic";
+import type { WorkOverview } from "./data/work";
 import type { EventItem } from "./event-utils";
 import type { TaskItem } from "./task-utils";
 import type { HabitItem } from "./data/habits";
@@ -34,6 +35,7 @@ export type TrackTabKey =
   | "habits"
   | "calendar"
   | "academic"
+  | "work"
   | "gym"
   | "finance";
 
@@ -44,6 +46,7 @@ export const TRACK_TABS: { key: TrackTabKey; href: string; title: string }[] = [
   { key: "habits", href: "/habits", title: "LIFEOS — HABITS" },
   { key: "calendar", href: "/calendar", title: "LIFEOS — CALENDAR" },
   { key: "academic", href: "/academic", title: "LIFEOS — ACADEMIC" },
+  { key: "work", href: "/work", title: "LIFEOS — WORK" },
   { key: "gym", href: "/gym", title: "LIFEOS — GYM" },
   { key: "finance", href: "/finance", title: "LIFEOS — FINANCE" },
 ];
@@ -124,6 +127,12 @@ export type AcademicData = AcademicOverview & {
   goals: GoalListItem[];
 };
 
+export type WorkData = WorkOverview & {
+  /** work-domain active goals via the goal engine (FR-WORK.1 — reused, not
+   * rebuilt), horizon order preserved */
+  goals: GoalListItem[];
+};
+
 export type TabDataMap = {
   today: TodayData;
   goals: GoalsData;
@@ -131,6 +140,7 @@ export type TabDataMap = {
   habits: HabitsData;
   calendar: CalendarData;
   academic: AcademicData;
+  work: WorkData;
   gym: GymData;
   finance: FinanceData;
 };

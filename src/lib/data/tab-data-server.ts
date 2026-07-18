@@ -6,6 +6,7 @@
 import { isCalendarView, viewRange, type CalendarView } from "@/lib/calendar";
 import { academicOverview } from "@/lib/data/academic";
 import { listEventsInRange } from "@/lib/data/events";
+import { workOverview } from "@/lib/data/work";
 import {
   computeBudgetVsActual,
   currentNetWorth,
@@ -45,6 +46,7 @@ import type {
   TasksData,
   TodayData,
   TrackTabKey,
+  WorkData,
 } from "@/lib/tab-data";
 import { trackIndex, TRACK_TABS as ORDER } from "@/lib/tab-data";
 
@@ -119,6 +121,17 @@ export async function buildAcademicData(userId: string): Promise<AcademicData> {
   return {
     ...overview,
     goals: groups.flatMap((g) => g.goals).filter((g) => g.domain === "academic"),
+  };
+}
+
+export async function buildWorkData(userId: string): Promise<WorkData> {
+  const [overview, groups] = await Promise.all([
+    workOverview(userId),
+    goalsByHorizon(userId),
+  ]);
+  return {
+    ...overview,
+    goals: groups.flatMap((g) => g.goals).filter((g) => g.domain === "work"),
   };
 }
 
@@ -218,6 +231,7 @@ const BUILDERS: {
   habits: buildHabitsData,
   calendar: buildCalendarData,
   academic: buildAcademicData,
+  work: buildWorkData,
   gym: buildGymData,
   finance: buildFinanceData,
 };

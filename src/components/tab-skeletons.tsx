@@ -83,6 +83,16 @@ export function AcademicSkeleton() {
   );
 }
 
+export function WorkSkeleton() {
+  return (
+    <main className="mx-auto grid w-full max-w-[1280px] grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3 p-4">
+      <SkeletonPanel label="Projects" rows={4} />
+      <SkeletonPanel label="Achievements log" rows={4} />
+      <SkeletonPanel label="Career goals" rows={3} />
+    </main>
+  );
+}
+
 export function GymSkeleton() {
   return (
     <main className="mx-auto grid w-full max-w-[1280px] grid-cols-[repeat(auto-fit,minmax(330px,1fr))] items-start gap-3 p-4">

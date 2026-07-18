@@ -25,14 +25,16 @@ const toItem = (row: typeof events.$inferSelect): EventItem => ({
 
 /**
  * Keeps only real scheduled occurrences on the calendar/dashboard. Excludes
- * module "definition" Events that live in the Event table but aren't dated
- * occurrences: gym templates (payload.isTemplate=true), finance records
- * (payload has a `fin` key), and academic course definitions (payload has an
- * `acad` key). Generated bill occurrences, assessment deadlines, and study
- * sessions carry none of those keys, so they stay visible.
+ * module Events that live in the Event table but aren't schedule items:
+ * gym templates (payload.isTemplate=true), finance records (payload has a
+ * `fin` key), academic course definitions (payload has an `acad` key), and
+ * work achievements (payload.work="achievement" — log entries, not dates to
+ * plan around). Generated bill occurrences, assessment deadlines, study
+ * sessions, and project deadlines (payload.work="project") stay visible.
  */
 export const calendarVisible = sql`
   (${events.payload} ->> 'isTemplate') is distinct from 'true'
+  and (${events.payload} ->> 'work') is distinct from 'achievement'
   and (${events.payload} is null or not (
     jsonb_exists(${events.payload}, 'fin') or jsonb_exists(${events.payload}, 'acad')
   ))

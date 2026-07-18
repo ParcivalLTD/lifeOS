@@ -26,9 +26,9 @@ Phase 1 ("Spine") is complete. **Phase 2 is complete** (owner-directed): the
 **Gym module** (§8.8), **Finance module** (§8.7), and **universal goal
 engine** (§8.2) are all built. The goal engine wired the savings-goal `funds→`
 life-goal Links that Finance had stubbed. **Phase 3 is in progress**
-(owner-directed): the **Academic module** (§8.5) is built; Work and the
-review system are not started. The Phase-1 scope below stays as the baseline
-the app must keep satisfying.
+(owner-directed): the **Academic module** (§8.5) and **Work module** (§8.6)
+are built; the review system is not started. The Phase-1 scope below stays
+as the baseline the app must keep satisfying.
 
 Phase 1 ("Spine"), all shipped (spec §11):
 
@@ -61,7 +61,7 @@ to-do + calendar apps.
 | ~~Finance module (accounts, net worth, budgets, expenses, savings goals, bills)~~ — **BUILT** (Phase 2) | 2 |
 | ~~Goal engine UI (Goals page, goal detail, progress roll-ups)~~ — **BUILT** (Phase 2) | 2 |
 | ~~Academic module (courses, assessments, study hours, pace flags)~~ — **BUILT** (Phase 3) | 3 |
-| Work module (projects, achievements log, career goals, time tracking) | 3 |
+| ~~Work module (projects, achievements log, career goals, time tracking)~~ — **BUILT** (Phase 3) | 3 |
 | Review system (weekly/monthly reviews, timeline) | 3 |
 | AI assistant (chat, plans, daily nudge) | 4 |
 | External integrations (Google Calendar, bank feeds/Basiq, health import) | 4 |
@@ -126,6 +126,26 @@ table itself) is fine — user-facing features are not.
   at 100% on remaining weight; TIGHT = needs > 85% avg on remaining; the
   `basis` string (shown in the UI) states the exact arithmetic, weights
   coverage, and which inputs are missing.
+
+### Work module → core mapping (hub-and-spoke, no private tables)
+
+- **Projects are Events** (`domain=work`, `kind=deadline`,
+  `payload.work="project"`, start = the deadline) → VISIBLE on the unified
+  calendar, unlike other modules' definition Events. A project's `goal_id`
+  points at its project Goal; **next actions are ordinary Tasks** whose
+  `goal_id` is that goal (the Work page derives "Next:" + done/total from
+  them — FR-WORK.2).
+- **Achievements are Events** (`kind=other`, `payload.work="achievement"`,
+  context in payload) — log entries, so `calendarVisible` excludes exactly
+  that discriminator value. Export is a client-side clipboard copy of plain
+  text (`achievementsText` in `src/lib/work.ts`), one line per win.
+- **Time tracking is a Metric per project** (`<title> hours`, FR-WORK.4):
+  each quick-duration tap or timer stop APPENDS a datapoint sourced
+  `work:<projectId>` — entries are additive facts, never replaced (unlike
+  the net-worth/grade daily recomputes). The project payload caches
+  `metricId` (rename-safe) and `timerStartedAt` (running start/stop timer).
+- Career goals panel = work-domain goals via the engine (FR-WORK.1), same
+  reuse rule as Academic.
 
 ### Goal engine → core mapping (§8.2, no private tables)
 

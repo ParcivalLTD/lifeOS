@@ -13,6 +13,7 @@ import {
   HabitsSkeleton,
   TasksSkeleton,
   TodaySkeleton,
+  WorkSkeleton,
 } from "@/components/tab-skeletons";
 import { AcademicViewTab } from "@/components/tabs/views/academic-view";
 import { CalendarViewTab } from "@/components/tabs/views/calendar-view";
@@ -22,6 +23,7 @@ import { GymViewTab } from "@/components/tabs/views/gym-view";
 import { HabitsView } from "@/components/tabs/views/habits-view";
 import { TasksView } from "@/components/tabs/views/tasks-view";
 import { TodayView } from "@/components/tabs/views/today-view";
+import { WorkViewTab } from "@/components/tabs/views/work-view";
 import {
   TRACK_TABS,
   trackIndex,
@@ -95,6 +97,8 @@ function TabView({
       );
     case "academic":
       return cache.academic ? <AcademicViewTab data={cache.academic} /> : <AcademicSkeleton />;
+    case "work":
+      return cache.work ? <WorkViewTab data={cache.work} /> : <WorkSkeleton />;
     case "gym":
       return cache.gym ? <GymViewTab data={cache.gym} /> : <GymSkeleton />;
     case "finance":

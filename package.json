@@ -18,7 +18,8 @@
     "test:gym": "tsx scripts/verify-gym.ts",
     "test:finance": "tsx scripts/verify-finance.ts",
     "test:goals": "tsx scripts/verify-goals.ts",
-    "test:academic": "tsx scripts/verify-academic.ts"
+    "test:academic": "tsx scripts/verify-academic.ts",
+    "test:work": "tsx scripts/verify-work.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.1",
