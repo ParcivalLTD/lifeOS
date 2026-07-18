@@ -9,8 +9,23 @@ const isTrackTab = (v: string): v is TrackTabKey =>
   TRACK_TABS.some((t) => t.key === v);
 
 /**
- * Client-cache fill for the co-mounted track: refresh the settled tab,
- * pre-load new neighbors, re-range the calendar. Auth + forUser scoping
+ * Batched client-cache fill: several tabs in one round-trip. Server actions
+ * serialize per client, so N separate calls would queue behind each other —
+ * one call fetches every requested tab in parallel server-side.
+ */
+export async function getTabsDataAction(
+  tabs: string[],
+): Promise<Partial<Record<TrackTabKey, AnyTabData>>> {
+  const user = await requireUser();
+  const keys = [...new Set(tabs)].filter(isTrackTab).slice(0, TRACK_TABS.length);
+  const results = await Promise.all(keys.map((k) => buildTabData(user.id, k, {})));
+  const out: Partial<Record<TrackTabKey, AnyTabData>> = {};
+  keys.forEach((k, i) => (out[k] = results[i]));
+  return out;
+}
+
+/**
+ * Single-tab fill with params (calendar re-ranging). Auth + forUser scoping
  * inside — the client only ever names a tab.
  */
 export async function getTabDataAction(

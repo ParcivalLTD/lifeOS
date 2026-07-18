@@ -3,7 +3,7 @@
 import { animate, motion, useMotionValue, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { getTabDataAction } from "@/app/tabs-actions";
+import { getTabsDataAction } from "@/app/tabs-actions";
 import {
   CalendarSkeleton,
   FinanceSkeleton,
@@ -30,7 +30,16 @@ import {
 const LOCK_PX = 8; // axis decision distance
 const COMMIT_FRAC = 0.28; // fraction of width that commits
 const COMMIT_V = 0.45; // px/ms flick velocity that commits
-const SPRING = { type: "spring", stiffness: 420, damping: 42 } as const;
+// loose rest thresholds: the spring "completes" the moment it LOOKS settled
+// instead of hunting the last fraction of a pixel
+const SPRING = {
+  type: "spring",
+  stiffness: 420,
+  damping: 42,
+  restDelta: 0.5,
+  restSpeed: 10,
+} as const;
+const STALE_MS = 60_000; // cached tab age before a background refresh
 
 type Cache = Partial<TabDataMap>;
 
@@ -40,6 +49,23 @@ type Cache = Partial<TabDataMap>;
 // falling back to skeletons. Single-user, single shell — never two instances.
 let savedCache: Cache = {};
 const savedScroll: Partial<Record<TrackTabKey, number>> = {};
+const fetchedAt: Partial<Record<TrackTabKey, number>> = {};
+
+// merge that drops unchanged payloads: identical JSON means no new object
+// identities, no re-render, no chart re-animation — landing on a tab whose
+// data didn't move costs nothing visually
+const mergePatch = (c: Cache, patch: Cache): Cache => {
+  let changed = false;
+  const next: Cache = { ...c };
+  for (const k of Object.keys(patch) as TrackTabKey[]) {
+    const v = patch[k];
+    if (v && JSON.stringify(next[k]) !== JSON.stringify(v)) {
+      (next as Record<string, unknown>)[k] = v;
+      changed = true;
+    }
+  }
+  return changed ? next : c;
+};
 
 function TabView({
   tab,
@@ -110,7 +136,9 @@ export function TabsApp({
   const inflight = useRef(new Set<TrackTabKey>());
 
   const merge = useCallback((patch: Cache) => {
-    setCache((c) => ({ ...c, ...patch }));
+    const now = Date.now();
+    for (const k of Object.keys(patch) as TrackTabKey[]) fetchedAt[k] = now;
+    setCache((c) => mergePatch(c, patch));
   }, []);
 
   // fresh server data arriving through the route (server-action revalidation,
@@ -119,8 +147,20 @@ export function TabsApp({
   const [seenInitial, setSeenInitial] = useState(initialData);
   if (seenInitial !== initialData) {
     setSeenInitial(initialData);
-    setCache((c) => ({ ...c, ...initialData }));
+    setCache((c) => mergePatch(c, initialData));
   }
+
+  // a route render means the server rebuilt this trio: its keys are fresh,
+  // and whatever mutation caused it may have touched the OTHER cached tabs
+  // (a task tick changes Today too) — mark those stale so their next visit
+  // refreshes in the background while still painting from cache
+  useEffect(() => {
+    const now = Date.now();
+    for (const t of TRACK_TABS) {
+      if (initialData[t.key]) fetchedAt[t.key] = now;
+      else delete fetchedAt[t.key];
+    }
+  }, [initialData]);
 
   // mirror committed cache into the module survivor (side effect, so outside
   // render; declared before the fill effect so reads below see it synced)
@@ -128,42 +168,47 @@ export function TabsApp({
     savedCache = cache;
   }, [cache]);
 
-  const fetchTab = useCallback(
-    (k: TrackTabKey) => {
-      if (inflight.current.has(k)) return;
-      inflight.current.add(k);
-      getTabDataAction(k)
-        .then((d) => {
-          if (d) merge({ [k]: d } as Cache);
-        })
+  const fetchTabs = useCallback(
+    (keys: TrackTabKey[]) => {
+      const need = keys.filter((k) => !inflight.current.has(k));
+      if (need.length === 0) return;
+      for (const k of need) inflight.current.add(k);
+      getTabsDataAction(need)
+        .then((map) => merge(map as Cache))
         .catch(() => {}) // keep whatever we had; next settle retries
-        .finally(() => inflight.current.delete(k));
+        .finally(() => {
+          for (const k of need) inflight.current.delete(k);
+        });
     },
     [merge],
   );
 
-  // on settling on a tab: refresh it, make sure both neighbors are ready
-  // (reads the module mirror, not React state — depending on `cache` here
-  // would make the fill effect re-run per merge and fetch in a loop)
-  const fillAround = useCallback(
+  // on settling on a tab: refresh it only when its cache has actually aged
+  // (a fresh landing repaints nothing — no data pop-in after the swipe), and
+  // fill EVERY still-missing tab in the same single round-trip so later
+  // swipes and header taps land on data, not skeletons. (Reads the module
+  // mirror, not React state — depending on `cache` here would make the fill
+  // effect re-run per merge and fetch in a loop.)
+  const ensureAround = useCallback(
     (center: TrackTabKey) => {
-      const i = trackIndex(center);
-      fetchTab(center);
-      for (const t of [TRACK_TABS[i - 1], TRACK_TABS[i + 1]]) {
-        if (t && !savedCache[t.key]) fetchTab(t.key);
-      }
+      const stale = (fetchedAt[center] ?? 0) < Date.now() - STALE_MS;
+      const want = TRACK_TABS.map((t) => t.key).filter(
+        (k) => !savedCache[k] || (k === center && stale),
+      );
+      if (want.length) fetchTabs(want);
     },
-    [fetchTab],
+    [fetchTabs],
   );
 
   const goTo = useCallback(
-    (key: TrackTabKey, opts: { push: boolean }) => {
+    (key: TrackTabKey, opts: { push: boolean; jumpTo?: number }) => {
       if (key === active) return;
       savedScroll[active] = window.scrollY;
-      // synchronous re-render + transform reset + scroll restore in one task:
-      // the browser never paints the intermediate state
+      // synchronous re-render + transform re-anchor + scroll restore in one
+      // task: the browser never paints the intermediate state. jumpTo lets
+      // the swipe path re-anchor mid-gesture instead of resetting to center.
       flushSync(() => setActive(key));
-      x.jump(0);
+      x.jump(opts.jumpTo ?? 0);
       const t = TRACK_TABS[trackIndex(key)];
       if (opts.push) window.history.pushState(null, "", t.href);
       document.title = t.title;
@@ -229,10 +274,14 @@ export function TabsApp({
         if (reduced) {
           goTo(target.key, { push: true }); // instant swap, x jumps home inside
         } else {
+          // commit at finger-release: swap active/URL NOW, re-anchoring x so
+          // no pixel moves, then spring the already-committed track home.
+          // Settle fetches overlap the animation instead of queuing after it.
+          const v = x.getVelocity();
           settling.current = true;
-          animate(x, dir === 1 ? -width : width, SPRING).then(() => {
+          goTo(target.key, { push: true, jumpTo: x.get() + dir * width });
+          animate(x, 0, { ...SPRING, velocity: v }).then(() => {
             settling.current = false;
-            goTo(target.key, { push: true });
           });
         }
       } else if (reduced) {
@@ -275,14 +324,17 @@ export function TabsApp({
     };
   }, [goTo]);
 
-  // the settle hook: runs on mount and after every tab switch — refresh the
-  // settled tab, pre-load missing neighbors, keep fresh on window re-focus
+  // the settle hook: runs on mount and after every tab switch — background-
+  // refresh the settled tab if aged, batch-fill anything uncached, and
+  // refresh on window re-focus after time away
   useEffect(() => {
-    fillAround(active);
-    const onFocus = () => fetchTab(active);
+    ensureAround(active);
+    const onFocus = () => {
+      if ((fetchedAt[active] ?? 0) < Date.now() - STALE_MS) fetchTabs([active]);
+    };
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-  }, [active, fillAround, fetchTab]);
+  }, [active, ensureAround, fetchTabs]);
 
   const idx = trackIndex(active);
   const mounted = [TRACK_TABS[idx - 1], TRACK_TABS[idx], TRACK_TABS[idx + 1]].filter(
