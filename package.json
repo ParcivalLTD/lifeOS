@@ -21,7 +21,8 @@
     "test:academic": "tsx scripts/verify-academic.ts",
     "test:work": "tsx scripts/verify-work.ts",
     "test:review": "tsx scripts/verify-review.ts",
-    "test:ai": "tsx scripts/verify-ai.ts"
+    "test:ai": "tsx scripts/verify-ai.ts",
+    "test:assistant": "tsx scripts/verify-assistant.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.3",
