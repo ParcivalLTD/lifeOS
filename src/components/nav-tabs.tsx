@@ -31,6 +31,7 @@ const TABS = [
   { key: "work", href: "/work", label: "WORK" },
   { key: "gym", href: "/gym", label: "GYM" },
   { key: "finance", href: "/finance", label: "FINANCE" },
+  { key: "review", href: "/review", label: "REVIEW" },
   { key: "settings", href: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 
@@ -47,6 +48,7 @@ const PREFIXES: [string, TabKey][] = [
   ["/work", "work"],
   ["/gym", "gym"],
   ["/finance", "finance"],
+  ["/review", "review"],
   ["/settings", "settings"],
 ];
 

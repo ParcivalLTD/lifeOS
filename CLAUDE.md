@@ -20,15 +20,16 @@ The value is not any individual module; it is the **cross-domain intelligence**
 and the **review cadence** that are only possible when everything lives in one
 system. Single tenant, no sharing, no monetisation (spec §3 non-goals).
 
-## ⚠️ Current scope: PHASES 1–2 done + PHASE 3 in progress
+## ⚠️ Current scope: PHASES 1–3 done
 
 Phase 1 ("Spine") is complete. **Phase 2 is complete** (owner-directed): the
 **Gym module** (§8.8), **Finance module** (§8.7), and **universal goal
 engine** (§8.2) are all built. The goal engine wired the savings-goal `funds→`
-life-goal Links that Finance had stubbed. **Phase 3 is in progress**
-(owner-directed): the **Academic module** (§8.5) and **Work module** (§8.6)
-are built; the review system is not started. The Phase-1 scope below stays
-as the baseline the app must keep satisfying.
+life-goal Links that Finance had stubbed. **Phase 3 is complete**
+(owner-directed): the **Academic module** (§8.5), **Work module** (§8.6),
+and **Review system** (§8.10) are built. Phase 4 (AI assistant, external
+integrations) is not started. The Phase-1 scope below stays as the baseline
+the app must keep satisfying.
 
 Phase 1 ("Spine"), all shipped (spec §11):
 
@@ -62,7 +63,7 @@ to-do + calendar apps.
 | ~~Goal engine UI (Goals page, goal detail, progress roll-ups)~~ — **BUILT** (Phase 2) | 2 |
 | ~~Academic module (courses, assessments, study hours, pace flags)~~ — **BUILT** (Phase 3) | 3 |
 | ~~Work module (projects, achievements log, career goals, time tracking)~~ — **BUILT** (Phase 3) | 3 |
-| Review system (weekly/monthly reviews, timeline) | 3 |
+| ~~Review system (weekly/monthly reviews, timeline)~~ — **BUILT** (Phase 3) | 3 |
 | AI assistant (chat, plans, daily nudge) | 4 |
 | External integrations (Google Calendar, bank feeds/Basiq, health import) | 4 |
 
@@ -146,6 +147,26 @@ table itself) is fine — user-facing features are not.
   `metricId` (rename-safe) and `timerStartedAt` (running start/stop timer).
 - Career goals panel = work-domain goals via the engine (FR-WORK.1), same
   reuse rule as Academic.
+
+### Review system → core mapping (§8.10, no private tables)
+
+- **The review is the smart layer, not a data type**: the weekly summary and
+  goal review are COMPUTED live from the other modules' own computations
+  (task lists, habit adherence, gym adherence, budget vs actual, academic
+  study/pace, work hours/wins, journal, goal engine). Every figure carries a
+  `basis` string shown in the UI; missing inputs render "—", never a guess
+  (`src/lib/data/review.ts`).
+- **Saved reviews are Events** (`domain=personal`, `kind=other`,
+  `payload.rev = {type, periodKey, stats, highlights, goals, reflections}`)
+  — POINT-IN-TIME snapshots recomputed server-side at save, then rendered
+  as stored forever (history never rewrites). `calendarVisible` excludes the
+  `rev` key. One review per (type, period): re-saving replaces.
+- **FR-REV.2 flags**: `at-risk` (academic pace via the course's goal),
+  `overdue` (target date passed, pct < 100), `no-signal` (no linked
+  metric/habits/milestones/savings), each with a `flagBasis`; flagged rows
+  link to the goal's edit page for adjust/abandon.
+- Timeline notes derive from STORED snapshots (`timelineNote` in
+  `src/lib/review.ts`); `/review/[id]` renders a snapshot as saved.
 
 ### Goal engine → core mapping (§8.2, no private tables)
 

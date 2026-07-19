@@ -93,6 +93,15 @@ export function WorkSkeleton() {
   );
 }
 
+export function ReviewSkeleton() {
+  return (
+    <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 p-4">
+      <SkeletonPanel label="Weekly review" rows={5} />
+      <SkeletonPanel label="Review timeline" rows={3} />
+    </main>
+  );
+}
+
 export function GymSkeleton() {
   return (
     <main className="mx-auto grid w-full max-w-[1280px] grid-cols-[repeat(auto-fit,minmax(330px,1fr))] items-start gap-3 p-4">

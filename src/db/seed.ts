@@ -15,6 +15,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 import type { HabitSchedule } from "./schema";
+import { weeklyPeriod, type ReviewPayload } from "../lib/review";
 
 config({ path: [".env.local", ".env"], quiet: true });
 
@@ -1098,6 +1099,56 @@ async function main() {
       [at(-30, 12), 189],
       [at(-1, 12), 148.5],
     ]),
+  ]);
+
+  // --- review system data (FR-REV.3) -------------------------------------------
+  // Stored reviews are Events with payload.rev — point-in-time snapshots of
+  // what each past review saw (per the mockup timeline: 74% / 81% / 68%).
+  const pastReview = (
+    weeksAgo: number,
+    tasksV: string,
+    adherence: number,
+    workouts: string,
+    reflections: Record<string, string>,
+  ) => {
+    const period = weeklyPeriod(iso(day(-7 * weeksAgo)));
+    const payload: ReviewPayload = {
+      rev: "weekly",
+      periodKey: period.key,
+      periodLabel: period.label,
+      savedISO: period.toISO,
+      stats: [
+        { v: tasksV, l: "tasks done", basis: "TASKS DUE THIS WEEK (UNDATED TASKS EXCLUDED)" },
+        { v: `${adherence}%`, l: "habit adherence", basis: "SCHEDULED HABIT-DAYS COMPLETED, LAST 7 DAYS" },
+        { v: workouts, l: "workouts", basis: "LOGGED VS PLANNED GYM SESSIONS THIS WEEK" },
+      ],
+      highlights: [],
+      reflections,
+    };
+    return {
+      userId: OWNER,
+      domain: "personal" as const,
+      kind: "other" as const,
+      title: `Weekly review — ${period.label}`,
+      start: at(-7 * weeksAgo, 12),
+      allDay: true,
+      payload,
+    };
+  };
+  await db.insert(schema.events).values([
+    pastReview(1, "14/19", 71, "3/4", {
+      worked: "Morning gym sessions stuck all week; meal prep on Sunday held.",
+      didnt: "Late nights Wed/Thu — both skipped-habit days followed short sleep.",
+      top3: "1. Submit COMP3888 preference form\n2. Keep eating out under cap\n3. Two study blocks before Friday",
+    }),
+    pastReview(2, "13/16", 78, "2/2", {
+      worked: "Study blocks in the calendar actually happened.",
+      top3: "1. Shortlist capstone projects\n2. Bench 92.5 kg\n3. Book dentist",
+    }),
+    pastReview(3, "13/19", 64, "1/2", {
+      didnt: "Sick two days — week mostly triage.",
+      top3: "1. Catch up MATH3061 notes\n2. Restart running\n3. Clear inbox",
+    }),
   ]);
 
   // --- journal entries (§7.6) -------------------------------------------------

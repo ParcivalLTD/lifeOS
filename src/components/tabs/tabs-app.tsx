@@ -11,6 +11,7 @@ import {
   GoalsSkeleton,
   GymSkeleton,
   HabitsSkeleton,
+  ReviewSkeleton,
   TasksSkeleton,
   TodaySkeleton,
   WorkSkeleton,
@@ -21,6 +22,7 @@ import { FinanceViewTab } from "@/components/tabs/views/finance-view";
 import { GoalsView } from "@/components/tabs/views/goals-view";
 import { GymViewTab } from "@/components/tabs/views/gym-view";
 import { HabitsView } from "@/components/tabs/views/habits-view";
+import { ReviewViewTab } from "@/components/tabs/views/review-view";
 import { TasksView } from "@/components/tabs/views/tasks-view";
 import { TodayView } from "@/components/tabs/views/today-view";
 import { WorkViewTab } from "@/components/tabs/views/work-view";
@@ -103,6 +105,8 @@ function TabView({
       return cache.gym ? <GymViewTab data={cache.gym} /> : <GymSkeleton />;
     case "finance":
       return cache.finance ? <FinanceViewTab data={cache.finance} /> : <FinanceSkeleton />;
+    case "review":
+      return cache.review ? <ReviewViewTab data={cache.review} /> : <ReviewSkeleton />;
   }
 }
 

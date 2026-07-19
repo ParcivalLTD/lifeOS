@@ -5,6 +5,7 @@
  * the server fetchers and the client views.
  */
 import type { AcademicOverview } from "./data/academic";
+import type { GoalsReview, StoredReview, WeeklySummary } from "./data/review";
 import type { WorkOverview } from "./data/work";
 import type { EventItem } from "./event-utils";
 import type { TaskItem } from "./task-utils";
@@ -37,7 +38,8 @@ export type TrackTabKey =
   | "academic"
   | "work"
   | "gym"
-  | "finance";
+  | "finance"
+  | "review";
 
 export const TRACK_TABS: { key: TrackTabKey; href: string; title: string }[] = [
   { key: "today", href: "/", title: "LIFEOS — TODAY" },
@@ -49,6 +51,7 @@ export const TRACK_TABS: { key: TrackTabKey; href: string; title: string }[] = [
   { key: "work", href: "/work", title: "LIFEOS — WORK" },
   { key: "gym", href: "/gym", title: "LIFEOS — GYM" },
   { key: "finance", href: "/finance", title: "LIFEOS — FINANCE" },
+  { key: "review", href: "/review", title: "LIFEOS — REVIEW" },
 ];
 
 export const trackIndex = (key: TrackTabKey): number =>
@@ -133,6 +136,16 @@ export type WorkData = WorkOverview & {
   goals: GoalListItem[];
 };
 
+export type ReviewData = {
+  todayISO: string;
+  weekly: WeeklySummary;
+  goalsReview: GoalsReview;
+  monthly: { key: string; label: string };
+  quarterly: { key: string; label: string };
+  /** stored snapshots, newest period first (FR-REV.3) */
+  timeline: StoredReview[];
+};
+
 export type TabDataMap = {
   today: TodayData;
   goals: GoalsData;
@@ -143,6 +156,7 @@ export type TabDataMap = {
   work: WorkData;
   gym: GymData;
   finance: FinanceData;
+  review: ReviewData;
 };
 
 export type AnyTabData = TabDataMap[TrackTabKey];

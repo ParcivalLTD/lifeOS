@@ -6,7 +6,9 @@
 import { isCalendarView, viewRange, type CalendarView } from "@/lib/calendar";
 import { academicOverview } from "@/lib/data/academic";
 import { listEventsInRange } from "@/lib/data/events";
+import { goalsReview, listReviews, weeklySummary } from "@/lib/data/review";
 import { workOverview } from "@/lib/data/work";
+import { monthlyPeriod, quarterlyPeriod } from "@/lib/review";
 import {
   computeBudgetVsActual,
   currentNetWorth,
@@ -43,6 +45,7 @@ import type {
   HabitsData,
   TabDataMap,
   TabParams,
+  ReviewData,
   TasksData,
   TodayData,
   TrackTabKey,
@@ -132,6 +135,23 @@ export async function buildWorkData(userId: string): Promise<WorkData> {
   return {
     ...overview,
     goals: groups.flatMap((g) => g.goals).filter((g) => g.domain === "work"),
+  };
+}
+
+export async function buildReviewData(userId: string): Promise<ReviewData> {
+  const today = todayISO();
+  const [weekly, goals, timeline] = await Promise.all([
+    weeklySummary(userId),
+    goalsReview(userId),
+    listReviews(userId),
+  ]);
+  return {
+    todayISO: today,
+    weekly,
+    goalsReview: goals,
+    monthly: monthlyPeriod(today),
+    quarterly: quarterlyPeriod(today),
+    timeline,
   };
 }
 
@@ -234,6 +254,7 @@ const BUILDERS: {
   work: buildWorkData,
   gym: buildGymData,
   finance: buildFinanceData,
+  review: buildReviewData,
 };
 
 export function buildTabData(
