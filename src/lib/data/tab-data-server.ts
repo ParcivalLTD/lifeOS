@@ -4,8 +4,10 @@
  * transport to the client changed, not the data access).
  */
 import { isCalendarView, viewRange, type CalendarView } from "@/lib/calendar";
+import { aiConfigured } from "@/lib/ai/client";
 import { academicOverview } from "@/lib/data/academic";
 import { listEventsInRange } from "@/lib/data/events";
+import { getNudgeEnabled, getTodayNudge } from "@/lib/data/nudge";
 import { goalsReview, listReviews, weeklySummary } from "@/lib/data/review";
 import { workOverview } from "@/lib/data/work";
 import { monthlyPeriod, quarterlyPeriod } from "@/lib/review";
@@ -56,7 +58,7 @@ import { trackIndex, TRACK_TABS as ORDER } from "@/lib/tab-data";
 export async function buildTodayData(userId: string): Promise<TodayData> {
   const today = todayISO();
   const month = currentMonthKey();
-  const [tasks, habitsOverview, events, goalsTop, budgets, expenses, sessions, gymWeek] =
+  const [tasks, habitsOverview, events, goalsTop, budgets, expenses, sessions, gymWeek, nudge, nudgeEnabled] =
     await Promise.all([
       listTasks(userId),
       listHabitsWithStats(userId, today),
@@ -66,6 +68,8 @@ export async function buildTodayData(userId: string): Promise<TodayData> {
       listExpenses(userId, { monthKey: month }),
       listSessions(userId, 5),
       thisWeekDays(userId),
+      getTodayNudge(userId), // cached read only — no API call on dashboard load
+      getNudgeEnabled(userId),
     ]);
   const bva = computeBudgetVsActual(budgets, expenses);
   const open = tasks.filter((t) => t.status === "open");
@@ -86,6 +90,9 @@ export async function buildTodayData(userId: string): Promise<TodayData> {
     monthKey: month,
     gymSession: sessions.find((s) => s.dateISO === today) ?? null,
     gymWeek,
+    nudge: nudge?.text ?? null,
+    nudgeEnabled,
+    nudgeConfigured: aiConfigured(),
   };
 }
 

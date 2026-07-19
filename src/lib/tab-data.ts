@@ -75,6 +75,11 @@ export type TodayData = {
   monthKey: string;
   gymSession: GymSession | null;
   gymWeek: GymWeekDay[];
+  /** today's cached daily nudge (FR-AI.3); null until generated. The build
+   * NEVER calls the API — the banner generates client-side on first load. */
+  nudge: string | null;
+  nudgeEnabled: boolean;
+  nudgeConfigured: boolean;
 };
 
 export type GoalsData = {

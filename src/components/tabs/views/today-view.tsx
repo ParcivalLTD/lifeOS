@@ -12,7 +12,12 @@ import type { TodayData } from "@/lib/tab-data";
 export function TodayView({ data }: { data: TodayData }) {
   return (
     <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 p-4">
-      <NudgeBanner />
+      <NudgeBanner
+        today={data.todayISO}
+        nudge={data.nudge}
+        enabled={data.nudgeEnabled}
+        configured={data.nudgeConfigured}
+      />
       <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3">
         <SchedulePanel events={data.events} nowHM={data.nowHM} />
         <TasksCard tasks={data.topTasks} openCount={data.openCount} today={data.todayISO} />

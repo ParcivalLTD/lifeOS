@@ -29,7 +29,8 @@ const toItem = (row: typeof events.$inferSelect): EventItem => ({
  * gym templates (payload.isTemplate=true), finance records (payload has a
  * `fin` key), academic course definitions (payload has an `acad` key), and
  * work achievements (payload.work="achievement" — log entries, not dates to
- * plan around), and stored review snapshots (payload has a `rev` key).
+ * plan around), stored review snapshots (payload has a `rev` key), and the
+ * AI daily-nudge cache + preference (payload has a `nudge` or `pref` key).
  * Generated bill occurrences, assessment deadlines, study sessions, and
  * project deadlines (payload.work="project") stay visible.
  */
@@ -40,6 +41,8 @@ export const calendarVisible = sql`
     jsonb_exists(${events.payload}, 'fin')
     or jsonb_exists(${events.payload}, 'acad')
     or jsonb_exists(${events.payload}, 'rev')
+    or jsonb_exists(${events.payload}, 'nudge')
+    or jsonb_exists(${events.payload}, 'pref')
   ))
 `;
 

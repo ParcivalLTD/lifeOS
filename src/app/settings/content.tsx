@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Panel } from "@/components/panel";
+import { NudgeToggle } from "@/components/settings/nudge-toggle";
 import { listBackups, type BackupFileInfo } from "@/lib/backup";
 import { runBackupAction } from "./actions";
 
@@ -9,11 +10,13 @@ export async function SettingsContent({
   email,
   backup,
   path,
+  nudgeEnabled,
 }: {
   userId?: string;
   email: string;
   backup?: string;
   path?: string;
+  nudgeEnabled: boolean;
 }) {
 
   let backups: BackupFileInfo[] = [];
@@ -33,12 +36,12 @@ export async function SettingsContent({
         </Panel>
 
         <Panel label="AI layer" value="NFR-1">
-          <div className="flex flex-col gap-2 p-4">
+          <div className="flex flex-col gap-3 p-4">
             <p className="text-[12.5px]">
-              Phase 4 groundwork: any assistant feature sees only structured
-              summaries assembled by one audited code path. Raw journal text is
-              excluded by default. Inspect the exact payload that would go to
-              the API — nothing is sent from the preview.
+              Any assistant feature sees only structured summaries assembled by
+              one audited code path. Raw journal text is excluded by default.
+              Inspect the exact payload that would go to the API — nothing is
+              sent from the preview.
             </p>
             <Link
               href="/settings/ai-preview"
@@ -46,6 +49,13 @@ export async function SettingsContent({
             >
               Preview what gets sent →
             </Link>
+            <div className="border-t border-border-row pt-3">
+              <p className="mb-2 text-[12px]">
+                The dashboard shows one data-grounded nudge per day, generated
+                once and cached (no cost on every load).
+              </p>
+              <NudgeToggle enabled={nudgeEnabled} />
+            </div>
           </div>
         </Panel>
 
