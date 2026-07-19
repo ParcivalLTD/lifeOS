@@ -20,16 +20,18 @@ The value is not any individual module; it is the **cross-domain intelligence**
 and the **review cadence** that are only possible when everything lives in one
 system. Single tenant, no sharing, no monetisation (spec §3 non-goals).
 
-## ⚠️ Current scope: PHASES 1–3 done
+## ⚠️ Current scope: PHASES 1–3 done + PHASE 4 in progress
 
 Phase 1 ("Spine") is complete. **Phase 2 is complete** (owner-directed): the
 **Gym module** (§8.8), **Finance module** (§8.7), and **universal goal
 engine** (§8.2) are all built. The goal engine wired the savings-goal `funds→`
 life-goal Links that Finance had stubbed. **Phase 3 is complete**
 (owner-directed): the **Academic module** (§8.5), **Work module** (§8.6),
-and **Review system** (§8.10) are built. Phase 4 (AI assistant, external
-integrations) is not started. The Phase-1 scope below stays as the baseline
-the app must keep satisfying.
+and **Review system** (§8.10) are built. **Phase 4 step 1 is built**
+(owner-directed): the **AI context assembler + privacy boundary** (see the
+AI-layer section below) — no chat UI, no nudges, no API calls from any
+feature yet. External integrations are not started. The Phase-1 scope below
+stays as the baseline the app must keep satisfying.
 
 Phase 1 ("Spine"), all shipped (spec §11):
 
@@ -64,7 +66,7 @@ to-do + calendar apps.
 | ~~Academic module (courses, assessments, study hours, pace flags)~~ — **BUILT** (Phase 3) | 3 |
 | ~~Work module (projects, achievements log, career goals, time tracking)~~ — **BUILT** (Phase 3) | 3 |
 | ~~Review system (weekly/monthly reviews, timeline)~~ — **BUILT** (Phase 3) | 3 |
-| AI assistant (chat, plans, daily nudge) | 4 |
+| AI assistant (chat, plans, daily nudge) — *step 1 (context assembler + boundary) BUILT; feature UIs still deferred* | 4 |
 | External integrations (Google Calendar, bank feeds/Basiq, health import) | 4 |
 
 If a task appears to require a still-deferred module, stop and flag it rather
@@ -147,6 +149,25 @@ table itself) is fine — user-facing features are not.
   `metricId` (rename-safe) and `timerStartedAt` (running start/stop timer).
 - Career goals panel = work-domain goals via the engine (FR-WORK.1), same
   reuse rule as Academic.
+
+### AI layer → boundary rules (Phase 4 step 1, NFR-1)
+
+- **`src/lib/ai/` is the ONLY path to the LLM API.** `context.ts` assembles
+  structured SUMMARIES (module computations, capped lists, no DB ids — the
+  verify suite asserts zero UUIDs); `request.ts` is the pure builder of the
+  exact request body (model `claude-opus-4-8`); `client.ts` is the sole
+  transport — `server-only`, reads `ANTHROPIC_API_KEY` inside the send call,
+  and is the one file allowed to import `@anthropic-ai/sdk` (enforced by a
+  `no-restricted-imports` lint rule). Never call the API any other way.
+- **Raw journal body text is EXCLUDED by default** — journal contributes
+  mood/energy/tags only. Body text requires the caller's explicit per-feature
+  `includeJournalText: true`; the payload records the decision in
+  `meta.journalTextIncluded`. `npm run test:ai` asserts both directions.
+- **The layer reads only** (all queries via forUser); it has no write
+  capability — also asserted statically by the verify suite.
+- **`/settings/ai-preview` renders the exact request body** without sending;
+  keep it truthful: it must go through the same `assembleContext` +
+  `buildAiRequest` path as any real send.
 
 ### Review system → core mapping (§8.10, no private tables)
 

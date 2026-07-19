@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Panel } from "@/components/panel";
 import { listBackups, type BackupFileInfo } from "@/lib/backup";
 import { runBackupAction } from "./actions";
@@ -29,6 +30,23 @@ export async function SettingsContent({
           <p className="px-3 py-2.5 font-mono text-[11px] text-muted">
             {email}
           </p>
+        </Panel>
+
+        <Panel label="AI layer" value="NFR-1">
+          <div className="flex flex-col gap-2 p-4">
+            <p className="text-[12.5px]">
+              Phase 4 groundwork: any assistant feature sees only structured
+              summaries assembled by one audited code path. Raw journal text is
+              excluded by default. Inspect the exact payload that would go to
+              the API — nothing is sent from the preview.
+            </p>
+            <Link
+              href="/settings/ai-preview"
+              className="self-start border border-border-input bg-subtle px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[.06em] no-underline"
+            >
+              Preview what gets sent →
+            </Link>
+          </div>
         </Panel>
 
         <Panel label="Data & backup" value="NFR-4">
