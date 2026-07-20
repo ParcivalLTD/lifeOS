@@ -175,11 +175,10 @@ export async function buildGymData(
     thisWeekDays(userId),
   ]);
 
-  const active =
-    (params.session ? await getSession(userId, params.session) : null) ??
-    sessions.find((s) => s.dateISO === today) ??
-    sessions[0] ??
-    null;
+  let active = params.session ? await getSession(userId, params.session) : null;
+  if (!active || active.isEnded) {
+    active = sessions.find((s) => !s.isEnded) ?? null;
+  }
 
   const lifts = prs.map((p) => p.lift);
   const [prev, ...seriesList] = await Promise.all([
@@ -209,6 +208,7 @@ export async function buildGymData(
     chartLift: params.lift && lifts.includes(params.lift) ? params.lift : null,
     lastByExercise,
     seriesByLift,
+    view: params.view === "stats" ? "stats" : "templates",
   };
 }
 

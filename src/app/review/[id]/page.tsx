@@ -8,7 +8,7 @@ import { getReview } from "@/lib/data/review";
 import { DOMAIN_DOT_CLASS, isDomain } from "@/lib/domains";
 import { REVIEW_TYPE_LABEL } from "@/lib/review";
 
-export const metadata: Metadata = { title: "LIFEOS — REVIEW" };
+export const metadata: Metadata = { title: "HELM — REVIEW" };
 
 const labelCls = "font-mono text-[10px] font-semibold uppercase tracking-[.08em] text-faint";
 

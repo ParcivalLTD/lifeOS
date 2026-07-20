@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { requireUser } from "@/lib/auth";
 import { getNudgeEnabled } from "@/lib/data/nudge";
 
-export const metadata: Metadata = { title: "LIFEOS — SETTINGS" };
+export const metadata: Metadata = { title: "HELM — SETTINGS" };
 
 export default async function SettingsPage({
   searchParams,

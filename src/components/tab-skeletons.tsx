@@ -11,7 +11,7 @@ export function TodaySkeleton() {
   return (
     <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 p-4">
       <div className="h-[38px] bg-ink opacity-90" />
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3">
+      <div className="columns-[320px] gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full">
         <SkeletonPanel label="Schedule" rows={5} />
         <SkeletonPanel label="Tasks" rows={3} />
         <SkeletonPanel label="Habits" rows={5} />
@@ -71,13 +71,11 @@ export function AcademicSkeleton() {
   return (
     <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 p-4">
       <div className="h-4 w-64 bg-track" />
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3">
+      <div className="columns-[320px] gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full">
         <SkeletonPanel label="Course" rows={4} />
         <SkeletonPanel label="Course" rows={4} />
-        <div className="flex flex-col gap-3">
-          <SkeletonPanel label="Study hours — this week" rows={3} />
-          <SkeletonPanel label="Goals" rows={3} />
-        </div>
+        <SkeletonPanel label="Study hours — this week" rows={3} />
+        <SkeletonPanel label="Goals" rows={3} />
       </div>
     </main>
   );
@@ -85,7 +83,7 @@ export function AcademicSkeleton() {
 
 export function WorkSkeleton() {
   return (
-    <main className="mx-auto grid w-full max-w-[1280px] grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3 p-4">
+    <main className="mx-auto w-full max-w-[1280px] columns-[320px] gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full p-4">
       <SkeletonPanel label="Projects" rows={4} />
       <SkeletonPanel label="Achievements log" rows={4} />
       <SkeletonPanel label="Career goals" rows={3} />
@@ -104,16 +102,14 @@ export function ReviewSkeleton() {
 
 export function GymSkeleton() {
   return (
-    <main className="mx-auto grid w-full max-w-[1280px] grid-cols-[repeat(auto-fit,minmax(330px,1fr))] items-start gap-3 p-4">
+    <main className="mx-auto w-full max-w-[1280px] columns-[330px] gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full p-4">
       <SkeletonPanel label="Session" rows={6} />
-      <div className="flex flex-col gap-3">
         <SkeletonPanel label="Estimated 1RM — PRs" rows={4} />
         <Panel label="e1RM — last 8 weeks">
           <SkeletonChart />
         </Panel>
         <SkeletonPanel label="Adherence — this week" rows={1} />
         <SkeletonPanel label="Templates" rows={2} />
-      </div>
     </main>
   );
 }
@@ -121,14 +117,14 @@ export function GymSkeleton() {
 export function FinanceSkeleton() {
   return (
     <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 p-4">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] items-start gap-3">
+      <div className="columns-[300px] gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full">
         <Panel label="Net worth">
           <SkeletonChart />
         </Panel>
         <SkeletonPanel label="Accounts" rows={4} />
         <SkeletonPanel label="Savings goals" rows={2} />
       </div>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3">
+      <div className="columns-[320px] gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full">
         <SkeletonPanel label="Budget vs actual" rows={5} />
         <SkeletonPanel label="Expense log" rows={6} />
         <SkeletonPanel label="Bills & subscriptions" rows={4} />

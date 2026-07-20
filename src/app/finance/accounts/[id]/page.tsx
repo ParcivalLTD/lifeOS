@@ -8,7 +8,7 @@ import { Panel } from "@/components/panel";
 import { requireUser } from "@/lib/auth";
 import { getAccount } from "@/lib/data/finance";
 
-export const metadata: Metadata = { title: "LIFEOS — ACCOUNT" };
+export const metadata: Metadata = { title: "HELM — ACCOUNT" };
 
 const inputCls = "border border-border-input bg-subtle px-2.5 py-2 text-[12.5px]";
 const labelCls = "font-mono text-[10px] font-semibold uppercase tracking-[.08em] text-faint";

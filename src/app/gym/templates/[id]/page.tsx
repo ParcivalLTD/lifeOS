@@ -6,7 +6,7 @@ import { TemplateEditor } from "@/components/gym/template-editor";
 import { requireUser } from "@/lib/auth";
 import { getTemplate } from "@/lib/data/gym";
 
-export const metadata: Metadata = { title: "LIFEOS — TEMPLATE" };
+export const metadata: Metadata = { title: "HELM — TEMPLATE" };
 
 export default async function EditTemplatePage({
   params,

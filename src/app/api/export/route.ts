@@ -15,7 +15,7 @@ export async function GET() {
   }
 
   const dump = await buildExport();
-  const filename = `lifeos-export-${dump.generatedAt.slice(0, 10)}.json`;
+  const filename = `helm-export-${dump.generatedAt.slice(0, 10)}.json`;
 
   return new NextResponse(JSON.stringify(dump, null, 2), {
     headers: {

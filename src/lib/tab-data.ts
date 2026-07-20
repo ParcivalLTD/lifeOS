@@ -42,16 +42,16 @@ export type TrackTabKey =
   | "review";
 
 export const TRACK_TABS: { key: TrackTabKey; href: string; title: string }[] = [
-  { key: "today", href: "/", title: "LIFEOS — TODAY" },
-  { key: "goals", href: "/goals", title: "LIFEOS — GOALS" },
-  { key: "tasks", href: "/tasks", title: "LIFEOS — TASKS" },
-  { key: "habits", href: "/habits", title: "LIFEOS — HABITS" },
-  { key: "calendar", href: "/calendar", title: "LIFEOS — CALENDAR" },
-  { key: "academic", href: "/academic", title: "LIFEOS — ACADEMIC" },
-  { key: "work", href: "/work", title: "LIFEOS — WORK" },
-  { key: "gym", href: "/gym", title: "LIFEOS — GYM" },
-  { key: "finance", href: "/finance", title: "LIFEOS — FINANCE" },
-  { key: "review", href: "/review", title: "LIFEOS — REVIEW" },
+  { key: "today", href: "/", title: "HELM — TODAY" },
+  { key: "goals", href: "/goals", title: "HELM — GOALS" },
+  { key: "tasks", href: "/tasks", title: "HELM — TASKS" },
+  { key: "habits", href: "/habits", title: "HELM — HABITS" },
+  { key: "calendar", href: "/calendar", title: "HELM — CALENDAR" },
+  { key: "academic", href: "/academic", title: "HELM — ACADEMIC" },
+  { key: "work", href: "/work", title: "HELM — WORK" },
+  { key: "gym", href: "/gym", title: "HELM — GYM" },
+  { key: "finance", href: "/finance", title: "HELM — FINANCE" },
+  { key: "review", href: "/review", title: "HELM — REVIEW" },
 ];
 
 export const trackIndex = (key: TrackTabKey): number =>
@@ -109,6 +109,7 @@ export type GymData = {
   chartLift: string | null;
   lastByExercise: Record<string, string | null>;
   seriesByLift: Record<string, LiftPoint[]>;
+  view: "templates" | "stats";
 };
 
 export type FinanceData = {

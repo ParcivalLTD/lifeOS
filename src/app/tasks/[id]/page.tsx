@@ -10,7 +10,7 @@ import { getTask } from "@/lib/data/tasks";
 import { DOMAINS } from "@/lib/domains";
 import { recurrenceLabel } from "@/lib/recurrence";
 
-export const metadata: Metadata = { title: "LIFEOS — TASK" };
+export const metadata: Metadata = { title: "HELM — TASK" };
 
 const inputCls = "border border-border-input bg-subtle px-2.5 py-2 text-[12.5px]";
 const labelCls =

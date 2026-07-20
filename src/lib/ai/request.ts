@@ -33,10 +33,10 @@ export type AiRequestBody = {
  * cacheable prefix never varies and the payload stays auditable.
  */
 export const SYSTEM_PROMPT = [
-  "You are the assistant layer of LifeOS, a private single-user life dashboard.",
+  "You are the assistant layer of Helm, a private single-user life dashboard.",
   "The user message contains structured summaries of the owner's own data",
   "(goals, schedule, budgets, training, academics, work) inside",
-  "<lifeos_context> tags, followed by the task. The data belongs to the",
+  "<helm_context> tags, followed by the task. The data belongs to the",
   "person you are talking to — answer from it plainly and specifically,",
   "and say so when it cannot answer the question. Never invent figures:",
   "every number you state must come from the context.",
@@ -70,7 +70,7 @@ export const CHAT_SYSTEM_PROMPT = [
 export const PROPOSAL_TOOL = {
   name: "propose_changes",
   description:
-    "Propose creating tasks, calendar events, or habits in LifeOS. Proposals are shown to the owner for review — nothing is created unless the owner approves each item. Dates are YYYY-MM-DD, times are 24h HH:MM. Domains: personal | academic | work | finance | gym | health. Event kinds: appointment | deadline | session | bill | birthday | other.",
+    "Propose creating tasks, calendar events, or habits in Helm. Proposals are shown to the owner for review — nothing is created unless the owner approves each item. Dates are YYYY-MM-DD, times are 24h HH:MM. Domains: personal | academic | work | finance | gym | health. Event kinds: appointment | deadline | session | bill | birthday | other.",
   input_schema: {
     type: "object",
     properties: {
@@ -122,7 +122,7 @@ const FEATURE_TASK: Record<AiFeature, string> = {
 };
 
 const contextBlock = (context: AssembledContext): string =>
-  `<lifeos_context>\n${JSON.stringify(context, null, 2)}\n</lifeos_context>`;
+  `<helm_context>\n${JSON.stringify(context, null, 2)}\n</helm_context>`;
 
 /**
  * Builds the exact request body for a feature. `userTask` is the free-text

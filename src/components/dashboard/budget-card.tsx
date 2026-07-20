@@ -43,7 +43,7 @@ export function BudgetCard({
         <p className="px-3 py-2 font-mono text-[10px] uppercase tracking-[.06em] text-faint">No budgets set</p>
       )}
       {top.map((b) => (
-        <div key={b.id} className="border-b border-border-row px-3 py-1.5">
+        <div key={b.id} className="border-b border-border-row px-3 py-2">
           <div className="flex items-baseline justify-between">
             <span className="text-[12px]">{b.category}</span>
             <span className="font-mono text-[11px] text-muted">{fmtMoney(b.spent)} / {fmtMoney(b.cap)}</span>

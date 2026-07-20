@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "LIFEOS — SIGN IN",
+  title: "HELM — SIGN IN",
 };
 
 const inputClass =
@@ -22,7 +22,7 @@ export default async function LoginPage({
         <div className="flex items-baseline justify-between border-b border-border-header px-3 py-2.5">
           <span className="flex items-baseline gap-2">
             <span className="font-mono text-[15px] font-bold tracking-[.05em]">
-              LIFEOS
+              HELM
             </span>
             <span className="border border-border-outer px-[5px] py-px font-mono text-[9px] font-semibold tracking-[.06em] text-faint">
               V0.1

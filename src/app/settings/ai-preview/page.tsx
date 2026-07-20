@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { assembleContext } from "@/lib/ai/context";
 import { buildAiRequest, AI_MODEL } from "@/lib/ai/request";
 
-export const metadata: Metadata = { title: "LIFEOS — AI CONTEXT PREVIEW" };
+export const metadata: Metadata = { title: "HELM — AI CONTEXT PREVIEW" };
 
 /**
  * "What gets sent" audit page (Phase 4 boundary): renders the EXACT request

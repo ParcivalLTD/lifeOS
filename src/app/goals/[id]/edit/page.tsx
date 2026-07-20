@@ -6,7 +6,7 @@ import { GoalForm } from "@/components/goals/goal-form";
 import { requireUser } from "@/lib/auth";
 import { getGoal, goalOptions } from "@/lib/data/goals";
 
-export const metadata: Metadata = { title: "LIFEOS — EDIT GOAL" };
+export const metadata: Metadata = { title: "HELM — EDIT GOAL" };
 
 export default async function EditGoalPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();

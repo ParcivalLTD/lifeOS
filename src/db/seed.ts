@@ -1,6 +1,6 @@
 /**
  * Seed script — realistic single-owner data across all six domains,
- * mirroring the design mockup (docs/design/LifeOS.dc.html).
+ * mirroring the design mockup (docs/design/Helm.dc.html).
  *
  * Idempotent: wipes and re-inserts all rows belonging to the seed user.
  * Dates are generated relative to "today" so the data always looks live.
@@ -157,7 +157,7 @@ async function main() {
       {
         userId: OWNER,
         domain: "personal",
-        title: "Ship LifeOS Phase 1",
+        title: "Ship Helm Phase 1",
         horizon: "quarterly",
         targetDate: iso(day(32)),
         successCriteria: "Using it every morning instead of to-do + calendar apps",
@@ -952,7 +952,7 @@ async function main() {
     .insert(schema.metrics)
     .values([
       { userId: OWNER, domain: "work", name: "Atlas API migration hours", unit: "h", direction: "higher-better" },
-      { userId: OWNER, domain: "work", name: "LifeOS Phase 1 hours", unit: "h", direction: "higher-better" },
+      { userId: OWNER, domain: "work", name: "Helm Phase 1 hours", unit: "h", direction: "higher-better" },
     ])
     .returning();
 
@@ -973,7 +973,7 @@ async function main() {
         userId: OWNER,
         domain: "work",
         kind: "deadline",
-        title: "LifeOS Phase 1",
+        title: "Helm Phase 1",
         start: at(28, 12),
         allDay: true,
         goalId: gLifeos.id,
@@ -1000,7 +1000,7 @@ async function main() {
   ]);
 
   // time entries logged today (FR-WORK.4) — land in the current week whatever
-  // weekday the seed runs on: Atlas 11.5 h + LifeOS 4 h = 15.5 h this week
+  // weekday the seed runs on: Atlas 11.5 h + Helm 4 h = 15.5 h this week
   await db.insert(schema.metricDatapoints).values([
     { userId: OWNER, metricId: mAtlasHours.id, timestamp: at(0, 10), value: 4, source: `work:${pAtlas.id}` },
     { userId: OWNER, metricId: mAtlasHours.id, timestamp: at(0, 14), value: 4, source: `work:${pAtlas.id}` },

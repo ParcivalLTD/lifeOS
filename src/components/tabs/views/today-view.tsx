@@ -21,7 +21,7 @@ export function TodayView({ data }: { data: TodayData }) {
       {/* Ordered for the morning (FR-DASH.1): what's on today, then the three
           things to act on (tasks, habits, workout), then the slower-moving
           roll-ups (goals, budget). Reads top-to-bottom as "today". */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3">
+      <div className="columns-[320px] gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full">
         <SchedulePanel events={data.events} nowHM={data.nowHM} />
         <TasksCard tasks={data.topTasks} openCount={data.openCount} today={data.todayISO} />
         <HabitsCard habits={data.habits} adherence7={data.adherence7} />

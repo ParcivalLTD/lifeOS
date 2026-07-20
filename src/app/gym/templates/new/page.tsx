@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { TemplateEditor } from "@/components/gym/template-editor";
 import { requireUser } from "@/lib/auth";
 
-export const metadata: Metadata = { title: "LIFEOS — NEW TEMPLATE" };
+export const metadata: Metadata = { title: "HELM — NEW TEMPLATE" };
 
 export default async function NewTemplatePage() {
   await requireUser();

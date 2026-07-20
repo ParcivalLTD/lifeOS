@@ -32,7 +32,7 @@ const dueLabel = (iso: string) => {
 export function FinanceViewTab({ data }: { data: FinanceData }) {
   return (
       <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 p-4">
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] items-start gap-3">
+        <div className="columns-[300px] gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full">
           {/* net worth */}
           <Panel label="Net worth">
             <div className="p-3">
@@ -108,7 +108,7 @@ export function FinanceViewTab({ data }: { data: FinanceData }) {
           </DisclosurePanel>
         </div>
 
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3">
+        <div className="columns-[320px] gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full">
           <BudgetExpenses
             monthKey={data.monthKey}
             budgets={data.budgetRows}

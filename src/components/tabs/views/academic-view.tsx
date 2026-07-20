@@ -148,15 +148,14 @@ export function AcademicViewTab({ data }: { data: AcademicData }) {
         </span>
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3">
+      <div className="columns-[320px] gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full">
         {/* course cards (FR-ACAD.2 + FR-ACAD.4) */}
         {data.courses.map((c) => (
           <CourseCard key={c.id} c={c} todayISO={data.todayISO} />
         ))}
 
-        <div className="flex flex-col gap-3">
-          {/* study hours (FR-ACAD.3) */}
-          <DisclosurePanel
+        {/* study hours (FR-ACAD.3) */}
+        <DisclosurePanel
             label="Study hours — this week"
             value="PLANNED VS ACTUAL"
             addLabel="Log study hours"
@@ -244,7 +243,6 @@ export function AcademicViewTab({ data }: { data: AcademicData }) {
               Tap + to add a course. Link it to its goal from the course page — nesting lives in the goal engine.
             </p>
           </DisclosurePanel>
-        </div>
       </div>
     </main>
   );

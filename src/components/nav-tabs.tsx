@@ -32,7 +32,7 @@ const TABS = [
   { key: "gym", href: "/gym", label: "GYM", short: "GYM" },
   { key: "finance", href: "/finance", label: "FINANCE", short: "FIN" },
   { key: "review", href: "/review", label: "REVIEW", short: "REV" },
-  { key: "assistant", href: "/assistant", label: "HELM", short: "HELM" },
+  { key: "assistant", href: "/assistant", label: "ASSISTANT", short: "ASSISTANT" },
   { key: "settings", href: "/settings", label: "Settings", short: "Settings", icon: SettingsIcon },
 ] as const;
 
@@ -75,7 +75,7 @@ export function NavTabs() {
   const onClick = (e: React.MouseEvent, key: TabKey) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
     const handled = !window.dispatchEvent(
-      new CustomEvent("lifeos:tab-nav", { detail: { key }, cancelable: true }),
+      new CustomEvent("helm:tab-nav", { detail: { key }, cancelable: true }),
     );
     if (handled) e.preventDefault();
   };

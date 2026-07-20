@@ -1,8 +1,9 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
-import { addSetAction, logSetAction } from "@/app/gym/actions";
+import { addSetAction, endSessionAction, logSetAction } from "@/app/gym/actions";
 import { CheckButton } from "@/components/check-button";
+import { SubmitButton } from "@/components/submit-button";
 import { Panel } from "@/components/panel";
 import type { GymSetLog } from "@/db/schema";
 import { sessionSetCounts, targetLabel, type SessionExercise } from "@/lib/gym";
@@ -77,8 +78,16 @@ export function SessionLogger({
       label={`Session — ${name}`}
       value={dateLabel}
       footer={
-        <div className="px-3 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[.06em] text-muted">
-          {done} of {total} sets logged
+        <div className="flex items-center justify-between border-t border-border-header bg-subtle px-3 py-2">
+          <div className="font-mono text-[11px] font-semibold uppercase tracking-[.06em] text-muted">
+            {done} of {total} sets logged
+          </div>
+          <form action={endSessionAction}>
+            <input type="hidden" name="id" value={sessionId} />
+            <SubmitButton className="cursor-pointer border-0 bg-ink px-4 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[.06em] text-[#ffffff] shadow-sm active:scale-95 transition-transform">
+              End Workout
+            </SubmitButton>
+          </form>
         </div>
       }
     >

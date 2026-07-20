@@ -4,7 +4,7 @@ import { TabsApp } from "@/components/tabs/tabs-app";
 import { requireUser } from "@/lib/auth";
 import { buildInitialTrio } from "@/lib/data/tab-data-server";
 
-export const metadata: Metadata = { title: "LIFEOS — ACADEMIC" };
+export const metadata: Metadata = { title: "HELM — ACADEMIC" };
 
 export default async function AcademicPage() {
   const user = await requireUser();

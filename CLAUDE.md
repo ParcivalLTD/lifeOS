@@ -1,13 +1,13 @@
-# CLAUDE.md — LifeOS
+# CLAUDE.md — Helm
 
 Guidance for Claude Code when working in this repository. Source of truth:
-`docs/lifeos-spec.md` (product spec v0.1) and `docs/design/LifeOS.dc.html`
+`docs/helm-spec.md` (product spec v0.1) and `docs/design/Helm.dc.html`
 (interactive design mockup). If this file and the spec disagree, the spec wins —
 then update this file.
 
-## What LifeOS is
+## What Helm is
 
-LifeOS is a **private, single-user web app** that acts as an operating system for
+Helm is a **private, single-user web app** that acts as an operating system for
 the owner's life. It unifies personal admin, academic planning, work/career,
 finance, gym, and health into one application built on a **shared data model**,
 with a daily dashboard, a universal goal engine, a structured review system, and
@@ -328,7 +328,7 @@ logging flows usable one-handed on a phone (NFR-2), nightly backup/export path
 (NFR-4), only minimal structured summaries ever sent to the LLM API and raw
 journal text excluded by default (NFR-1).
 
-## Design system (from `docs/design/LifeOS.dc.html`)
+## Design system (from `docs/design/Helm.dc.html`)
 
 The mockup defines a **flat, dense, utilitarian** aesthetic — closer to a
 terminal dashboard than a consumer app. Reproduce it faithfully.
@@ -396,7 +396,7 @@ gym:      oklch(0.62 0.13 55)    health:   oklch(0.55 0.13 20)
 - **Inputs/selects**: `1px solid #c9c9c0`, `#fafaf6` bg; numeric inputs use
   monospace and `inputMode="decimal"`.
 - **Progress bars**: 4px tall, track `#ecece5`, fill = domain or status colour.
-- **Header**: white bar with `LIFEOS` mono wordmark + version chip, a mono
+- **Header**: white bar with `HELM` mono wordmark + version chip, a mono
   key-stats strip, and the date; nav is a horizontally scrollable row of
   UPPERCASE mono tabs where the active tab gets a 2px `#1a1a18` bottom border
   and ink text (inactive: `#8b8b80`).
@@ -411,7 +411,7 @@ gym:      oklch(0.62 0.13 55)    health:   oklch(0.55 0.13 20)
 - Full §7 schema ships in Phase 1 via Drizzle migrations; deferred-module UIs
   do not.
 - Sign-up stays disabled; never build multi-user features (NG1).
-- Keep the mockup (`docs/design/LifeOS.dc.html`) as the visual reference for
+- Keep the mockup (`docs/design/Helm.dc.html`) as the visual reference for
   every screen; open questions live in spec §13.
 
 RLS bypass rule: server-side Drizzle connects as `postgres` and BYPASSES RLS. Every

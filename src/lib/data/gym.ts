@@ -39,6 +39,7 @@ export type GymSession = {
   done: number;
   total: number;
   logged: boolean;
+  isEnded: boolean;
 };
 
 export type PR = { lift: string; e1rm: number; whenISO: string };
@@ -72,6 +73,7 @@ const toSession = (row: typeof events.$inferSelect): GymSession => {
     done,
     total,
     logged: isSessionLogged(exercises),
+    isEnded: row.end !== null,
   };
 };
 
@@ -259,6 +261,10 @@ export async function addSet(
 
 export async function archiveSession(userId: string, id: string): Promise<void> {
   await forUser(userId).update(events, { archived: true }, and(eq(events.id, id), isSessionSql));
+}
+
+export async function endSession(userId: string, id: string): Promise<void> {
+  await forUser(userId).update(events, { end: new Date() }, and(eq(events.id, id), isSessionSql));
 }
 
 /** Most recent OTHER logged session of the same template, for "LAST:" hints. */

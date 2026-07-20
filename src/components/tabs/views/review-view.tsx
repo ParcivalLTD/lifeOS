@@ -106,7 +106,7 @@ export function ReviewViewTab({ data }: { data: ReviewData }) {
             </div>
             <form action={saveReviewAction} key={`weekly-${periodKey}`}>
               <input type="hidden" name="type" value="weekly" />
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-3 p-3">
+              <div className="columns-[260px] gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full p-3">
                 <label className="flex flex-col gap-1.5">
                   <span className={labelCls}>What worked?</span>
                   <textarea name="worked" rows={3} defaultValue={saved.worked ?? ""} placeholder="e.g. morning sessions stuck; prepped meals Sunday…" className={taCls} />
@@ -163,7 +163,7 @@ export function ReviewViewTab({ data }: { data: ReviewData }) {
             ))}
             <form action={saveReviewAction} key={`${type}-${periodKey}`}>
               <input type="hidden" name="type" value={type} />
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-3 p-3">
+              <div className="columns-[260px] gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full p-3">
                 <label className="flex flex-col gap-1.5">
                   <span className={labelCls}>What moved this {type === "monthly" ? "month" : "quarter"}?</span>
                   <textarea name="moved" rows={3} defaultValue={saved.moved ?? ""} placeholder="e.g. WAM goal back on track after quiz results…" className={taCls} />

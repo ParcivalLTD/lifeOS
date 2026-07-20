@@ -10,7 +10,7 @@ import { getSavingsGoal } from "@/lib/data/finance";
 import { goalOptions, savingsFundsGoals } from "@/lib/data/goals";
 import { HORIZON_LABEL } from "@/lib/goals";
 
-export const metadata: Metadata = { title: "LIFEOS — SAVINGS GOAL" };
+export const metadata: Metadata = { title: "HELM — SAVINGS GOAL" };
 
 const inputCls = "border border-border-input bg-subtle px-2.5 py-2 text-[12.5px]";
 const labelCls = "font-mono text-[10px] font-semibold uppercase tracking-[.08em] text-faint";

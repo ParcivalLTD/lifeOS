@@ -328,10 +328,10 @@ export function TabsApp({
       const hit = TRACK_TABS.find((t) => t.href === window.location.pathname);
       if (hit) goTo(hit.key, { push: false });
     };
-    window.addEventListener("lifeos:tab-nav", onNav);
+    window.addEventListener("helm:tab-nav", onNav);
     window.addEventListener("popstate", onPop);
     return () => {
-      window.removeEventListener("lifeos:tab-nav", onNav);
+      window.removeEventListener("helm:tab-nav", onNav);
       window.removeEventListener("popstate", onPop);
     };
   }, [goTo]);

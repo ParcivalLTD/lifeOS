@@ -8,6 +8,7 @@ import {
   archiveSession,
   archiveTemplate,
   createTemplate,
+  endSession,
   logSet,
   startSessionFromTemplate,
   updateTemplate,
@@ -134,4 +135,13 @@ export async function archiveSessionAction(formData: FormData): Promise<void> {
   await archiveSession(user.id, id);
   revalidateGym();
   redirect("/gym");
+}
+
+export async function endSessionAction(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  if (!okId(id)) return;
+  await endSession(user.id, id);
+  revalidateGym();
+  redirect("/gym?view=stats");
 }

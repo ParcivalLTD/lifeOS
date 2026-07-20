@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* LifeOS design tokens — docs/design/LifeOS.dc.html via CLAUDE.md.
+/* Helm design tokens — docs/design/Helm.dc.html via CLAUDE.md.
    Flat, dense, utilitarian: no border-radius, no shadows, no gradients,
    light theme only. */
 @theme {

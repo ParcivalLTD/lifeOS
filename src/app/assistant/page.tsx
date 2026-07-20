@@ -9,7 +9,7 @@ import { requireUser } from "@/lib/auth";
 import { getConversation, listConversations } from "@/lib/data/conversations";
 import { todayISO } from "@/lib/dates";
 
-export const metadata: Metadata = { title: "LIFEOS — HELM" };
+export const metadata: Metadata = { title: "HELM — ASSISTANT" };
 
 export default async function AssistantPage({
   searchParams,
@@ -53,7 +53,7 @@ export default async function AssistantPage({
             todayISO={todayISO()}
           />
         ) : (
-          <Panel label="Helm" value="NOT CONFIGURED">
+          <Panel label="Assistant" value="NOT CONFIGURED">
             <div className="flex flex-col gap-2 p-4">
               <p className="text-[12.5px]">
                 Set <span className="font-mono text-[11px]">ANTHROPIC_API_KEY</span>{" "}

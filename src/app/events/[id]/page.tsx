@@ -9,7 +9,7 @@ import { getEvent } from "@/lib/data/events";
 import { DOMAINS } from "@/lib/domains";
 import { EVENT_KINDS, KIND_LABEL } from "@/lib/event-utils";
 
-export const metadata: Metadata = { title: "LIFEOS — EVENT" };
+export const metadata: Metadata = { title: "HELM — EVENT" };
 
 const inputCls = "border border-border-input bg-subtle px-2.5 py-2 text-[12.5px]";
 const labelCls =

@@ -4,7 +4,7 @@ import { TabsApp } from "@/components/tabs/tabs-app";
 import { requireUser } from "@/lib/auth";
 import { buildInitialTrio } from "@/lib/data/tab-data-server";
 
-export const metadata: Metadata = { title: "LIFEOS — FINANCE" };
+export const metadata: Metadata = { title: "HELM — FINANCE" };
 
 export default async function FinancePage() {
   const user = await requireUser();

@@ -73,7 +73,7 @@ async function ensureBucket(admin: ReturnType<typeof createAdminClient>) {
   if (error && !/already exists/i.test(error.message)) throw error;
 }
 
-/** Uploads one dump as lifeos-backup-<timestamp>.json; returns path + size. */
+/** Uploads one dump as helm-backup-<timestamp>.json; returns path + size. */
 export async function uploadBackup(
   dump: BackupDocument,
 ): Promise<{ path: string; bytes: number }> {
@@ -81,7 +81,7 @@ export async function uploadBackup(
   await ensureBucket(admin);
 
   const stamp = dump.generatedAt.replace(/[:]/g, "-").slice(0, 16); // YYYY-MM-DDTHH-mm
-  const path = `lifeos-backup-${stamp}.json`;
+  const path = `helm-backup-${stamp}.json`;
   const body = JSON.stringify(dump);
 
   const { error } = await admin.storage

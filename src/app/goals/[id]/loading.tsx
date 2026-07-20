@@ -7,7 +7,7 @@ export default function GoalDetailLoading() {
   return (
     <>
       <AppHeader />
-      <main className="mx-auto grid w-full max-w-[1280px] grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3 p-4">
+      <main className="mx-auto w-full max-w-[1280px] columns-[320px] gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full p-4">
       <SkeletonPanel label="Goal" rows={3} />
       <SkeletonPanel label="Milestones" rows={3} />
       <SkeletonPanel label="Recurring actions" rows={2} />

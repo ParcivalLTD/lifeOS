@@ -22,7 +22,7 @@ import {
 import { DOMAIN_DOT_CLASS } from "@/lib/domains";
 import { HORIZON_LABEL } from "@/lib/goals";
 
-export const metadata: Metadata = { title: "LIFEOS — GOAL" };
+export const metadata: Metadata = { title: "HELM — GOAL" };
 
 const smallSelect = "min-w-0 flex-1 border border-border-input bg-subtle px-1.5 py-1.5 text-[12px]";
 const addBtn = "cursor-pointer border-0 bg-ink px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[.06em] text-[#ffffff]";
@@ -48,7 +48,7 @@ export default async function GoalDetailPage({ params }: { params: Promise<{ id:
   return (
     <>
       <AppHeader />
-      <main className="mx-auto grid w-full max-w-[1280px] grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3 p-4">
+      <main className="mx-auto w-full max-w-[1280px] columns-[320px] gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full p-4">
         {/* outcome + progress */}
         <Panel
           label={`${HORIZON_LABEL[detail.horizon]} goal`}

@@ -1,5 +1,5 @@
 /**
- * LifeOS core data model — spec §7, implemented in full (hub and spoke).
+ * Helm core data model — spec §7, implemented in full (hub and spoke).
  *
  * All seven core entities ship in Phase 1 even though Phase 1 UIs only
  * exercise Tasks, Habits, and Events. Every core entity carries:

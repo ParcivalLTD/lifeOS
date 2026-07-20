@@ -11,7 +11,7 @@ import { getHabit } from "@/lib/data/habits";
 import { DOMAINS } from "@/lib/domains";
 import { scheduleLabel } from "@/lib/habits";
 
-export const metadata: Metadata = { title: "LIFEOS — HABIT" };
+export const metadata: Metadata = { title: "HELM — HABIT" };
 
 const inputCls = "border border-border-input bg-subtle px-2.5 py-2 text-[12.5px]";
 const labelCls =

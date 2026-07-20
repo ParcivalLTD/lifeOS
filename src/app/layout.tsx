@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "LIFEOS",
+  title: "HELM",
   description: "Private, single-user operating system for your life.",
-  applicationName: "LifeOS",
+  applicationName: "Helm",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "LifeOS",
+    title: "Helm",
   },
   formatDetection: {
     telephone: false,

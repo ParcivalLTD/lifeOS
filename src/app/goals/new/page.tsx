@@ -5,7 +5,7 @@ import { GoalForm } from "@/components/goals/goal-form";
 import { requireUser } from "@/lib/auth";
 import { goalOptions } from "@/lib/data/goals";
 
-export const metadata: Metadata = { title: "LIFEOS — NEW GOAL" };
+export const metadata: Metadata = { title: "HELM — NEW GOAL" };
 
 export default async function NewGoalPage({
   searchParams,

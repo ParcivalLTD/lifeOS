@@ -87,7 +87,7 @@ export function WorkViewTab({ data }: { data: WorkData }) {
   const [, startTransition] = useTransition();
 
   return (
-    <main className="mx-auto grid w-full max-w-[1280px] grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3 p-4">
+    <main className="mx-auto w-full max-w-[1280px] columns-[320px] gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full p-4">
       {/* projects with deadlines + next actions + time (FR-WORK.2/4) */}
       <DisclosurePanel
         label="Projects"
