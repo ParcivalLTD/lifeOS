@@ -180,7 +180,8 @@ table itself) is fine — user-facing features are not.
 - **The daily nudge (FR-AI.3) is advisory + cached.** `lib/ai/nudge.ts`
   generates one line via `buildAiRequest(ctx, "daily-nudge")` — NO tools, so
   it can only return text (FR-AI.4: it never writes; acting on it means the
-  "Discuss →" link into chat). Cost (NFR-5): today's nudge is cached as an
+  "Discuss →" link into chat). Cost (NFR-5 — this is LLM spend, which is real
+  and ongoing; NOT a platform quota, see Infrastructure): today's nudge is cached as an
   Event (`payload.nudge = {date, text}`, one per day, `calendarVisible`
   excludes it); the dashboard build only READS the cache (never calls the
   API), and the banner fires the generate action client-side once per day —
@@ -316,17 +317,96 @@ gym | health`), `created_at`, `updated_at`, `archived`.
 |---|---|
 | Frontend | **Next.js (App Router)** as an installable, mobile-first **PWA** |
 | Styling | **Tailwind CSS**, hand-rolled components (no component library — see design system) |
-| Backend/DB | **Supabase** (PostgreSQL, auth, storage) |
+| Backend/DB | **Supabase, self-hosted** (PostgreSQL, auth, storage) |
 | ORM | **Drizzle** (decided; not Prisma) |
 | Charts | **Recharts** |
 | AI (Phase 4) | **Anthropic API** (decided; not OpenAI), structured data as context |
-| Hosting | Vercel + Supabase free/hobby tiers (~$0/month, NFR-5) |
+| Hosting | **Self-hosted on Coolify** (Nixpacks build) — see Infrastructure |
 
 Non-functional constraints to respect from the first commit: dashboard <1s load
 on mobile (NFR-3, FR-DASH.3), optimistic UI on logging interactions, all
 logging flows usable one-handed on a phone (NFR-2), nightly backup/export path
 (NFR-4), only minimal structured summaries ever sent to the LLM API and raw
 journal text excluded by default (NFR-1).
+
+## Infrastructure — self-hosted (supersedes spec §10 hosting + NFR-5)
+
+The spec's "Vercel + Supabase free tiers, zero ops" is **historical**. Both
+now run on the owner's own server:
+
+| Piece | Reality |
+|---|---|
+| App | **Coolify**, built with **Nixpacks** (no Dockerfile in this repo) |
+| Supabase | **Self-hosted via Coolify** — own Postgres, auth (GoTrue), storage |
+| Scheduled jobs | **Coolify Scheduled Tasks** hitting secret-protected routes |
+
+### Scheduled jobs
+
+Cron lives in **Coolify Scheduled Tasks**, not `vercel.json`. A task is just a
+scheduled HTTP call to a route that authorizes a shared secret
+(`Authorization: Bearer $CRON_SECRET`), the same door the signed-in owner can
+open with a session cookie. Current + planned jobs: the nightly backup
+(NFR-4) and CalDAV sync. Add a scheduled job by adding the route + the secret
+check, then registering it in Coolify — never by adding platform cron config
+to the repo.
+
+### ⚠️ Vercel-era constraints are GONE — do not design around them
+
+Several earlier decisions were shaped by limits that **no longer exist**. Do
+not reintroduce them, and do not accept a premise from a future prompt that
+assumes them:
+
+- **No serverless function duration cap.** Long-running work (a full export,
+  a bulk sync, a slow AI call) no longer has to be split, streamed early, or
+  deferred to fit a 10s/60s ceiling. `maxDuration` hints are inert here.
+- **No once-daily cron limit** (the Vercel Hobby restriction). Jobs may run
+  as often as the work actually warrants — hourly sync is fine.
+- **No per-invocation / bandwidth metering, no cold starts.** A persistent
+  server process is available; background work and in-process caching are
+  legitimate options now, where before everything had to be stateless.
+- **No platform-imposed DB row/storage caps**, since Postgres and storage are
+  the owner's own.
+
+### Cost (NFR-5, restated)
+
+NFR-5's "runs within free/hobby tiers (~$0/month)" framing is superseded: the
+cost is now **the server itself** — a fixed monthly box, plus Anthropic API
+usage. Platform tier limits are no longer a design input. What remains true
+is the *spirit* of NFR-5: don't burn money for no reason. The daily-nudge
+cache (one API call per day, §FR-AI.3) stays cached because LLM calls still
+cost real money — not because a platform quota demands it.
+
+**Ops the owner now owns** (previously the platform's job): backups of the
+Postgres volume itself, TLS/cert renewal, Supabase version upgrades, and disk
+headroom. The app-level nightly export (NFR-4) is a *logical* backup and is
+not a substitute for volume-level backups.
+
+### Persistent storage — REQUIRED, and ⚠️ NOT YET VERIFIED
+
+Postgres data and Supabase Storage objects **must** live on persistent
+volumes (named Docker volumes or host bind mounts), never on a container's
+writable layer. Coolify recreates containers on every redeploy: anything in
+the writable layer is destroyed silently, so an unmounted data directory
+means the database is one deploy away from gone.
+
+- Postgres data dir: `/var/lib/postgresql/data`
+- Supabase Storage (file backend): `/var/lib/storage`
+
+**This has not been confirmed.** Nothing in this repo describes the
+deployment — there is no compose/Coolify config here, and `.env.local`
+points at the local Supabase CLI stack (`127.0.0.1:54321`), not the server.
+It is recorded here as a requirement, not a verified fact. To check, on the
+Coolify host:
+
+```sh
+docker ps --format '{{.Names}}' | grep -iE 'db|postgres|storage'
+# for each: a Type of "volume" or "bind" is good; NO row for the data dir is the bug
+docker inspect -f '{{range .Mounts}}{{.Type}}  {{.Source}} -> {{.Destination}}{{println}}{{end}}' <container>
+```
+
+Once verified, replace this block with the finding and the date. (If Storage
+is configured with the S3 backend rather than the file backend, the
+`/var/lib/storage` mount is moot — note which backend is in use.)
 
 ## Design system (from `docs/design/Helm.dc.html`)
 
