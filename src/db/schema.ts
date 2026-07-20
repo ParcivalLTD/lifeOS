@@ -76,6 +76,15 @@ export const metricDirectionEnum = pgEnum("metric_direction", [
   "target-range",
 ]);
 
+/**
+ * Where an Event came from. "native" = created in Helm and owned by it;
+ * anything else is mirrored from an external calendar and is re-synced by
+ * (source, external_id). Adding a provider is an explicit ALTER TYPE
+ * migration, which is the point — a new sync source should be a deliberate
+ * schema change, not a free-text value that silently varies.
+ */
+export const eventSourceEnum = pgEnum("event_source", ["native", "apple_calendar"]);
+
 export const habitCompletionStatusEnum = pgEnum("habit_completion_status", [
   "done",
   "skipped",
@@ -212,11 +221,35 @@ export const events = pgTable(
     kind: eventKindEnum("kind").notNull().default("other"),
     goalId: uuid("goal_id").references(() => goals.id, { onDelete: "set null" }),
     payload: jsonb("payload").$type<EventPayload>(),
+
+    // --- external-calendar sync (no behaviour yet; schema support only) ----
+    /** Owner of this row's truth. Everything created in-app is "native". */
+    source: eventSourceEnum("source").notNull().default("native"),
+    /** The provider's stable id for the event (iCalendar UID). Null for native. */
+    externalId: text("external_id"),
+    /** Which remote calendar it came from, so one account can sync several. */
+    externalCalendarId: text("external_calendar_id"),
   },
   (t) => [
     index("events_user_idx").on(t.userId),
     index("events_start_idx").on(t.start),
     index("events_kind_idx").on(t.kind),
+    /**
+     * Re-syncing the same remote event must UPSERT, never duplicate.
+     *
+     * PARTIAL (`WHERE external_id IS NOT NULL`) because every native row has a
+     * null external_id: Postgres treats nulls as distinct, so they would never
+     * collide anyway — this just keeps them out of the index entirely.
+     *
+     * USER-SCOPED even though the app is single-tenant (NG1). The house rule
+     * is that server-side Drizzle bypasses RLS and every user-scoped write
+     * must carry user_id explicitly; a conflict target of (source,
+     * external_id) alone would be the one write path that silently doesn't.
+     * Scoping it here forces the sync upsert's ON CONFLICT to name user_id.
+     */
+    uniqueIndex("events_source_external_uq")
+      .on(t.userId, t.source, t.externalId)
+      .where(sql`${t.externalId} IS NOT NULL`),
     ownerPolicy("events", t.userId),
   ],
 ).enableRLS();
