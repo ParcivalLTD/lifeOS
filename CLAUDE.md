@@ -483,6 +483,17 @@ gym:      oklch(0.62 0.13 55)    health:   oklch(0.55 0.13 20)
 - **Assistant nudge banner** (Phase 4): inverted — `#1a1a18` bg, `#f2f2ee`
   text (do not build now).
 - Priority badges: bordered mono chips like `P1`; streaks shown as `×23`.
+- **Calendar week/day = hour-grid timeline** (`lib/calendar-timeline.ts` +
+  `components/calendar/time-grid.tsx`). Blocks are positioned AND sized by
+  real start/end — a 30-min event is visibly half a 1-hour one; never uniform
+  rows. Concurrent events tile side by side (greedy column packing, columns
+  reclaimed once free), all-day items sit in their own strip above the grid,
+  blocks are domain-tinted (`bg-domain-x/10` + 2px domain left edge), and
+  today's column carries a current-time line. Window is 06–23, WIDENED (never
+  clipped) to fit outlying events — nothing is ever hidden. Week scrolls
+  horizontally at 108px/column with a sticky hour gutter; day fills the width
+  and is the mobile fallback. **Month view is unchanged.** Guarded by
+  `npm run test:calendar`, which checks the math and the real seeded week.
 - **Segmented control** (sub-view switch): a row of mono UPPERCASE buttons at
   the top of a merged tab, active = ink fill + white text, inactive =
   `#fafaf6` bg + `#c9c9c0` border. Same rectangles-only rules as everything

@@ -2,10 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { getTabDataAction } from "@/app/tabs-actions";
-import { DayList } from "@/components/calendar/day-list";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { QuickAddEvent } from "@/components/calendar/quick-add";
-import { WeekGrid } from "@/components/calendar/week-grid";
+import { TimeGrid } from "@/components/calendar/time-grid";
 import {
   monthGridDates,
   rangeLabel,
@@ -101,14 +100,15 @@ export function CalendarViewTab({ data, active }: { data: CalendarData; active: 
 
       <QuickAddEvent defaultDate={state.date} />
 
+      {/* week and day share one hour-grid timeline; month keeps its own grid */}
       {state.view === "week" && (
-        <WeekGrid days={weekDates(state.date)} eventsByDate={byDate} today={state.todayISO} />
+        <TimeGrid days={weekDates(state.date)} eventsByDate={byDate} today={state.todayISO} />
       )}
       {state.view === "month" && (
         <MonthGrid cells={monthGridDates(state.date)} eventsByDate={byDate} today={state.todayISO} />
       )}
       {state.view === "day" && (
-        <DayList events={byDate.get(state.date) ?? []} dateISO={state.date} today={state.todayISO} />
+        <TimeGrid days={[state.date]} eventsByDate={byDate} today={state.todayISO} />
       )}
     </main>
   );
