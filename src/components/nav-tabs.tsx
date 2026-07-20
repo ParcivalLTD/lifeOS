@@ -22,18 +22,18 @@ const SettingsIcon = () => (
 );
 
 const TABS = [
-  { key: "today", href: "/", label: "Today", icon: HomeIcon },
-  { key: "goals", href: "/goals", label: "GOALS" },
-  { key: "tasks", href: "/tasks", label: "TASKS" },
-  { key: "habits", href: "/habits", label: "HABITS" },
-  { key: "calendar", href: "/calendar", label: "CALENDAR" },
-  { key: "academic", href: "/academic", label: "ACADEMIC" },
-  { key: "work", href: "/work", label: "WORK" },
-  { key: "gym", href: "/gym", label: "GYM" },
-  { key: "finance", href: "/finance", label: "FINANCE" },
-  { key: "review", href: "/review", label: "REVIEW" },
-  { key: "assistant", href: "/assistant", label: "ASSISTANT" },
-  { key: "settings", href: "/settings", label: "Settings", icon: SettingsIcon },
+  { key: "today", href: "/", label: "Today", short: "Today", icon: HomeIcon },
+  { key: "goals", href: "/goals", label: "GOALS", short: "GOALS" },
+  { key: "tasks", href: "/tasks", label: "TASKS", short: "TASKS" },
+  { key: "habits", href: "/habits", label: "HABITS", short: "HABIT" },
+  { key: "calendar", href: "/calendar", label: "CALENDAR", short: "CAL" },
+  { key: "academic", href: "/academic", label: "ACADEMIC", short: "ACAD" },
+  { key: "work", href: "/work", label: "WORK", short: "WORK" },
+  { key: "gym", href: "/gym", label: "GYM", short: "GYM" },
+  { key: "finance", href: "/finance", label: "FINANCE", short: "FIN" },
+  { key: "review", href: "/review", label: "REVIEW", short: "REV" },
+  { key: "assistant", href: "/assistant", label: "HELM", short: "HELM" },
+  { key: "settings", href: "/settings", label: "Settings", short: "Settings", icon: SettingsIcon },
 ] as const;
 
 export type TabKey = (typeof TABS)[number]["key"];
@@ -81,7 +81,7 @@ export function NavTabs() {
   };
 
   return (
-    <nav className="mx-auto -mb-px flex max-w-[1280px] items-stretch overflow-x-auto px-1 sm:px-2">
+    <nav className="nav-scroll mx-auto -mb-px flex max-w-[1280px] items-stretch overflow-x-auto px-0.5 sm:px-2">
       {TABS.map((t) => {
         const activeCls =
           active === t.key ? "border-ink text-ink" : "border-transparent text-faint";
@@ -93,7 +93,7 @@ export function NavTabs() {
               href={t.href}
               aria-label={t.label}
               onClick={(e) => onClick(e, t.key)}
-              className={`flex items-center border-b-2 px-1.5 py-2 no-underline sm:px-3 ${activeCls}`}
+              className={`flex items-center border-b-2 px-1 py-2 no-underline sm:px-3 ${activeCls}`}
             >
               <Icon />
             </Link>
@@ -104,9 +104,10 @@ export function NavTabs() {
             key={t.key}
             href={t.href}
             onClick={(e) => onClick(e, t.key)}
-            className={`whitespace-nowrap border-b-2 px-1.5 py-2 font-mono text-[10px] font-semibold uppercase tracking-[.05em] no-underline sm:px-3 sm:text-[11px] sm:tracking-[.08em] ${activeCls}`}
+            className={`whitespace-nowrap border-b-2 px-1 py-2 font-mono text-[9px] font-semibold uppercase tracking-[.03em] no-underline sm:px-3 sm:text-[11px] sm:tracking-[.08em] ${activeCls}`}
           >
-            {t.label}
+            <span className="sm:hidden">{t.short}</span>
+            <span className="hidden sm:inline">{t.label}</span>
           </Link>
         );
       })}

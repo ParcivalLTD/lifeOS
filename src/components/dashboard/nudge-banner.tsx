@@ -64,7 +64,7 @@ export function NudgeBanner({
   const shell = (children: React.ReactNode) => (
     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 bg-ink px-3.5 py-2.5 text-inverse">
       <span className="flex-none font-mono text-[10px] font-semibold uppercase tracking-[.08em] text-faintest">
-        Assistant
+        Helm
       </span>
       {children}
     </div>

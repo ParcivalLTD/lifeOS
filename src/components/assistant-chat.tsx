@@ -225,7 +225,7 @@ export function AssistantChat({
         throw new Error(
           body.error === "not-configured"
             ? "ANTHROPIC_API_KEY is not configured on the server."
-            : "Assistant request failed.",
+            : "Helm request failed.",
         );
       }
 
@@ -281,7 +281,7 @@ export function AssistantChat({
       }
     } catch (e) {
       setStreaming(null);
-      setError(e instanceof Error ? e.message : "Assistant request failed.");
+      setError(e instanceof Error ? e.message : "Helm request failed.");
     } finally {
       setBusy(false);
     }
@@ -321,7 +321,7 @@ export function AssistantChat({
     <div className="flex flex-col gap-3">
       {/* history — collapsed by default so the chat owns the screen on mobile */}
       <Panel
-        label="Assistant"
+        label="Helm"
         value={`${conversations.length} chat${conversations.length === 1 ? "" : "s"}`}
         actions={
           <div className="flex items-center gap-2.5">
@@ -401,7 +401,7 @@ export function AssistantChat({
         <div className="flex flex-col gap-2.5 p-3.5">
           {turns.length === 0 && streaming == null && (
             <p className="font-mono text-[10px] uppercase tracking-[.04em] text-faint">
-              Ask about your data — answers cite your own numbers. Changes it
+              Ask about your data — answers cite your own numbers. Changes Helm
               suggests become review cards you approve or reject.
             </p>
           )}
@@ -476,8 +476,8 @@ export function AssistantChat({
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about your data…"
-            aria-label="Message the assistant"
+            placeholder="Ask Helm…"
+            aria-label="Message Helm"
             disabled={busy}
             className="min-w-0 flex-1 border border-border-input bg-subtle px-2.5 py-2 text-[12.5px] disabled:opacity-60"
           />

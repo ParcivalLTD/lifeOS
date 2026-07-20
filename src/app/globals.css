@@ -36,6 +36,11 @@
 }
 
 @layer base {
+  html {
+    overscroll-behavior-y: none;
+    background: var(--color-bg);
+  }
+
   body {
     margin: 0;
     background: var(--color-bg);
@@ -43,6 +48,7 @@
     font: 13px/1.45 var(--font-sans);
     font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
   }
 
   a {
@@ -78,5 +84,18 @@
     textarea {
       font-size: 16px !important;
     }
+  }
+
+  /* Hide scrollbar on nav but keep it scrollable */
+  .nav-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+  .nav-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .nav-scroll > * {
+    scroll-snap-align: start;
   }
 }

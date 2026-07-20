@@ -21,17 +21,17 @@ export function MonthGrid({
 }) {
   return (
     <div>
-      <div className="grid grid-cols-7 gap-1 pb-1">
+      <div className="grid grid-cols-7 gap-px sm:gap-1 pb-1">
         {dowLabels().map((d) => (
           <span
             key={d}
-            className="px-1 text-right font-mono text-[9px] font-semibold tracking-[.08em] text-faint"
+            className="px-0.5 sm:px-1 text-right font-mono text-[8px] sm:text-[9px] font-semibold tracking-[.08em] text-faint"
           >
             {d}
           </span>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-px sm:gap-1">
         {cells.map(({ dateISO, inMonth }) => {
           const isToday = dateISO === today;
           const dayEvents = eventsByDate.get(dateISO) ?? [];
@@ -40,14 +40,14 @@ export function MonthGrid({
           return (
             <div
               key={dateISO}
-              className={`min-h-[64px] border border-border-outer sm:min-h-[92px] ${
+              className={`min-h-[52px] overflow-hidden border border-border-outer sm:min-h-[92px] ${
                 inMonth ? "bg-surface" : "bg-subtle"
               }`}
             >
               <div className="flex justify-end px-1 pt-1">
                 <Link
                   href={`/calendar?view=day&date=${dateISO}`}
-                  className={`px-1 font-mono text-[11px] font-semibold no-underline ${
+                  className={`inline-flex min-h-[28px] min-w-[28px] items-center justify-center font-mono text-[10px] sm:text-[11px] font-semibold no-underline ${
                     isToday
                       ? "bg-ink text-[#ffffff]"
                       : inMonth
@@ -59,15 +59,19 @@ export function MonthGrid({
                 </Link>
               </div>
               <div className="flex flex-col gap-px px-1 pb-1">
-                {/* phones: dots only */}
-                <div className="flex flex-wrap gap-0.5 sm:hidden">
+                {/* phones: domain dot + truncated title, ≥44px tap target */}
+                <div className="flex flex-col gap-px sm:hidden">
                   {shown.map((e) => (
                     <Link
                       key={e.id}
                       href={`/events/${e.id}`}
-                      aria-label={e.title}
-                      className={`h-[6px] w-[6px] flex-none ${DOMAIN_DOT_CLASS[e.domain]}`}
-                    />
+                      className={`flex min-h-[22px] min-w-0 items-center gap-1 no-underline ${
+                        dateISO < today ? "opacity-45" : ""
+                      }`}
+                    >
+                      <span className={`h-[5px] w-[5px] flex-none ${DOMAIN_DOT_CLASS[e.domain]}`} />
+                      <span className="truncate text-[9px] leading-tight">{e.title}</span>
+                    </Link>
                   ))}
                 </div>
                 {/* ≥sm: dot + truncated title */}

@@ -14,7 +14,7 @@ export function AllDayChip({ event }: { event: EventItem }) {
   return (
     <Link
       href={`/events/${event.id}`}
-      className="flex min-w-0 items-center gap-1.5 border border-[#e2e2da] bg-subtle px-1.5 py-[3px] text-[11px] no-underline"
+      className="flex min-h-[44px] min-w-0 items-center gap-1.5 border border-[#e2e2da] bg-subtle px-1.5 py-1 text-[11px] no-underline sm:min-h-0 sm:py-[3px]"
     >
       <Dot domain={event.domain} />
       <span className="truncate">{event.title}</span>
@@ -27,7 +27,7 @@ export function TimedRow({ event, past }: { event: EventItem; past: boolean }) {
   return (
     <Link
       href={`/events/${event.id}`}
-      className={`flex min-w-0 items-baseline gap-1.5 no-underline ${past ? "opacity-45" : ""}`}
+      className={`flex min-h-[44px] min-w-0 items-center gap-1.5 no-underline sm:min-h-0 ${past ? "opacity-45" : ""}`}
     >
       <span className="w-[34px] flex-none font-mono text-[10px] text-faint">
         {event.timeHM}

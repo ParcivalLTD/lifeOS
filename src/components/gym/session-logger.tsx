@@ -85,8 +85,8 @@ export function SessionLogger({
       {exercises.map((ex, exIdx) => {
         const last = lastByExercise[ex.name];
         return (
-          <div key={`${ex.name}-${exIdx}`} className="border-b border-border-row pb-1.5">
-            <div className="flex items-baseline justify-between px-3 pt-2.5">
+          <div key={`${ex.name}-${exIdx}`} className="border-b border-border-row py-2">
+            <div className="flex items-baseline justify-between px-3">
               <span className="text-[12.5px] font-semibold">{ex.name}</span>
               <span className="font-mono text-[10px] text-muted">{targetLabel(ex)}</span>
             </div>
@@ -107,7 +107,7 @@ export function SessionLogger({
             <button
               type="button"
               onClick={() => addSet(exIdx)}
-              className="mt-0.5 ml-3 cursor-pointer border-0 bg-transparent p-0 font-mono text-[10px] uppercase tracking-[.06em] text-faint underline underline-offset-2"
+              className="mt-1 ml-3 cursor-pointer border-0 bg-transparent p-0 font-mono text-[10px] uppercase tracking-[.06em] text-faint underline underline-offset-2"
             >
               + set
             </button>
@@ -147,9 +147,9 @@ function SetRow({
 
   return (
     <div
-      className={`flex items-center gap-2.5 px-3 py-1 ${set.done ? "opacity-60" : ""}`}
+      className={`flex items-center gap-2 px-3 py-1.5 ${set.done ? "opacity-60" : ""}`}
     >
-      <span className="w-[42px] flex-none font-mono text-[10px] uppercase text-faint">
+      <span className="w-[36px] flex-none font-mono text-[10px] uppercase text-faint">
         Set {index}
       </span>
       <input
@@ -160,7 +160,7 @@ function SetRow({
         onBlur={commitKg}
         className={numCls}
       />
-      <span className="font-mono text-[11px] text-faint">kg ×</span>
+      <span className="w-[28px] flex-none text-center font-mono text-[11px] text-faint">kg ×</span>
       <input
         value={reps}
         inputMode="numeric"

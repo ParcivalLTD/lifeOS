@@ -14,12 +14,12 @@ export function WeekGrid({
   today: string;
 }) {
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] items-stretch gap-2">
+    <div className="grid grid-cols-1 items-stretch gap-2 sm:grid-cols-[repeat(auto-fit,minmax(160px,1fr))]">
       {days.map((dateISO) => {
         const isToday = dateISO === today;
         const { allDay, timed } = splitDay(eventsByDate.get(dateISO) ?? []);
         return (
-          <div key={dateISO} className="min-h-[190px] border border-border-outer bg-surface">
+          <div key={dateISO} className="min-h-[80px] border border-border-outer bg-surface sm:min-h-[190px]">
             <div
               className={`flex justify-between border-b px-2 py-1.5 ${
                 isToday

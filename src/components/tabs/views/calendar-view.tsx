@@ -18,7 +18,7 @@ import type { EventItem } from "@/lib/event-utils";
 import type { CalendarData } from "@/lib/tab-data";
 
 const btnBase =
-  "whitespace-nowrap px-2.5 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[.06em] cursor-pointer";
+  "whitespace-nowrap px-2 py-2 min-h-[44px] font-mono text-[10px] font-semibold uppercase tracking-[.06em] cursor-pointer sm:px-2.5 sm:py-1.5 sm:min-h-0";
 const btnIdle = `${btnBase} border border-border-input bg-subtle text-ink`;
 const btnActive = `${btnBase} border border-ink bg-ink text-[#ffffff]`;
 const VIEWS: View[] = ["month", "week", "day"];
@@ -89,7 +89,7 @@ export function CalendarViewTab({ data, active }: { data: CalendarData; active: 
             ))}
           </div>
         </div>
-        <div className="flex flex-wrap gap-x-3 gap-y-1">
+        <div className="hidden flex-wrap gap-x-3 gap-y-1 sm:flex">
           {DOMAINS.map((d) => (
             <span key={d} className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase text-muted">
               <span className={`h-[7px] w-[7px] ${DOMAIN_DOT_CLASS[d]}`} />

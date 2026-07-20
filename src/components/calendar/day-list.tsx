@@ -28,7 +28,7 @@ export function DayList({
         <Link
           key={e.id}
           href={`/events/${e.id}`}
-          className={`flex items-baseline gap-2.5 border-b border-border-row px-3 py-2 no-underline ${
+          className={`flex min-h-[44px] items-center gap-2.5 border-b border-border-row px-3 py-2 no-underline sm:min-h-0 sm:items-baseline ${
             dateISO < today ? "opacity-45" : ""
           }`}
         >
