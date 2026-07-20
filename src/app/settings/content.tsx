@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Panel } from "@/components/panel";
+import { AppleCalendarPanel } from "@/components/settings/apple-calendar";
 import { NudgeToggle } from "@/components/settings/nudge-toggle";
 import { listBackups, type BackupFileInfo } from "@/lib/backup";
+import type { CaldavConnection } from "@/lib/data/caldav";
 import { runBackupAction } from "./actions";
 
 const kb = (bytes: number) => `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -11,12 +13,16 @@ export async function SettingsContent({
   backup,
   path,
   nudgeEnabled,
+  appleCalendar,
+  caldavConfigured,
 }: {
   userId?: string;
   email: string;
   backup?: string;
   path?: string;
   nudgeEnabled: boolean;
+  appleCalendar: CaldavConnection | null;
+  caldavConfigured: boolean;
 }) {
 
   let backups: BackupFileInfo[] = [];
@@ -57,6 +63,22 @@ export async function SettingsContent({
               <NudgeToggle enabled={nudgeEnabled} />
             </div>
           </div>
+        </Panel>
+
+        <Panel
+          label="Apple Calendar"
+          value={
+            appleCalendar
+              ? appleCalendar.status === "broken"
+                ? "RECONNECT"
+                : "CONNECTED"
+              : "NOT CONNECTED"
+          }
+        >
+          <AppleCalendarPanel
+            connection={appleCalendar}
+            configured={caldavConfigured}
+          />
         </Panel>
 
         <Panel label="Data & backup" value="NFR-4">

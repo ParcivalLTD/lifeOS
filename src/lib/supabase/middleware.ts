@@ -3,10 +3,17 @@ import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Routes reachable without a session (everything else requires the owner).
- * /api/backup enforces its own auth (CRON_SECRET bearer or session) so the
- * scheduled-task caller (Coolify) isn't bounced to /login.
+ * /api/backup and /api/sync/apple-calendar enforce their own auth (a bearer
+ * secret or a session) so the scheduled-task callers (Coolify) aren't bounced
+ * to /login.
  */
-const PUBLIC_PATHS = ["/login", "/auth/login", "/auth/logout", "/api/backup"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/auth/login",
+  "/auth/logout",
+  "/api/backup",
+  "/api/sync/apple-calendar",
+];
 
 const isPublicPath = (pathname: string) =>
   PUBLIC_PATHS.some((p) => pathname === p);

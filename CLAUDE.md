@@ -31,7 +31,9 @@ and **Review system** (§8.10) are built. **Phase 4 steps 1–3 are built**
 (owner-directed): the **AI context assembler + privacy boundary** (step 1),
 the **chat assistant with the CONFIRMED-ACTION write model, now streaming
 and persisted** (step 2), and the **dashboard daily nudge** (step 3) — see
-the AI-layer section below. External integrations are not started. The
+the AI-layer section below. **Apple Calendar sync (iCloud → Helm, one way)
+is built** — the first external integration; other integrations (Google
+Calendar, bank feeds/Basiq, health import) are not started. The
 Phase-1 scope below stays as the baseline the app must keep satisfying.
 
 Phase 1 ("Spine"), all shipped (spec §11):
@@ -68,7 +70,8 @@ to-do + calendar apps.
 | ~~Work module (projects, achievements log, career goals, time tracking)~~ — **BUILT** (Phase 3) | 3 |
 | ~~Review system (weekly/monthly reviews, timeline)~~ — **BUILT** (Phase 3) | 3 |
 | AI assistant (chat, plans, daily nudge) — *steps 1–3 (assembler + boundary, chat w/ confirmed-action writes, dashboard daily nudge) BUILT* | 4 |
-| External integrations (Google Calendar, bank feeds/Basiq, health import) | 4 |
+| ~~Apple/iCloud Calendar sync (one-way, read-only)~~ — **BUILT** | 4 |
+| Other external integrations (Google Calendar, bank feeds/Basiq, health import) | 4 |
 
 If a task appears to require a still-deferred module, stop and flag it rather
 than building ahead. Schema-level support (e.g. `goal_id` FKs, the `goals`
@@ -217,6 +220,41 @@ table itself) is fine — user-facing features are not.
   boundary — `assembleContext` is still the only thing that decides what
   reaches the API. `npm run test:chat` asserts persistence/reload/resume,
   export inclusion, and that the boundary + journal exclusion are unchanged.
+
+### Apple Calendar sync → core mapping (one-way, read-only)
+
+- **Mirrored events are ordinary Events** carrying the migration-0004 sync
+  columns: `source='apple_calendar'`, `external_id` (iCalendar UID, plus
+  `::RECURRENCE-ID` for one occurrence of a series), `external_calendar_id`.
+  They are NOT hidden from the calendar — they are real schedule items.
+- **Upsert, never duplicate**: every occurrence writes through
+  `onConflict` on `(user_id, source, external_id)` with the partial index's
+  `targetWhere`. Re-syncing an unchanged calendar creates zero rows. The
+  upsert's `set` list is only the fields iCloud owns — `domain`, `kind` and
+  `goal_id` are NOT reset, so an owner who re-domains an imported event or
+  links it to a goal keeps that through every later sync.
+- **The connection record IS a config Event** (`payload.caldav`), same
+  pattern as the nudge preference; `calendarVisible` excludes the `caldav`
+  key. The app-specific password is stored **encrypted** (AES-256-GCM,
+  `src/lib/secrets.ts`) under `CALDAV_ENCRYPTION_KEY` — the key lives only in
+  the environment, and `lib/backup.ts` redacts the sealed value from the
+  NFR-4 export.
+- **⚠️ READ-ONLY IS ENFORCED, NOT ASSUMED.** Every request in
+  `lib/caldav/client.ts` goes through one `dav()` helper that accepts only
+  `PROPFIND`/`REPORT`/`GET` and throws otherwise; `npm run test:caldav`
+  asserts no write verb exists, that there is exactly one `fetch` call site,
+  and that a live sync makes the server observe only read methods. **Never
+  add a CalDAV write path** — Helm mirrors iCloud, it does not own it.
+- **Recurrence is the server's job**: the calendar-query REPORT asks iCloud
+  to `<expand>` series into concrete occurrences, so we never interpret
+  RRULE/EXDATE. `lib/caldav/ical.ts` is deliberately not recurrence-aware.
+- **A revoked password must surface, not retry silently**: on auth failure
+  the connection is marked `status='broken'` with a reason, the route returns
+  409, and Settings shows an explicit Reconnect state (FR: no assuming
+  re-auth works next poll).
+- Trigger is `GET /api/sync/apple-calendar`, bearer `CALDAV_SYNC_SECRET`,
+  called by a Coolify Scheduled Task every 15 minutes — same pattern as the
+  `CRON_SECRET` backup route. No repo-level cron config, ever.
 
 ### Review system → core mapping (§8.10, no private tables)
 

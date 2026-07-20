@@ -72,7 +72,13 @@ export class UserDb {
     table: T,
     values: NewRow<T> | NewRow<T>[],
     opts?: {
-      onConflict?: { target: PgColumn[]; set: Partial<NewRow<T>> };
+      onConflict?: {
+        target: PgColumn[];
+        /** Predicate of a PARTIAL unique index — Postgres needs it restated
+         * for the index to be chosen as the conflict arbiter. */
+        targetWhere?: SQL;
+        set: Partial<NewRow<T>>;
+      };
     },
   ): Promise<Row<T>[]> {
     const list = (Array.isArray(values) ? values : [values]).map((v) => ({
@@ -84,6 +90,7 @@ export class UserDb {
       return (await q
         .onConflictDoUpdate({
           target: opts.onConflict.target,
+          targetWhere: opts.onConflict.targetWhere,
           set: opts.onConflict.set as never,
         })
         .returning()) as Row<T>[];

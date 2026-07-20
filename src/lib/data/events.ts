@@ -30,9 +30,13 @@ const toItem = (row: typeof events.$inferSelect): EventItem => ({
  * `fin` key), academic course definitions (payload has an `acad` key), and
  * work achievements (payload.work="achievement" — log entries, not dates to
  * plan around), stored review snapshots (payload has a `rev` key), and the
- * AI daily-nudge cache + preference (payload has a `nudge` or `pref` key).
+ * AI daily-nudge cache + preference (payload has a `nudge` or `pref` key),
+ * and the Apple Calendar connection record (payload has a `caldav` key).
  * Generated bill occurrences, assessment deadlines, study sessions, and
  * project deadlines (payload.work="project") stay visible.
+ *
+ * NOTE: events MIRRORED from Apple Calendar are ordinary schedule items and
+ * DO stay visible — it is only the connection/credential record that hides.
  */
 export const calendarVisible = sql`
   (${events.payload} ->> 'isTemplate') is distinct from 'true'
@@ -43,6 +47,7 @@ export const calendarVisible = sql`
     or jsonb_exists(${events.payload}, 'rev')
     or jsonb_exists(${events.payload}, 'nudge')
     or jsonb_exists(${events.payload}, 'pref')
+    or jsonb_exists(${events.payload}, 'caldav')
   ))
 `;
 

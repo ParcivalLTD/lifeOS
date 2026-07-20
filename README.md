@@ -83,6 +83,62 @@ Every run dumps **all nine core tables into one JSON document**
   "Back up to storage now" writes the same dump to the bucket. Recent
   backups are listed on the settings page.
 
+## Apple Calendar sync (iCloud → Helm)
+
+One-way mirror of every calendar on an iCloud account. **Read-only: Helm never
+writes to iCloud.** That is enforced in code — every request goes through one
+helper that accepts only `PROPFIND`/`REPORT`/`GET` and throws on anything else,
+and `npm run test:caldav` asserts no write verb exists in the client.
+
+Mirrored events are ordinary Events (`source="apple_calendar"`), so they appear
+on the unified calendar and dashboard like anything else.
+
+**Connecting** (Settings → Apple Calendar). Apple does not allow a normal
+account password over CalDAV, so this step is manual and cannot be automated:
+
+1. Two-factor auth must already be enabled on the Apple ID.
+2. [appleid.apple.com](https://appleid.apple.com) → Sign-In and Security →
+   App-Specific Passwords → generate one.
+3. Paste it with the Apple ID in Settings.
+
+The credentials are verified against iCloud before being saved, then stored
+**encrypted at rest** (AES-256-GCM) under `CALDAV_ENCRYPTION_KEY`. That key
+lives only in the server environment, never in the database — so a database
+dump alone cannot recover the password, and the NFR-4 backup redacts the
+sealed value entirely.
+
+**When it breaks.** App-specific passwords can be revoked at any time. If
+iCloud rejects the stored credential, the connection is marked `broken` and
+Settings shows an explicit **Reconnect Apple Calendar** state with the reason.
+Sync does not silently retry forever pretending nothing is wrong.
+
+### Scheduled sync — Coolify Scheduled Task
+
+Syncing is triggered by an HTTP call, so it needs no external scheduler and no
+`vercel.json`; it runs on our own infrastructure. In Coolify, add a
+**Scheduled Task** to the Helm application:
+
+| Setting | Value |
+|---|---|
+| Frequency | `*/15 * * * *` (every 15 minutes) |
+| Command | `curl -fsS -H "Authorization: Bearer $CALDAV_SYNC_SECRET" https://YOUR-HOST/api/sync/apple-calendar` |
+
+The route is `GET /api/sync/apple-calendar` (POST works too) and authorises the
+`CALDAV_SYNC_SECRET` bearer — the same pattern as the nightly backup's
+`CRON_SECRET`. A signed-in owner can also hit it from Settings → "Sync now".
+
+It responds with a summary:
+
+```json
+{ "ok": true, "created": 3, "updated": 41, "errors": 0, "calendars": 2 }
+```
+
+Status codes: `200` synced · `401` bad/missing bearer · `404` not connected ·
+`409` iCloud rejected the credentials (reconnect needed) · `500` other failure.
+
+Re-syncing is safe at any cadence: every occurrence upserts on
+`(user_id, source, external_id)`, so an unchanged calendar creates nothing.
+
 ## Deploying (self-hosted on Coolify)
 
 Both the app and Supabase run on the owner's own server via Coolify. There is
@@ -108,6 +164,9 @@ CLAUDE.md § Infrastructure before designing around any such constraint.
    calls `GET /api/backup` with `Authorization: Bearer $CRON_SECRET`. This
    replaces the old `vercel.json` cron; scheduled jobs are never registered
    from repo config.
+5. **Apple Calendar sync**: add a second Coolify Scheduled Task
+   (`*/15 * * * *`) calling `GET /api/sync/apple-calendar` with
+   `Authorization: Bearer $CALDAV_SYNC_SECRET` — see the section above.
 
 | Env var | Where | Notes |
 |---|---|---|
@@ -116,6 +175,8 @@ CLAUDE.md § Infrastructure before designing around any such constraint.
 | `SUPABASE_SERVICE_ROLE_KEY` | Coolify + local | server-only: backups + owner script |
 | `DATABASE_URL` | Coolify + local | Postgres URI |
 | `CRON_SECRET` | Coolify + local | bearer for `/api/backup`; any long random string |
+| `CALDAV_ENCRYPTION_KEY` | Coolify + local | encrypts the stored Apple app-specific password; `openssl rand -base64 32` |
+| `CALDAV_SYNC_SECRET` | Coolify + local | bearer for `/api/sync/apple-calendar`; `openssl rand -hex 32` |
 | `ANTHROPIC_API_KEY` | Coolify | enables the assistant + daily nudge; absent = features gate off |
 | `OWNER_EMAIL` / `OWNER_PASSWORD` | local only | consumed by `auth:create-owner` |
 | `SEED_USER_ID` | local only | consumed by `db:seed` |
@@ -132,6 +193,7 @@ CLAUDE.md § Infrastructure before designing around any such constraint.
 | `npm run dev` / `build` / `start` | Next.js dev server / production build / serve |
 | `npm run auth:create-owner` | Create the single owner account (admin API) |
 | `npm run test:auth` | E2E auth + RLS test (needs stack + dev server running) |
+| `npm run test:caldav` | Apple Calendar sync against a local mock CalDAV server |
 | `npm run db:generate` | Generate SQL migrations from `src/db/schema.ts` |
 | `npm run db:migrate` | Apply migrations to `DATABASE_URL` |
 | `npm run db:seed` | Wipe + re-insert the seed user's data |

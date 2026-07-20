@@ -25,7 +25,8 @@
     "test:assistant": "tsx scripts/verify-assistant.ts",
     "test:nudge": "tsx scripts/verify-nudge.ts",
     "test:chat": "tsx scripts/verify-chat.ts",
-    "test:calendar": "tsx scripts/verify-calendar.ts"
+    "test:calendar": "tsx scripts/verify-calendar.ts",
+    "test:caldav": "tsx scripts/verify-caldav.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.3",

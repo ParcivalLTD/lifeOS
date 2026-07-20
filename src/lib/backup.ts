@@ -41,6 +41,24 @@ export type BackupDocument = {
   data: Record<keyof typeof TABLES, unknown[]>;
 };
 
+/**
+ * Strip stored credentials out of an exported row.
+ *
+ * The Apple Calendar connection lives in `events.payload.caldav` and holds the
+ * app-specific password, sealed with a key that exists only in the server
+ * environment. The ciphertext is useless without that key, but a backup is a
+ * file that gets copied around — so the secret does not travel in it at all.
+ * Everything else about the connection is kept, so a restore still shows that
+ * a connection existed and simply needs reconnecting.
+ */
+function redact(row: unknown): unknown {
+  const r = row as { payload?: { caldav?: Record<string, unknown> } };
+  if (!r?.payload?.caldav) return row;
+  const { secret, ...rest } = r.payload.caldav;
+  void secret;
+  return { ...r, payload: { ...r.payload, caldav: { ...rest, secretRedacted: true } } };
+}
+
 export async function buildExport(): Promise<BackupDocument> {
   // Deliberately unscoped: single-tenant whole-database dump (NFR-4).
   const db = fullExportDb("nfr4-full-export");
@@ -52,7 +70,7 @@ export async function buildExport(): Promise<BackupDocument> {
   const data = {} as BackupDocument["data"];
   const counts = {} as BackupDocument["counts"];
   names.forEach((name, i) => {
-    data[name] = results[i];
+    data[name] = name === "events" ? results[i].map(redact) : results[i];
     counts[name] = results[i].length;
   });
 
