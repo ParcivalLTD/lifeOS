@@ -431,13 +431,42 @@ export async function weeklyAdherence(userId: string, weeks = 8): Promise<Adhere
   return out;
 }
 
-/** This week's gym days for the adherence strip (planned vs done). */
+/**
+ * This week's gym days for the adherence strip (planned vs done) — ALWAYS
+ * exactly 7 unique consecutive dates (Mon–Sun), one entry per calendar day.
+ *
+ * Sessions are bucketed by dateISO rather than mapped 1:1, because a day can
+ * carry more than one session Event (an AM + PM split, or — as the seed data
+ * deliberately exercises for calendar-overlap testing — several concurrent
+ * sessions on one day). Mapping sessions directly, one row per row, used to
+ * emit duplicate dateISO entries whenever that happened, which the UI keys
+ * lists on (`key={d.dateISO}`) — a duplicate key is a React console error,
+ * not just a cosmetic wrinkle. `done` is true if ANY session that day was
+ * logged; `planned` is true if any session exists that day at all (kept for
+ * type compatibility — no current caller reads it, but a day with sessions
+ * should not read as unplanned).
+ */
 export async function thisWeekDays(userId: string): Promise<GymWeekDay[]> {
   const udb = forUser(userId);
   const start = weekStartISO(toISODate(new Date()));
   const sessions = await gymSessionsInRange(udb, start, addDaysISO(start, 7));
-  return sessions.map((s) => {
-    const d = parseISODate(s.dateISO);
-    return { dateISO: s.dateISO, label: DOW[d.getDay()], done: s.logged, planned: !s.logged };
+
+  const byDate = new Map<string, { done: boolean; planned: boolean }>();
+  for (const s of sessions) {
+    const bucket = byDate.get(s.dateISO) ?? { done: false, planned: false };
+    bucket.done ||= s.logged;
+    bucket.planned = true;
+    byDate.set(s.dateISO, bucket);
+  }
+
+  return Array.from({ length: 7 }, (_, i) => {
+    const dateISO = addDaysISO(start, i);
+    const bucket = byDate.get(dateISO);
+    return {
+      dateISO,
+      label: DOW[parseISODate(dateISO).getDay()],
+      done: bucket?.done ?? false,
+      planned: bucket?.planned ?? false,
+    };
   });
 }

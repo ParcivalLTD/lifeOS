@@ -77,8 +77,34 @@ async function main() {
   check("adherence: 8 weeks", weeks.length === 8);
   const prior = weeks.slice(0, 7);
   check("adherence: prior weeks 2 planned / 2 completed", prior.every((w) => w.planned === 2 && w.completed === 2), JSON.stringify(prior));
+  const { weekStartISO } = await import("@/lib/calendar");
+
+  /** Every place that renders this list keys it by dateISO
+   * (GymViewTab's adherence strip, and WorkoutCard via TodayData.gymWeek) —
+   * a repeated date is a React duplicate-key console error, not just a
+   * cosmetic wrinkle. Assert the real invariant, not just "non-empty". */
+  const assertSevenUniqueConsecutiveDays = (dows: { dateISO: string; label: string }[], label: string) => {
+    check(`${label}: exactly 7 entries`, dows.length === 7, `got ${dows.length}`);
+    check(`${label}: all 7 dates unique (no duplicate keys)`,
+      new Set(dows.map((d) => d.dateISO)).size === dows.length,
+      dows.map((d) => d.dateISO).join(","));
+    const start = weekStartISO(todayISO());
+    check(`${label}: starts Monday of this week`, dows[0]?.dateISO === start, `${dows[0]?.dateISO} vs ${start}`);
+    check(`${label}: consecutive calendar days`,
+      dows.every((d, i) => d.dateISO === addDaysISO(start, i)));
+  };
+
   const dows = await thisWeekDays(OWNER);
-  check("thisWeekDays: has gym days this week", dows.length >= 1, `got ${dows.length}`);
+  assertSevenUniqueConsecutiveDays(dows, "thisWeekDays");
+  // the seed data deliberately puts several gym sessions on today (used to
+  // exercise the calendar's overlapping-events layout) — exactly the shape
+  // that used to produce a duplicate dateISO row per session
+  const todaySessionsSeeded = sessions.filter((s) => s.dateISO === todayISO()).length;
+  check("thisWeekDays: today's seed data has multiple sessions on one day (the regression case)",
+    todaySessionsSeeded >= 2, `${todaySessionsSeeded}`);
+  const todayBucket = dows.find((d) => d.dateISO === todayISO());
+  check("thisWeekDays: today still one bucket despite multiple sessions",
+    Boolean(todayBucket) && todayBucket!.planned === true);
 
   // --- scoping ---------------------------------------------------------------
   check("scoping: foreign sees no templates/sessions/PRs",
@@ -89,6 +115,10 @@ async function main() {
   // --- start session (pre-fill FR-GYM.2) + log set (recompute FR-GYM.3) ------
   const started = await startSessionFromTemplate(OWNER, upper!.id, todayISO());
   check("start session: created from template", Boolean(started) && started!.exercises.length === upper!.exercises.length);
+  // this just added yet ANOTHER session on today's already-crowded date —
+  // the regression case, created live rather than only relying on seed data
+  assertSevenUniqueConsecutiveDays(await thisWeekDays(OWNER),
+    "thisWeekDays after adding one more same-day session");
   const benchEx = started!.exercises.findIndex((e) => e.name === "Bench Press");
   check("start session: pre-filled sets, none done", started!.exercises[benchEx].sets.length >= 1 && started!.total > 0 && started!.done === 0);
   check("start session: pre-fill weight from last logged (82.5)", started!.exercises[benchEx].sets[0].kg === 82.5, `${started!.exercises[benchEx].sets[0].kg}`);
@@ -106,6 +136,7 @@ async function main() {
 
   await archiveSession(OWNER, started!.id);
   check("cleanup: session archived, gone from list", !(await listSessions(OWNER, 200)).some((s) => s.id === started!.id));
+  assertSevenUniqueConsecutiveDays(await thisWeekDays(OWNER), "thisWeekDays after cleanup");
 
   await closeDb();
   console.log(`\n${pass} passed, ${fail} failed`);

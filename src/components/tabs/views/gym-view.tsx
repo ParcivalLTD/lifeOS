@@ -130,7 +130,7 @@ export function GymViewTab({ data }: { data: GymData }) {
       <Panel label="Adherence — this week">
         <div className="flex items-center gap-2 p-3">
           <div className="flex gap-2">
-            {data.weekDays.length === 0 && (
+            {data.weekDays.every((d) => !d.planned) && (
               <span className="font-mono text-[10px] uppercase text-faint">No sessions</span>
             )}
             {data.weekDays.map((d) => (
