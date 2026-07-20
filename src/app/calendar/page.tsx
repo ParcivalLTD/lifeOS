@@ -17,7 +17,7 @@ export default async function CalendarPage({
     <>
       <AppHeader />
       <TabsApp
-        initialTab="calendar"
+        initialView="calendar"
         initialData={await buildInitialTrio(user.id, "calendar", { view, date })}
       />
     </>

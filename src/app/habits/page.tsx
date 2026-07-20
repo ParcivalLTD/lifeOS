@@ -11,7 +11,7 @@ export default async function HabitsPage() {
   return (
     <>
       <AppHeader />
-      <TabsApp initialTab="habits" initialData={await buildInitialTrio(user.id, "habits")} />
+      <TabsApp initialView="habits" initialData={await buildInitialTrio(user.id, "habits")} />
     </>
   );
 }

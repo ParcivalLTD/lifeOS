@@ -11,7 +11,7 @@ export default async function FinancePage() {
   return (
     <>
       <AppHeader />
-      <TabsApp initialTab="finance" initialData={await buildInitialTrio(user.id, "finance")} />
+      <TabsApp initialView="finance" initialData={await buildInitialTrio(user.id, "finance")} />
     </>
   );
 }

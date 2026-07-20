@@ -17,7 +17,7 @@ export default async function GymPage({
     <>
       <AppHeader />
       <TabsApp
-        initialTab="gym"
+        initialView="gym"
         initialData={await buildInitialTrio(user.id, "gym", { session, lift })}
       />
     </>

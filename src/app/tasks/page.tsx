@@ -11,7 +11,7 @@ export default async function TasksPage() {
   return (
     <>
       <AppHeader />
-      <TabsApp initialTab="tasks" initialData={await buildInitialTrio(user.id, "tasks")} />
+      <TabsApp initialView="tasks" initialData={await buildInitialTrio(user.id, "tasks")} />
     </>
   );
 }

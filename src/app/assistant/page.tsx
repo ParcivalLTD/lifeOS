@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
 import { AssistantChat, type ChatMessageView } from "@/components/assistant-chat";
 import { Panel } from "@/components/panel";
+import { ASSISTANT_SEGMENTS, Segmented } from "@/components/segmented";
 import { aiConfigured } from "@/lib/ai/client";
 import { proposalsFromBlocks } from "@/lib/ai/replay";
 import { requireUser } from "@/lib/auth";
@@ -44,6 +45,7 @@ export default async function AssistantPage({
   return (
     <>
       <AppHeader />
+      <Segmented segments={ASSISTANT_SEGMENTS} active="chat" width={840} />
       <main className="mx-auto w-full max-w-[840px] p-4">
         {aiConfigured() ? (
           <AssistantChat

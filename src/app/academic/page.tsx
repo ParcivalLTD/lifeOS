@@ -11,7 +11,7 @@ export default async function AcademicPage() {
   return (
     <>
       <AppHeader />
-      <TabsApp initialTab="academic" initialData={await buildInitialTrio(user.id, "academic")} />
+      <TabsApp initialView="academic" initialData={await buildInitialTrio(user.id, "academic")} />
     </>
   );
 }

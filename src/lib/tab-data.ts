@@ -29,7 +29,10 @@ import type {
 } from "./data/finance";
 import type { Horizon } from "./goals";
 
-export type TrackTabKey =
+/** Every DTO the tab layer can build. Two of them — goals and review — are
+ * NOT on the swipe track: goals is reachable from the dashboard card and its
+ * own route, review lives under the Assistant tab's Reviews segment. */
+export type TabDataKey =
   | "today"
   | "goals"
   | "tasks"
@@ -41,21 +44,104 @@ export type TrackTabKey =
   | "finance"
   | "review";
 
-export const TRACK_TABS: { key: TrackTabKey; href: string; title: string }[] = [
-  { key: "today", href: "/", title: "HELM — TODAY" },
-  { key: "goals", href: "/goals", title: "HELM — GOALS" },
-  { key: "tasks", href: "/tasks", title: "HELM — TASKS" },
-  { key: "habits", href: "/habits", title: "HELM — HABITS" },
-  { key: "calendar", href: "/calendar", title: "HELM — CALENDAR" },
-  { key: "academic", href: "/academic", title: "HELM — ACADEMIC" },
-  { key: "work", href: "/work", title: "HELM — WORK" },
-  { key: "gym", href: "/gym", title: "HELM — GYM" },
-  { key: "finance", href: "/finance", title: "HELM — FINANCE" },
-  { key: "review", href: "/review", title: "HELM — REVIEW" },
+/** The six co-mounted, swipeable tabs of the primary nav. */
+export type TrackTabKey =
+  | "today"
+  | "daily"
+  | "calendar"
+  | "acadwork"
+  | "gym"
+  | "finance";
+
+/** A DTO reachable inside the track — i.e. a segment of some track tab. */
+export type TrackViewKey = Exclude<TabDataKey, "goals" | "review">;
+
+/** One segment of a track tab: its own route, title and DTO. Tabs with a
+ * single view have no segmented control; tabs with two render one at the top
+ * of the page and keep the two views' filters and forms entirely separate. */
+export type TrackView = {
+  key: TrackViewKey;
+  href: string;
+  label: string;
+  title: string;
+};
+
+export type TrackTab = {
+  key: TrackTabKey;
+  /** container width the views use, so the segmented bar lines up with them */
+  width: 720 | 1280;
+  views: TrackView[];
+};
+
+export const TRACK_TABS: TrackTab[] = [
+  {
+    key: "today",
+    width: 1280,
+    views: [{ key: "today", href: "/", label: "Today", title: "HELM — TODAY" }],
+  },
+  {
+    key: "daily",
+    width: 720,
+    views: [
+      { key: "tasks", href: "/tasks", label: "Tasks", title: "HELM — TASKS" },
+      { key: "habits", href: "/habits", label: "Habits", title: "HELM — HABITS" },
+    ],
+  },
+  {
+    key: "calendar",
+    width: 1280,
+    views: [
+      { key: "calendar", href: "/calendar", label: "Calendar", title: "HELM — CALENDAR" },
+    ],
+  },
+  {
+    key: "acadwork",
+    width: 1280,
+    views: [
+      { key: "academic", href: "/academic", label: "Academic", title: "HELM — ACADEMIC" },
+      { key: "work", href: "/work", label: "Work", title: "HELM — WORK" },
+    ],
+  },
+  {
+    key: "gym",
+    width: 1280,
+    views: [{ key: "gym", href: "/gym", label: "Gym", title: "HELM — GYM" }],
+  },
+  {
+    key: "finance",
+    width: 1280,
+    views: [{ key: "finance", href: "/finance", label: "Finance", title: "HELM — FINANCE" }],
+  },
 ];
 
 export const trackIndex = (key: TrackTabKey): number =>
   TRACK_TABS.findIndex((t) => t.key === key);
+
+/** Every DTO the co-mounted track can show — what the shell pre-fills. */
+export const TRACK_VIEW_KEYS: TrackViewKey[] = TRACK_TABS.flatMap((t) =>
+  t.views.map((v) => v.key),
+);
+
+export const isTrackView = (v: string): v is TrackViewKey =>
+  (TRACK_VIEW_KEYS as string[]).includes(v);
+
+/** The tab that owns a view (every view belongs to exactly one). */
+export const tabForView = (view: TrackViewKey): TrackTab =>
+  TRACK_TABS.find((t) => t.views.some((v) => v.key === view)) as TrackTab;
+
+export const trackTab = (key: TrackTabKey): TrackTab =>
+  TRACK_TABS[trackIndex(key)];
+
+export const trackView = (view: TrackViewKey): TrackView =>
+  tabForView(view).views.find((v) => v.key === view) as TrackView;
+
+/** Resolve a pathname back onto the track (used by popstate). */
+export const viewForPath = (path: string): TrackViewKey | null => {
+  for (const t of TRACK_TABS) {
+    for (const v of t.views) if (v.href === path) return v.key;
+  }
+  return null;
+};
 
 // --- per-tab DTOs --------------------------------------------------------------
 
@@ -165,7 +251,7 @@ export type TabDataMap = {
   review: ReviewData;
 };
 
-export type AnyTabData = TabDataMap[TrackTabKey];
+export type AnyTabData = TabDataMap[TabDataKey];
 
 /** Params a deep link can contribute to its tab's initial data. */
 export type TabParams = {

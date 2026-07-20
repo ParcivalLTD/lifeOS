@@ -11,46 +11,49 @@ const HomeIcon = () => (
   </svg>
 );
 
-/** Flat sliders glyph (rectangular knobs — squares, never circles). */
-const SettingsIcon = () => (
+/** Flat gear glyph — square teeth, square hub (never circles). */
+const GearIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="miter" aria-hidden="true">
-    <path d="M1.5 4.5 H14.5" />
-    <rect x="9.5" y="2.75" width="3.5" height="3.5" fill="var(--color-surface)" />
-    <path d="M1.5 11.5 H14.5" />
-    <rect x="3" y="9.75" width="3.5" height="3.5" fill="var(--color-surface)" />
+    <path d="M6.4 1.8 H9.6 L10 3.6 L11.6 4.3 L13.2 3.4 L14.8 6.2 L13.4 7.3 V8.7 L14.8 9.8 L13.2 12.6 L11.6 11.7 L10 12.4 L9.6 14.2 H6.4 L6 12.4 L4.4 11.7 L2.8 12.6 L1.2 9.8 L2.6 8.7 V7.3 L1.2 6.2 L2.8 3.4 L4.4 4.3 L6 3.6 Z" />
+    <rect x="6.2" y="6.2" width="3.6" height="3.6" />
   </svg>
 );
 
+/**
+ * The primary nav: Home icon + six tabs. Two of them merge a pair of views
+ * behind a segmented control on the page itself (Daily = Tasks|Habits,
+ * Acad & Work = Academic|Work; Assistant = Chat|Reviews), so the row stays
+ * short enough to read on a 360px phone without scrolling.
+ *
+ * Goals is deliberately NOT here — it stays a real route reached from the
+ * dashboard's Goals card ("All goals →"). Settings moved to the header's
+ * gear icon.
+ */
 const TABS = [
   { key: "today", href: "/", label: "Today", short: "Today", icon: HomeIcon },
-  { key: "goals", href: "/goals", label: "GOALS", short: "GOALS" },
-  { key: "tasks", href: "/tasks", label: "TASKS", short: "TASKS" },
-  { key: "habits", href: "/habits", label: "HABITS", short: "HABIT" },
+  { key: "daily", href: "/tasks", label: "DAILY", short: "DAILY" },
   { key: "calendar", href: "/calendar", label: "CALENDAR", short: "CAL" },
-  { key: "academic", href: "/academic", label: "ACADEMIC", short: "ACAD" },
-  { key: "work", href: "/work", label: "WORK", short: "WORK" },
+  { key: "acadwork", href: "/academic", label: "ACADEMIC & WORK", short: "ACAD·WORK" },
   { key: "gym", href: "/gym", label: "GYM", short: "GYM" },
   { key: "finance", href: "/finance", label: "FINANCE", short: "FIN" },
-  { key: "review", href: "/review", label: "REVIEW", short: "REV" },
-  { key: "assistant", href: "/assistant", label: "ASSISTANT", short: "ASSISTANT" },
-  { key: "settings", href: "/settings", label: "Settings", short: "Settings", icon: SettingsIcon },
+  { key: "assistant", href: "/assistant", label: "ASSISTANT", short: "ASSIST" },
 ] as const;
 
-export type TabKey = (typeof TABS)[number]["key"];
+export type TabKey = (typeof TABS)[number]["key"] | "settings";
 
-// detail routes light up their owning tab (events live on the calendar)
+// detail routes light up their owning tab (events live on the calendar; a
+// merged tab lights up from either of its segments' routes)
 const PREFIXES: [string, TabKey][] = [
-  ["/goals", "goals"],
-  ["/tasks", "tasks"],
-  ["/habits", "habits"],
+  ["/tasks", "daily"],
+  ["/habits", "daily"],
   ["/calendar", "calendar"],
   ["/events", "calendar"],
-  ["/academic", "academic"],
-  ["/work", "work"],
+  ["/academic", "acadwork"],
+  ["/work", "acadwork"],
   ["/gym", "gym"],
   ["/finance", "finance"],
-  ["/review", "review"],
   ["/assistant", "assistant"],
+  ["/review", "assistant"],
   ["/settings", "settings"],
 ];
 
@@ -59,14 +62,28 @@ const activeFor = (path: string): TabKey | null => {
   for (const [prefix, key] of PREFIXES) {
     if (path === prefix || path.startsWith(`${prefix}/`)) return key;
   }
-  return null;
+  return null; // e.g. /goals — reachable, just not a top-level tab
 };
+
+/** The gear that replaced the Settings tab; lives in the header's top row. */
+export function SettingsLink() {
+  const active = activeFor(usePathname()) === "settings";
+  return (
+    <Link
+      href="/settings"
+      aria-label="Settings"
+      className={`flex -my-1 items-center self-center p-1 no-underline ${active ? "text-ink" : "text-faint"}`}
+    >
+      <GearIcon />
+    </Link>
+  );
+}
 
 /**
  * Pathname-driven nav: history.pushState from the tab shell updates
  * usePathname without a route render, so the underline follows swipes for
  * free. Tapping a track tab is offered to the shell first (custom event);
- * only when nothing claims it (settings, or a page without the shell) does
+ * only when nothing claims it (assistant, or a page without the shell) does
  * the Link navigate for real.
  */
 export function NavTabs() {
@@ -93,7 +110,7 @@ export function NavTabs() {
               href={t.href}
               aria-label={t.label}
               onClick={(e) => onClick(e, t.key)}
-              className={`flex items-center border-b-2 px-1 py-2 no-underline sm:px-3 ${activeCls}`}
+              className={`flex items-center border-b-2 px-1.5 py-2 no-underline sm:px-3 ${activeCls}`}
             >
               <Icon />
             </Link>
@@ -104,7 +121,7 @@ export function NavTabs() {
             key={t.key}
             href={t.href}
             onClick={(e) => onClick(e, t.key)}
-            className={`whitespace-nowrap border-b-2 px-1 py-2 font-mono text-[9px] font-semibold uppercase tracking-[.03em] no-underline sm:px-3 sm:text-[11px] sm:tracking-[.08em] ${activeCls}`}
+            className={`whitespace-nowrap border-b-2 px-1.5 py-2 font-mono text-[9px] font-semibold uppercase tracking-[.03em] no-underline sm:px-3 sm:text-[11px] sm:tracking-[.08em] ${activeCls}`}
           >
             <span className="sm:hidden">{t.short}</span>
             <span className="hidden sm:inline">{t.label}</span>

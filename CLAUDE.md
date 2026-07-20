@@ -403,6 +403,41 @@ gym:      oklch(0.62 0.13 55)    health:   oklch(0.55 0.13 20)
 - **Assistant nudge banner** (Phase 4): inverted — `#1a1a18` bg, `#f2f2ee`
   text (do not build now).
 - Priority badges: bordered mono chips like `P1`; streaks shown as `×23`.
+- **Segmented control** (sub-view switch): a row of mono UPPERCASE buttons at
+  the top of a merged tab, active = ink fill + white text, inactive =
+  `#fafaf6` bg + `#c9c9c0` border. Same rectangles-only rules as everything
+  else. Carries `data-segmented` + `data-no-swipe`.
+
+### Primary navigation — 6 tabs (restructured 2026-07-20)
+
+Home icon · **DAILY · CALENDAR · ACADEMIC & WORK · GYM · FINANCE ·
+ASSISTANT** · Settings gear. The gear sits in the header's top row next to
+Sign out, not in the tab row. **Goals is deliberately NOT a tab** — it stays
+a real route (`/goals`) reached from the dashboard's Goals card
+("All goals →") and every module's goal rows.
+
+Three tabs merge two views behind a segmented control. The merge is
+**presentational only** — each sub-view keeps its own filters, forms and
+empty states; never blend them into one unified list:
+
+| Tab | Segments | Routes |
+|---|---|---|
+| Daily | Tasks · Habits | `/tasks` · `/habits` |
+| Academic & Work | Academic · Work | `/academic` · `/work` |
+| Assistant | Chat · Reviews | `/assistant` · `/review` |
+
+**Every pre-existing route still resolves** — the restructure only changed
+what nav links to, so deep links, detail pages and bookmarks are unaffected.
+
+`lib/tab-data.ts` is the single source of truth for the track: `TRACK_TABS`
+lists the six tabs, each with its `views[]`. **The swipe track's unit is the
+TAB, not the view** — a swipe moves tab-to-tab and lands on whichever segment
+that tab was last left on; the segmented control switches within a tab
+without moving the track. `buildInitialTrio` fetches every segment of the
+landing tab and both neighbours, so neither a swipe nor a segment flip can
+land on a skeleton. Assistant's two segments are separate ROUTES (not track
+members) because the chat owns resumable `?c=…` URLs that a pushState shell
+would fight.
 
 ## Working agreements
 

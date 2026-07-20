@@ -45,15 +45,16 @@ import type {
   GoalsData,
   GymData,
   HabitsData,
+  TabDataKey,
   TabDataMap,
   TabParams,
   ReviewData,
   TasksData,
   TodayData,
-  TrackTabKey,
+  TrackViewKey,
   WorkData,
 } from "@/lib/tab-data";
-import { trackIndex, TRACK_TABS as ORDER } from "@/lib/tab-data";
+import { tabForView, trackIndex, TRACK_TABS as ORDER } from "@/lib/tab-data";
 
 export async function buildTodayData(userId: string): Promise<TodayData> {
   const today = todayISO();
@@ -250,7 +251,7 @@ export async function buildFinanceData(userId: string): Promise<FinanceData> {
 }
 
 const BUILDERS: {
-  [K in TrackTabKey]: (userId: string, params?: TabParams) => Promise<TabDataMap[K]>;
+  [K in TabDataKey]: (userId: string, params?: TabParams) => Promise<TabDataMap[K]>;
 } = {
   today: buildTodayData,
   goals: buildGoalsData,
@@ -266,24 +267,29 @@ const BUILDERS: {
 
 export function buildTabData(
   userId: string,
-  tab: TrackTabKey,
+  tab: TabDataKey,
   params?: TabParams,
 ): Promise<AnyTabData> {
   return BUILDERS[tab](userId, params);
 }
 
-/** Active tab + both neighbors, fetched in parallel (the initial trio). */
+/**
+ * The landing view's tab plus both neighbouring tabs, every segment of each,
+ * fetched in parallel (the initial trio). A tab with a segmented control
+ * brings BOTH its views so flipping the segment — like swiping — never lands
+ * on a skeleton.
+ */
 export async function buildInitialTrio(
   userId: string,
-  tab: TrackTabKey,
+  view: TrackViewKey,
   params?: TabParams,
 ): Promise<Partial<TabDataMap>> {
-  const idx = trackIndex(tab);
-  const keys = [ORDER[idx - 1]?.key, tab, ORDER[idx + 1]?.key].filter(
-    (k): k is TrackTabKey => Boolean(k),
-  );
+  const idx = trackIndex(tabForView(view).key);
+  const keys = [ORDER[idx - 1], ORDER[idx], ORDER[idx + 1]]
+    .filter(Boolean)
+    .flatMap((t) => t.views.map((v) => v.key));
   const results = await Promise.all(
-    keys.map((k) => buildTabData(userId, k, k === tab ? params : undefined)),
+    keys.map((k) => buildTabData(userId, k, k === view ? params : undefined)),
   );
   const out: Record<string, AnyTabData> = {};
   keys.forEach((k, i) => (out[k] = results[i]));

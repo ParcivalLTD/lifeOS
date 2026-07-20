@@ -11,7 +11,7 @@ export default async function TodayPage() {
   return (
     <>
       <AppHeader />
-      <TabsApp initialTab="today" initialData={await buildInitialTrio(user.id, "today")} />
+      <TabsApp initialView="today" initialData={await buildInitialTrio(user.id, "today")} />
     </>
   );
 }
