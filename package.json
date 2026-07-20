@@ -23,7 +23,8 @@
     "test:review": "tsx scripts/verify-review.ts",
     "test:ai": "tsx scripts/verify-ai.ts",
     "test:assistant": "tsx scripts/verify-assistant.ts",
-    "test:nudge": "tsx scripts/verify-nudge.ts"
+    "test:nudge": "tsx scripts/verify-nudge.ts",
+    "test:chat": "tsx scripts/verify-chat.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.3",

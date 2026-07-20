@@ -62,8 +62,9 @@ export async function SettingsContent({
         <Panel label="Data & backup" value="NFR-4">
           <div className="flex flex-col gap-3 p-4">
             <p className="text-[12.5px]">
-              Everything you log is exportable as one JSON document — all nine
-              core tables, no lock-in. A nightly cron writes the same dump to
+              Everything you log is exportable as one JSON document — every
+              core table plus your assistant history, no lock-in. A nightly
+              cron writes the same dump to
               the private <span className="font-mono text-[11px]">backups</span>{" "}
               bucket at 02:00 UTC.
             </p>

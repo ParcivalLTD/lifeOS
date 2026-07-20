@@ -23,6 +23,48 @@ export function aiConfigured(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY);
 }
 
+export type StreamChunk =
+  | { type: "text"; text: string }
+  | { type: "done"; blocks: unknown[]; stopReason: string | null };
+
+/**
+ * Streaming counterpart to sendToClaude. Yields plain text deltas as they
+ * arrive, then one final chunk with the complete content blocks (which carry
+ * any propose_changes tool calls). SDK types stay sealed inside this module —
+ * callers only see the plain protocol above, so the boundary holds.
+ */
+export async function* streamFromClaude(body: AiRequestBody): AsyncGenerator<StreamChunk> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "ANTHROPIC_API_KEY is not set — the AI layer is disabled until the server-side key is configured",
+    );
+  }
+  const client = new Anthropic({ apiKey });
+  const stream = client.messages.stream({
+    model: body.model,
+    max_tokens: body.max_tokens,
+    system: body.system,
+    ...(body.thinking ? { thinking: body.thinking } : {}),
+    ...(body.tools ? { tools: body.tools as Anthropic.ToolUnion[] } : {}),
+    messages: body.messages as Anthropic.MessageParam[],
+  });
+
+  for await (const event of stream) {
+    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+      yield { type: "text", text: event.delta.text };
+    }
+  }
+
+  const final = await stream.finalMessage();
+  yield {
+    type: "done",
+    // strip SDK prototypes — these blocks are persisted and replayed verbatim
+    blocks: JSON.parse(JSON.stringify(final.content)) as unknown[],
+    stopReason: final.stop_reason ?? null,
+  };
+}
+
 export async function sendToClaude(body: AiRequestBody): Promise<Anthropic.Message> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {

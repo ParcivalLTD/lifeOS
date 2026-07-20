@@ -369,3 +369,58 @@ export const links = pgTable(
     ownerPolicy("links", t.userId),
   ],
 ).enableRLS();
+
+// ---------------------------------------------------------------------------
+// Assistant conversations (Phase 4) — app infrastructure, NOT a §7 entity
+// ---------------------------------------------------------------------------
+//
+// Deliberate, owner-directed exception to the "modules own no private tables"
+// rule (§5.1): a chat transcript is not a life-domain object. It has no
+// domain semantics, never belongs on the unified calendar, and never rolls up
+// to a goal — modelling it as Events would abuse the core. It sits alongside
+// the core like the backup files do. Owner-only RLS + forUser like everything
+// else, and it IS included in the NFR-4 export.
+
+export const conversationRoleEnum = pgEnum("conversation_role", [
+  "user",
+  "assistant",
+]);
+
+export const conversations = pgTable(
+  "conversations",
+  {
+    ...coreEntityColumns(),
+    /** Auto-titled from the first user message; editable later. */
+    title: text("title").notNull().default("New chat"),
+  },
+  (t) => [
+    index("conversations_user_idx").on(t.userId),
+    index("conversations_updated_idx").on(t.updatedAt),
+    ownerPolicy("conversations", t.userId),
+  ],
+).enableRLS();
+
+export const conversationMessages = pgTable(
+  "conversation_messages",
+  {
+    ...logRowColumns(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    role: conversationRoleEnum("role").notNull(),
+    /** Plain text, for display and auto-titling. */
+    text: text("text").notNull().default(""),
+    /** Verbatim API content blocks (incl. tool_use proposals), replayed to
+     * the model on later turns. Null for plain user turns. */
+    blocks: jsonb("blocks").$type<unknown[]>(),
+    /** Owner decisions on this turn's proposals, keyed by proposal:
+     * {"<toolUseId>:<index>": "approved" | "rejected"}. Confirmed-action
+     * state survives a reload — nothing is ever re-applied on resume. */
+    decisions: jsonb("decisions").$type<Record<string, string>>(),
+  },
+  (t) => [
+    index("conversation_messages_conversation_idx").on(t.conversationId),
+    index("conversation_messages_user_idx").on(t.userId),
+    ownerPolicy("conversation_messages", t.userId),
+  ],
+).enableRLS();

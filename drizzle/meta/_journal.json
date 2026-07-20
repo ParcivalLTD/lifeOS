@@ -15,6 +15,13 @@
       "when": 1784036356631,
       "tag": "0001_api_role_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784519343792,
+      "tag": "0002_mean_sabretooth",
+      "breakpoints": true
     }
   ]
 }

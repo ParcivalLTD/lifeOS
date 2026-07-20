@@ -5,6 +5,8 @@
  */
 import { fullExportDb } from "@/db";
 import {
+  conversationMessages,
+  conversations,
   events,
   goals,
   habitCompletions,
@@ -27,6 +29,9 @@ const TABLES = {
   metric_datapoints: metricDatapoints,
   journal_entries: journalEntries,
   links,
+  // assistant history — the owner's own transcripts leave with their data too
+  conversations,
+  conversation_messages: conversationMessages,
 } as const;
 
 export type BackupDocument = {

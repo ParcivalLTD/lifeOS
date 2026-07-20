@@ -34,7 +34,7 @@ const db = drizzle(pgClient, { schema });
 
 export type Db = typeof db;
 
-/** Any table carrying a user_id column (all nine core tables). */
+/** Any table carrying a user_id column (every core + conversation table). */
 export type UserScopedTable = PgTable & { userId: PgColumn };
 
 type Row<T extends UserScopedTable> = T["$inferSelect"];

@@ -1,23 +1,57 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
-import { AssistantChat } from "@/components/assistant-chat";
+import { AssistantChat, type ChatMessageView } from "@/components/assistant-chat";
 import { Panel } from "@/components/panel";
 import { aiConfigured } from "@/lib/ai/client";
+import { proposalsFromBlocks } from "@/lib/ai/replay";
 import { requireUser } from "@/lib/auth";
+import { getConversation, listConversations } from "@/lib/data/conversations";
+import { todayISO } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "LIFEOS — ASSISTANT" };
 
-export default async function AssistantPage() {
-  await requireUser();
-  const configured = aiConfigured();
+export default async function AssistantPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ c?: string }>;
+}) {
+  const user = await requireUser();
+  const { c } = await searchParams;
+
+  const [conversations, active] = await Promise.all([
+    listConversations(user.id),
+    c ? getConversation(user.id, c) : Promise.resolve(null),
+  ]);
+
+  // parse each stored assistant turn's proposals server-side so a resumed
+  // chat renders its review cards (and their decisions) without a round-trip
+  const messages: ChatMessageView[] = (active?.messages ?? []).map((m) => ({
+    id: m.id,
+    role: m.role,
+    text: m.text,
+    decisions: m.decisions,
+    proposals:
+      m.role === "assistant"
+        ? proposalsFromBlocks(m.blocks).proposals.map((p) => ({
+            key: p.key,
+            description: p.description,
+            proposal: p.proposal,
+          }))
+        : [],
+  }));
 
   return (
     <>
       <AppHeader />
       <main className="mx-auto w-full max-w-[840px] p-4">
-        {configured ? (
-          <AssistantChat />
+        {aiConfigured() ? (
+          <AssistantChat
+            conversations={conversations}
+            conversationId={active?.id ?? null}
+            messages={messages}
+            todayISO={todayISO()}
+          />
         ) : (
           <Panel label="Assistant" value="NOT CONFIGURED">
             <div className="flex flex-col gap-2 p-4">

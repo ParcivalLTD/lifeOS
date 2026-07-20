@@ -29,10 +29,10 @@ life-goal Links that Finance had stubbed. **Phase 3 is complete**
 (owner-directed): the **Academic module** (§8.5), **Work module** (§8.6),
 and **Review system** (§8.10) are built. **Phase 4 steps 1–3 are built**
 (owner-directed): the **AI context assembler + privacy boundary** (step 1),
-the **chat assistant with the CONFIRMED-ACTION write model** (step 2), and
-the **dashboard daily nudge** (step 3) — see the AI-layer section below.
-External integrations are not started. The Phase-1 scope below stays as the
-baseline the app must keep satisfying.
+the **chat assistant with the CONFIRMED-ACTION write model, now streaming
+and persisted** (step 2), and the **dashboard daily nudge** (step 3) — see
+the AI-layer section below. External integrations are not started. The
+Phase-1 scope below stays as the baseline the app must keep satisfying.
 
 Phase 1 ("Spine"), all shipped (spec §11):
 
@@ -194,6 +194,28 @@ table itself) is fine — user-facing features are not.
   `buildAiRequest` path as any real send. `/assistant` and the nudge gate on
   the key being configured (`aiConfigured()` — the sole reader stays
   client.ts; callers ask that helper, never `process.env` directly).
+- **Chat is streamed and persisted.** `streamFromClaude` (still inside
+  `client.ts`, the sole SDK importer) yields plain text deltas over
+  `POST /api/assistant/chat` (SSE); the route owns persistence — it stores
+  the user turn before calling the model and the assistant turn (verbatim
+  content blocks, including any `propose_changes` tool call) when the stream
+  ends, so a completed reply is never lost. **`conversations` /
+  `conversation_messages` are a deliberate, owner-directed EXCEPTION to
+  "modules own no private tables"** (§5.1) — a chat transcript has no domain
+  semantics, never belongs on the calendar, and isn't a life-domain object,
+  so modelling it as Events would abuse the core; it sits beside the core
+  like backup files do. Owner-only RLS + `forUser` like every other table,
+  and included in the NFR-4 export (`lib/backup.ts`). Resuming a
+  conversation replays it through `buildReplayTurns` (`lib/ai/replay.ts`),
+  which feeds the model a `tool_result` per past proposal stating exactly
+  what the owner decided — a resumed chat can never believe an unapplied or
+  rejected proposal went through, and nothing is ever re-applied on
+  reload. Delete is archive-then-purge, same soft-delete convention as
+  tasks/habits (`purgeConversation` refuses a non-archived row). Storing
+  history in the owner's own database does **not** widen the outbound
+  boundary — `assembleContext` is still the only thing that decides what
+  reaches the API. `npm run test:chat` asserts persistence/reload/resume,
+  export inclusion, and that the boundary + journal exclusion are unchanged.
 
 ### Review system → core mapping (§8.10, no private tables)
 

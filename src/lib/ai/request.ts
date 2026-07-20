@@ -56,7 +56,10 @@ export const CHAT_SYSTEM_PROMPT = [
   "tool_result will tell you which proposals the owner approved or rejected.",
   "Use the tool when a plan or suggestion should become concrete items (e.g.",
   "a study plan as calendar events); keep answering in text otherwise.",
-  "Keep answers concise and grounded in the context figures.",
+  "Keep answers concise and grounded in the context figures. The chat UI",
+  "renders your text as plain text, not markdown — never use **bold**,",
+  "headings, or markdown tables; use plain sentences and simple dashed lists",
+  "instead.",
 ].join(" ");
 
 /**
