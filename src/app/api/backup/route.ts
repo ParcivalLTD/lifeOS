@@ -4,12 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 
 /**
  * Nightly backup endpoint (NFR-4). Two callers:
- * - Vercel Cron (vercel.json, 02:00 UTC) with `Authorization: Bearer CRON_SECRET`
+ * - a Coolify Scheduled Task with `Authorization: Bearer CRON_SECRET`
  * - the signed-in owner (settings page / manual curl with session cookies)
  * Public in the proxy; authorization enforced here.
+ *
+ * No duration cap: this runs on the owner's own server, so a full export can
+ * take as long as it takes. (Deliberately no `maxDuration` — that was a
+ * Vercel serverless ceiling and is inert here; see CLAUDE.md Infrastructure.)
  */
-export const maxDuration = 60;
-
 async function handle(request: Request) {
   const secret = process.env.CRON_SECRET;
   const bearerOk = Boolean(

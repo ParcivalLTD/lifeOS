@@ -22,7 +22,9 @@ import { createClient } from "@/lib/supabase/server";
  * goes out, and the assistant turn (with its verbatim blocks, including any
  * propose_changes tool calls) is stored when the stream completes.
  */
-export const maxDuration = 60;
+// No `maxDuration`: that was a Vercel serverless ceiling and is inert on the
+// self-hosted server. It mattered most here — a long streamed reply was cut
+// at 60s. See CLAUDE.md Infrastructure.
 
 const MAX_TEXT = 4000;
 

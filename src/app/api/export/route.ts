@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { buildExport } from "@/lib/backup";
 import { createClient } from "@/lib/supabase/server";
 
-/** Manual "export my data" download — owner session required. */
-export const maxDuration = 60;
+/** Manual "export my data" download — owner session required. No duration
+ * cap: `maxDuration` was a Vercel ceiling, inert here (CLAUDE.md § Infra). */
 
 export async function GET() {
   const supabase = await createClient();

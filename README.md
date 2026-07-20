@@ -73,32 +73,50 @@ npm run db:shim      # stubs auth.uid() + roles — local only, NEVER on Supabas
 Every run dumps **all nine core tables into one JSON document**
 (`{ version, generatedAt, counts, data }`):
 
-- **Nightly**: Vercel Cron (see `vercel.json`) calls `GET /api/backup` at
-  02:00 UTC with `Authorization: Bearer $CRON_SECRET`; the dump lands in the
+- **Nightly**: a **Coolify Scheduled Task** calls `GET /api/backup` at
+  02:00 with `Authorization: Bearer $CRON_SECRET`; the dump lands in the
   private `backups` Storage bucket (auto-created).
+- ⚠️ This is a **logical** backup of the app's own tables. It is not a
+  substitute for volume-level backups of the Postgres data directory, which
+  are the owner's responsibility on self-hosted infrastructure.
 - **Manual**: Settings → "Export my data" downloads the JSON;
   "Back up to storage now" writes the same dump to the bucket. Recent
   backups are listed on the settings page.
 
-## Deploying to Vercel
+## Deploying (self-hosted on Coolify)
 
-1. **Supabase project**: create one, then under Authentication → Sign In / Up
-   disable **"Allow new users to sign up"** (mirrors `supabase/config.toml`).
-2. **Migrate + owner**: with `DATABASE_URL` pointing at the project (use the
-   **transaction pooler** URI, port 6543 — the app already sets
-   `prepare: false`), run `npm run db:migrate`, then `npm run
-   auth:create-owner` (needs `OWNER_EMAIL`/`OWNER_PASSWORD`/service key).
-   Optionally `SEED_USER_ID=<owner id> npm run db:seed`.
-3. **Vercel**: import the repo; `vercel.json` registers the nightly backup
-   cron. Set the environment variables:
+Both the app and Supabase run on the owner's own server via Coolify. There is
+no platform tier, no function duration cap and no cron frequency limit — see
+CLAUDE.md § Infrastructure before designing around any such constraint.
+
+1. **Supabase**: deploy the self-hosted stack (Postgres + auth + storage) in
+   Coolify. Disable sign-ups in the auth service
+   (`GOTRUE_DISABLE_SIGNUP=true`), mirroring `supabase/config.toml` — the
+   single owner account is created manually in step 2.
+   ⚠️ Give Postgres (`/var/lib/postgresql/data`) and Storage
+   (`/var/lib/storage`) **persistent volumes**. Coolify recreates containers
+   on redeploy; anything on the container's writable layer is destroyed.
+2. **Migrate + owner**: with `DATABASE_URL` pointing at that Postgres, run
+   `npm run db:migrate`, then `npm run auth:create-owner` (needs
+   `OWNER_EMAIL`/`OWNER_PASSWORD`/service key). Optionally
+   `SEED_USER_ID=<owner id> npm run db:seed`.
+   (The app sets `prepare: false`, so a pooler in front of Postgres is safe
+   but not required — self-hosted usually connects direct on 5432.)
+3. **App**: create a Coolify application from this repo — it builds with
+   **Nixpacks**, no Dockerfile needed. Set the environment variables below.
+4. **Nightly backup**: add a **Coolify Scheduled Task** (`0 2 * * *`) that
+   calls `GET /api/backup` with `Authorization: Bearer $CRON_SECRET`. This
+   replaces the old `vercel.json` cron; scheduled jobs are never registered
+   from repo config.
 
 | Env var | Where | Notes |
 |---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Vercel + local | Project Settings → API |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Vercel + local | Project Settings → API |
-| `SUPABASE_SERVICE_ROLE_KEY` | Vercel + local | server-only: backups + owner script |
-| `DATABASE_URL` | Vercel + local | transaction-pooler URI (port 6543) |
-| `CRON_SECRET` | Vercel + local | bearer for `/api/backup`; any long random string |
+| `NEXT_PUBLIC_SUPABASE_URL` | Coolify + local | public URL of the Supabase stack |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Coolify + local | from the Supabase stack's config |
+| `SUPABASE_SERVICE_ROLE_KEY` | Coolify + local | server-only: backups + owner script |
+| `DATABASE_URL` | Coolify + local | Postgres URI |
+| `CRON_SECRET` | Coolify + local | bearer for `/api/backup`; any long random string |
+| `ANTHROPIC_API_KEY` | Coolify | enables the assistant + daily nudge; absent = features gate off |
 | `OWNER_EMAIL` / `OWNER_PASSWORD` | local only | consumed by `auth:create-owner` |
 | `SEED_USER_ID` | local only | consumed by `db:seed` |
 

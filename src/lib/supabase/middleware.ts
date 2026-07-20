@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 /**
  * Routes reachable without a session (everything else requires the owner).
  * /api/backup enforces its own auth (CRON_SECRET bearer or session) so the
- * Vercel Cron caller isn't bounced to /login.
+ * scheduled-task caller (Coolify) isn't bounced to /login.
  */
 const PUBLIC_PATHS = ["/login", "/auth/login", "/auth/logout", "/api/backup"];
 
