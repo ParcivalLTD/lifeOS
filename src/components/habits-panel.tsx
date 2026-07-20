@@ -5,9 +5,9 @@ import { useMemo, useOptimistic, useState, useTransition } from "react";
 import { addHabitAction, archiveHabitInlineAction, toggleHabitAction } from "@/app/habits/actions";
 import { SwipeableRow } from "@/components/swipeable-row";
 import { CheckButton } from "@/components/check-button";
+import { DisclosurePanel } from "@/components/disclosure-panel";
 import { FilterBar, FilterSelect, FilterToggle } from "@/components/filter-bar";
 import { HabitScheduleFields } from "@/components/habit-schedule-fields";
-import { Panel } from "@/components/panel";
 import { toISODate } from "@/lib/dates";
 import { DOMAIN_DOT_CLASS, DOMAINS, isDomain } from "@/lib/domains";
 import { isScheduledOn, scheduleLabel } from "@/lib/habits";
@@ -114,10 +114,11 @@ export function HabitsPanel({
     });
   };
 
-  const add = async (formData: FormData) => {
+  const add = async (formData: FormData, close?: () => void) => {
     const item = optimisticHabit(formData);
     if (item) patch({ type: "add", item });
-    await addHabitAction(formData);
+    close?.(); // optimistic row is up — collapse the form immediately
+    await addHabitAction(formData); // awaited so the action-transition holds the optimism
   };
 
   // swipe-to-delete: archive (completion history is retained for reviews)
@@ -129,50 +130,51 @@ export function HabitsPanel({
   };
 
   return (
-    <Panel
+    <DisclosurePanel
       label="Habits"
       value={
         active
           ? `${visible.length} shown · ${doneToday}/${scheduledToday} today`
           : `${doneToday} / ${scheduledToday} today`
       }
+      filterActive={active}
+      addLabel="Add habit"
+      filters={
+        <FilterBar>
+          <FilterToggle label="Hide done" checked={hideDone} onChange={setHideDone} />
+          <FilterSelect
+            label="Domain"
+            value={domain}
+            onChange={setDomain}
+            options={[
+              { value: "all", label: "ALL" },
+              ...DOMAINS.map((d) => ({ value: d, label: d.toUpperCase() })),
+            ]}
+          />
+          <FilterSelect
+            label="Sched"
+            value={scheduleType}
+            onChange={setScheduleType}
+            options={[
+              { value: "all", label: "ALL" },
+              { value: "daily", label: "DAILY" },
+              { value: "weekly_days", label: "DAYS" },
+              { value: "times_per_week", label: "N×/WK" },
+            ]}
+          />
+        </FilterBar>
+      }
+      form={(close) => <AddHabitForm action={(fd) => add(fd, close)} />}
       footer={
-        <>
-          <div className="border-t border-border-row px-3 py-2 font-mono text-[10px] tracking-[.06em] text-faint">
-            7-DAY ADHERENCE {adherence7}%
-          </div>
-          <AddHabitForm action={add} />
-        </>
+        <div className="border-t border-border-row px-3 py-2 font-mono text-[10px] tracking-[.06em] text-faint">
+          7-DAY ADHERENCE {adherence7}%
+        </div>
       }
     >
-      <FilterBar>
-        <FilterToggle label="Hide done" checked={hideDone} onChange={setHideDone} />
-        <FilterSelect
-          label="Domain"
-          value={domain}
-          onChange={setDomain}
-          options={[
-            { value: "all", label: "ALL" },
-            ...DOMAINS.map((d) => ({ value: d, label: d.toUpperCase() })),
-          ]}
-        />
-        <FilterSelect
-          label="Sched"
-          value={scheduleType}
-          onChange={setScheduleType}
-          options={[
-            { value: "all", label: "ALL" },
-            { value: "daily", label: "DAILY" },
-            { value: "weekly_days", label: "DAYS" },
-            { value: "times_per_week", label: "N×/WK" },
-          ]}
-        />
-      </FilterBar>
-
       {visible.length === 0 && (
         <p className="px-3 py-2 font-mono text-[10px] uppercase tracking-[.06em] text-faint">
           {habits.length === 0
-            ? "No habits — add one below"
+            ? "No habits yet — tap + to add one"
             : hideDone && doneToday > 0 && !active
               ? "All done for today ✓"
               : "No habits match the current filters"}
@@ -232,14 +234,14 @@ export function HabitsPanel({
           </SwipeableRow>
         );
       })}
-    </Panel>
+    </DisclosurePanel>
   );
 }
 
 function AddHabitForm({
   action,
 }: {
-  action: (formData: FormData) => Promise<void>;
+  action: (formData: FormData) => void | Promise<void>;
 }) {
   return (
     <form

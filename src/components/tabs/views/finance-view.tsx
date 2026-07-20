@@ -8,6 +8,7 @@ import {
   saveSavingsAction,
   upsertBudgetAction,
 } from "@/app/finance/actions";
+import { DisclosurePanel } from "@/components/disclosure-panel";
 import { SubmitButton } from "@/components/submit-button";
 import { BudgetExpenses } from "@/components/finance/budget-expenses";
 import { NetWorthChart } from "@/components/finance/net-worth-chart";
@@ -46,19 +47,20 @@ export function FinanceViewTab({ data }: { data: FinanceData }) {
           </Panel>
 
           {/* accounts */}
-          <Panel
+          <DisclosurePanel
             label="Accounts"
             value={`${data.accounts.length}`}
-            footer={
-              <form action={saveAccountAction} className="flex flex-wrap gap-1.5 border-t border-border-header p-3">
+            addLabel="Add account"
+            form={(close) => (
+              <form action={async (fd) => { await saveAccountAction(fd); close(); }} className="flex flex-wrap gap-1.5 border-t border-border-header p-3">
                 <input name="name" required placeholder="Account name" aria-label="Account name" autoComplete="off" className={`${inputCls} min-w-0 flex-[2_1_120px]`} />
                 <input name="balance" required inputMode="decimal" placeholder="0.00" aria-label="Balance" className={numCls} />
                 <SubmitButton className={`${addBtn} disabled:opacity-50`}>Add</SubmitButton>
               </form>
-            }
+            )}
           >
             {data.accounts.length === 0 && (
-              <p className="px-3 py-2 font-mono text-[10px] uppercase tracking-[.06em] text-faint">No accounts yet</p>
+              <p className="px-3 py-2 font-mono text-[10px] uppercase tracking-[.06em] text-faint">No accounts yet — tap + to add one</p>
             )}
             {data.accounts.map((a) => (
               <Link key={a.id} href={`/finance/accounts/${a.id}`} className="flex items-baseline justify-between border-b border-border-row px-3 py-2 no-underline">
@@ -66,23 +68,24 @@ export function FinanceViewTab({ data }: { data: FinanceData }) {
                 <span className="font-mono text-[12px] font-semibold">{fmtMoney(a.balance, { cents: true })}</span>
               </Link>
             ))}
-          </Panel>
+          </DisclosurePanel>
 
           {/* savings goals */}
-          <Panel
+          <DisclosurePanel
             label="Savings goals"
             value={`${data.savings.length}`}
-            footer={
-              <form action={saveSavingsAction} className="flex flex-wrap gap-1.5 border-t border-border-header p-3">
+            addLabel="Add savings goal"
+            form={(close) => (
+              <form action={async (fd) => { await saveSavingsAction(fd); close(); }} className="flex flex-wrap gap-1.5 border-t border-border-header p-3">
                 <input name="name" required placeholder="Goal" aria-label="Savings goal name" autoComplete="off" className={`${inputCls} min-w-0 flex-[2_1_110px]`} />
                 <input name="current" inputMode="decimal" placeholder="now" aria-label="Current amount" className={`${numCls} w-[70px]`} />
                 <input name="target" required inputMode="decimal" placeholder="target" aria-label="Target amount" className={`${numCls} w-[70px]`} />
                 <SubmitButton className={`${addBtn} disabled:opacity-50`}>Add</SubmitButton>
               </form>
-            }
+            )}
           >
             {data.savings.length === 0 && (
-              <p className="px-3 py-2 font-mono text-[10px] uppercase tracking-[.06em] text-faint">No savings goals yet</p>
+              <p className="px-3 py-2 font-mono text-[10px] uppercase tracking-[.06em] text-faint">No savings goals yet — tap + to add one</p>
             )}
             {data.savings.map((s) => (
               <Link key={s.id} href={`/finance/savings/${s.id}`} className="block border-b border-border-row px-3 py-2 no-underline">
@@ -102,7 +105,7 @@ export function FinanceViewTab({ data }: { data: FinanceData }) {
                 })()}
               </Link>
             ))}
-          </Panel>
+          </DisclosurePanel>
         </div>
 
         <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3">
@@ -115,11 +118,12 @@ export function FinanceViewTab({ data }: { data: FinanceData }) {
           />
 
           {/* bills / subscriptions register (FR-FIN.4) */}
-          <Panel
+          <DisclosurePanel
             label="Bills & subscriptions"
             value={`${data.bills.length}`}
-            footer={
-              <form action={saveBillAction} className="flex flex-wrap gap-1.5 border-t border-border-header p-3">
+            addLabel="Add bill"
+            form={(close) => (
+              <form action={async (fd) => { await saveBillAction(fd); close(); }} className="flex flex-wrap gap-1.5 border-t border-border-header p-3">
                 <input name="name" required placeholder="Bill" aria-label="Bill name" autoComplete="off" className={`${inputCls} min-w-0 flex-[2_1_100px]`} />
                 <input name="amount" required inputMode="decimal" placeholder="0.00" aria-label="Amount" className={`${numCls} w-[74px]`} />
                 <input type="date" name="nextDue" defaultValue={data.todayISO} aria-label="Next due" className={`${inputCls} font-mono`} />
@@ -130,10 +134,10 @@ export function FinanceViewTab({ data }: { data: FinanceData }) {
                 </select>
                 <SubmitButton className={`${addBtn} disabled:opacity-50`}>Add</SubmitButton>
               </form>
-            }
+            )}
           >
             {data.bills.length === 0 && (
-              <p className="px-3 py-2 font-mono text-[10px] uppercase tracking-[.06em] text-faint">No recurring bills yet</p>
+              <p className="px-3 py-2 font-mono text-[10px] uppercase tracking-[.06em] text-faint">No recurring bills yet — tap + to add one</p>
             )}
             {data.bills.map((b) => (
               <div key={b.id} className="flex items-baseline gap-2.5 border-b border-border-row px-3 py-2">
@@ -152,23 +156,28 @@ export function FinanceViewTab({ data }: { data: FinanceData }) {
                 </form>
               </div>
             ))}
-          </Panel>
+          </DisclosurePanel>
 
           {/* set / adjust a budget cap */}
-          <Panel label="Set budget">
-            <form action={upsertBudgetAction} className="flex flex-wrap gap-1.5 p-3">
-              <select name="category" aria-label="Budget category" className="min-w-0 flex-1 border border-border-input bg-subtle px-1.5 py-2 text-[12px]">
-                {data.categories.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-              <input name="cap" required inputMode="decimal" placeholder="cap" aria-label="Monthly cap" className={numCls} />
-              <SubmitButton className={`${addBtn} disabled:opacity-50`}>Set</SubmitButton>
-            </form>
-            <p className="px-3 pb-3 font-mono text-[9px] uppercase tracking-[.06em] text-faintest">
-              Setting a category updates its monthly cap in budget-vs-actual.
+          <DisclosurePanel
+            label="Set budget"
+            addLabel="Set a budget cap"
+            form={(close) => (
+              <form action={async (fd) => { await upsertBudgetAction(fd); close(); }} className="flex flex-wrap gap-1.5 border-t border-border-header p-3">
+                <select name="category" aria-label="Budget category" className="min-w-0 flex-1 border border-border-input bg-subtle px-1.5 py-2 text-[12px]">
+                  {data.categories.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <input name="cap" required inputMode="decimal" placeholder="cap" aria-label="Monthly cap" className={numCls} />
+                <SubmitButton className={`${addBtn} disabled:opacity-50`}>Set</SubmitButton>
+              </form>
+            )}
+          >
+            <p className="px-3 py-2.5 font-mono text-[9px] uppercase tracking-[.06em] text-faintest">
+              Tap + to set or adjust a category&apos;s monthly cap in budget-vs-actual.
             </p>
-          </Panel>
+          </DisclosurePanel>
         </div>
       </main>
   );

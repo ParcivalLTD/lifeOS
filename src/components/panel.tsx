@@ -1,14 +1,18 @@
 import type { ReactNode } from "react";
 
-/** Mockup panel: white card, 1px outer border, mono uppercase header row. */
+/** Mockup panel: white card, 1px outer border, mono uppercase header row.
+ * `actions` renders quiet header controls (e.g. filter / add toggles) to the
+ * right of the value — chrome, kept visually below the content. */
 export function Panel({
   label,
   value,
+  actions,
   children,
   footer,
 }: {
   label: string;
   value?: ReactNode;
+  actions?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
 }) {
@@ -18,8 +22,13 @@ export function Panel({
         <h2 className="font-mono text-[10px] font-semibold uppercase tracking-[.08em] text-faint">
           {label}
         </h2>
-        {value != null && (
-          <span className="font-mono text-[11px] text-muted">{value}</span>
+        {(value != null || actions != null) && (
+          <div className="flex items-center gap-2.5">
+            {value != null && (
+              <span className="font-mono text-[11px] text-muted">{value}</span>
+            )}
+            {actions}
+          </div>
         )}
       </div>
       {children}

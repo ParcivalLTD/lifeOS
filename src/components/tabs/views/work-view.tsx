@@ -9,6 +9,7 @@ import {
   logTimeAction,
   toggleTimerAction,
 } from "@/app/work/actions";
+import { DisclosurePanel } from "@/components/disclosure-panel";
 import { GoalProgressRow } from "@/components/goals/goal-progress-row";
 import { Panel } from "@/components/panel";
 import { SubmitButton } from "@/components/submit-button";
@@ -88,27 +89,28 @@ export function WorkViewTab({ data }: { data: WorkData }) {
   return (
     <main className="mx-auto grid w-full max-w-[1280px] grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-3 p-4">
       {/* projects with deadlines + next actions + time (FR-WORK.2/4) */}
-      <Panel
+      <DisclosurePanel
         label="Projects"
         value={`${data.projects.length} active`}
+        addLabel="Add project"
+        form={(close) => (
+          <form action={async (fd) => { await addProjectAction(fd); close(); }} className="flex flex-wrap gap-1.5 border-t border-border-header p-3">
+            <input name="title" required placeholder="Project" aria-label="Project name" autoComplete="off" className={`${inputCls} min-w-0 flex-[2_1_140px]`} />
+            <input type="date" name="due" required defaultValue={data.todayISO} aria-label="Deadline" className={`${inputCls} font-mono`} />
+            <SubmitButton className={addBtn}>Add</SubmitButton>
+          </form>
+        )}
         footer={
-          <>
-            <div className="border-t border-border-row px-3 py-2 font-mono text-[10px] uppercase tracking-[.03em] text-faint">
-              {data.weekTotal.projects > 0
-                ? `TIME THIS WEEK: ${data.weekTotal.hours} H TRACKED ACROSS ${data.weekTotal.projects} PROJECT${data.weekTotal.projects === 1 ? "" : "S"}`
-                : "NO TIME TRACKED THIS WEEK"}
-            </div>
-            <form action={addProjectAction} className="flex flex-wrap gap-1.5 border-t border-border-header p-3">
-              <input name="title" required placeholder="Project" aria-label="Project name" autoComplete="off" className={`${inputCls} min-w-0 flex-[2_1_140px]`} />
-              <input type="date" name="due" required defaultValue={data.todayISO} aria-label="Deadline" className={`${inputCls} font-mono`} />
-              <SubmitButton className={addBtn}>Add</SubmitButton>
-            </form>
-          </>
+          <div className="border-t border-border-row px-3 py-2 font-mono text-[10px] uppercase tracking-[.03em] text-faint">
+            {data.weekTotal.projects > 0
+              ? `TIME THIS WEEK: ${data.weekTotal.hours} H TRACKED ACROSS ${data.weekTotal.projects} PROJECT${data.weekTotal.projects === 1 ? "" : "S"}`
+              : "NO TIME TRACKED THIS WEEK"}
+          </div>
         }
       >
         {data.projects.length === 0 && (
           <p className="px-3 py-2 font-mono text-[10px] uppercase tracking-[.06em] text-faint">
-            No projects yet — add one below
+            No projects yet — tap + to add one
           </p>
         )}
         {data.projects.map((p) => (
@@ -150,23 +152,22 @@ export function WorkViewTab({ data }: { data: WorkData }) {
             </div>
           </div>
         ))}
-      </Panel>
+      </DisclosurePanel>
 
       {/* achievements log (FR-WORK.3) */}
-      <Panel
+      <DisclosurePanel
         label="Achievements log"
         value="DATED WINS · CV-READY"
-        footer={
-          <>
-            <CopyAchievements rows={data.achievements} />
-            <form action={addAchievementAction} className="flex flex-wrap gap-1.5 border-t border-border-header p-3">
-              <input name="title" required placeholder="Win" aria-label="Achievement" autoComplete="off" className={`${inputCls} min-w-0 flex-[3_1_150px]`} />
-              <input name="context" placeholder="Context" aria-label="Context" autoComplete="off" className={`${inputCls} w-[90px]`} />
-              <input type="date" name="date" defaultValue={data.todayISO} aria-label="Date" className={`${inputCls} font-mono`} />
-              <SubmitButton className={addBtn}>Log</SubmitButton>
-            </form>
-          </>
-        }
+        addLabel="Log achievement"
+        form={(close) => (
+          <form action={async (fd) => { await addAchievementAction(fd); close(); }} className="flex flex-wrap gap-1.5 border-t border-border-header p-3">
+            <input name="title" required placeholder="Win" aria-label="Achievement" autoComplete="off" className={`${inputCls} min-w-0 flex-[3_1_150px]`} />
+            <input name="context" placeholder="Context" aria-label="Context" autoComplete="off" className={`${inputCls} w-[90px]`} />
+            <input type="date" name="date" defaultValue={data.todayISO} aria-label="Date" className={`${inputCls} font-mono`} />
+            <SubmitButton className={addBtn}>Log</SubmitButton>
+          </form>
+        )}
+        footer={<CopyAchievements rows={data.achievements} />}
       >
         {data.achievements.length === 0 && (
           <p className="px-3 py-2 font-mono text-[10px] uppercase tracking-[.06em] text-faint">
@@ -193,7 +194,7 @@ export function WorkViewTab({ data }: { data: WorkData }) {
             </div>
           </SwipeableRow>
         ))}
-      </Panel>
+      </DisclosurePanel>
 
       {/* career goals — the engine, not a parallel structure (FR-WORK.1) */}
       <Panel label="Career goals" value="VIA GOAL ENGINE">

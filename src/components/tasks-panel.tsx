@@ -5,8 +5,8 @@ import { useMemo, useOptimistic, useState, useTransition } from "react";
 import { addTaskAction, archiveTaskInlineAction, setTaskStatusAction } from "@/app/tasks/actions";
 import { SwipeableRow } from "@/components/swipeable-row";
 import { CheckButton } from "@/components/check-button";
+import { DisclosurePanel } from "@/components/disclosure-panel";
 import { FilterBar, FilterSelect, FilterToggle } from "@/components/filter-bar";
-import { Panel } from "@/components/panel";
 import { dueLabel } from "@/lib/dates";
 import { DOMAIN_DOT_CLASS, DOMAINS, isDomain } from "@/lib/domains";
 import {
@@ -22,6 +22,23 @@ const inputCls =
 const selectCls = "border border-border-input bg-subtle px-1.5 py-2 text-[12px]";
 
 const isOptimistic = (id: string) => id.startsWith("optimistic-");
+
+/** Optimistic TaskItem from the add-form's fields (server assigns the real id). */
+function optimisticTask(formData: FormData): TaskItem | null {
+  const title = String(formData.get("title") ?? "").trim();
+  if (!title) return null;
+  const domainRaw = String(formData.get("domain") ?? "personal");
+  const dueRaw = String(formData.get("due") ?? "");
+  return {
+    id: `optimistic-${Date.now()}`,
+    title,
+    domain: isDomain(domainRaw) ? domainRaw : "personal",
+    dueDate: dueRaw || null,
+    priority: Number(formData.get("priority")) || 2,
+    status: "open",
+    recurrence: null,
+  };
+}
 
 type Patch =
   | { type: "add"; item: TaskItem }
@@ -107,33 +124,60 @@ export function TasksPanel({
     });
   };
 
-  const add = async (formData: FormData) => {
-    const title = String(formData.get("title") ?? "").trim();
-    if (!title) return;
-    const domainRaw = String(formData.get("domain") ?? "personal");
-    const dueRaw = String(formData.get("due") ?? "");
-    patch({
-      type: "add",
-      item: {
-        id: `optimistic-${Date.now()}`,
-        title,
-        domain: isDomain(domainRaw) ? domainRaw : "personal",
-        dueDate: dueRaw || null,
-        priority: Number(formData.get("priority")) || 2,
-        status: "open",
-        recurrence: null,
-      },
-    });
-    await addTaskAction(formData);
+  const add = async (formData: FormData, close?: () => void) => {
+    const item = optimisticTask(formData);
+    if (item) patch({ type: "add", item });
+    close?.(); // optimistic row is up — collapse the form immediately
+    await addTaskAction(formData); // awaited so the action-transition holds the optimism
   };
 
   return (
-    <Panel
+    <DisclosurePanel
       label="Tasks"
       value={active ? `${visible.length} shown · ${openCount} open` : `${openCount} open`}
-      footer={
+      filterActive={active}
+      addLabel="Add task"
+      filters={
+        <FilterBar>
+          <FilterToggle label="Show done" checked={showDone} onChange={setShowDone} />
+          <FilterSelect
+            label="Prio"
+            value={priority}
+            onChange={setPriority}
+            options={[
+              { value: "all", label: "ALL" },
+              { value: "1", label: "P1" },
+              { value: "2", label: "P2" },
+              { value: "3", label: "P3" },
+            ]}
+          />
+          <FilterSelect
+            label="Due"
+            value={due}
+            onChange={setDue}
+            options={[
+              { value: "all", label: "ALL" },
+              { value: "overdue", label: "OVERDUE" },
+              { value: "today", label: "TODAY" },
+              { value: "week", label: "≤7D" },
+            ]}
+          />
+          <FilterSelect
+            label="Status"
+            value={status}
+            onChange={setStatus}
+            options={[
+              { value: "all", label: "ALL" },
+              { value: "open", label: "OPEN" },
+              { value: "done", label: "DONE" },
+              { value: "dropped", label: "DROPPED" },
+            ]}
+          />
+        </FilterBar>
+      }
+      form={(close) => (
         <form
-          action={add}
+          action={(fd) => add(fd, close)}
           className="flex flex-wrap items-stretch gap-1.5 border-t border-border-header p-3"
         >
           <input
@@ -176,49 +220,12 @@ export function TasksPanel({
             Add
           </button>
         </form>
-      }
+      )}
     >
-      <FilterBar>
-        <FilterToggle label="Show done" checked={showDone} onChange={setShowDone} />
-        <FilterSelect
-          label="Prio"
-          value={priority}
-          onChange={setPriority}
-          options={[
-            { value: "all", label: "ALL" },
-            { value: "1", label: "P1" },
-            { value: "2", label: "P2" },
-            { value: "3", label: "P3" },
-          ]}
-        />
-        <FilterSelect
-          label="Due"
-          value={due}
-          onChange={setDue}
-          options={[
-            { value: "all", label: "ALL" },
-            { value: "overdue", label: "OVERDUE" },
-            { value: "today", label: "TODAY" },
-            { value: "week", label: "≤7D" },
-          ]}
-        />
-        <FilterSelect
-          label="Status"
-          value={status}
-          onChange={setStatus}
-          options={[
-            { value: "all", label: "ALL" },
-            { value: "open", label: "OPEN" },
-            { value: "done", label: "DONE" },
-            { value: "dropped", label: "DROPPED" },
-          ]}
-        />
-      </FilterBar>
-
       {visible.length === 0 && (
         <p className="px-3 py-2 font-mono text-[10px] uppercase tracking-[.06em] text-faint">
           {tasks.length === 0
-            ? "No tasks — add one below"
+            ? "No tasks yet — tap + to add one"
             : "No tasks match the current filters"}
         </p>
       )}
@@ -300,6 +307,6 @@ export function TasksPanel({
           </SwipeableRow>
         );
       })}
-    </Panel>
+    </DisclosurePanel>
   );
 }

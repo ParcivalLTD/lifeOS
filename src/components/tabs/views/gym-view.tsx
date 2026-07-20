@@ -5,6 +5,7 @@ import { useState } from "react";
 import { startSessionAction } from "@/app/gym/actions";
 import { E1rmChart } from "@/components/gym/e1rm-chart";
 import { SessionLogger } from "@/components/gym/session-logger";
+import { DisclosurePanel } from "@/components/disclosure-panel";
 import { Panel } from "@/components/panel";
 import { SubmitButton } from "@/components/submit-button";
 import { parseISODate } from "@/lib/dates";
@@ -53,23 +54,33 @@ export function GymViewTab({ data }: { data: GymData }) {
       )}
 
       <div className="flex flex-col gap-3">
-        <Panel label="Start session">
-          {data.templates.length === 0 ? (
+        {data.templates.length === 0 ? (
+          <Panel label="Start session">
             <p className="px-3 py-3 font-mono text-[10px] uppercase tracking-[.06em] text-faint">
               No templates yet — <Link href="/gym/templates/new">create one</Link>.
             </p>
-          ) : (
-            <form action={startSessionAction} className="flex flex-wrap items-stretch gap-1.5 p-3">
-              <select name="templateId" aria-label="Template" className={`${selectCls} min-w-0 flex-[2_1_140px]`}>
-                {data.templates.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-              <input type="date" name="date" defaultValue={data.todayISO} aria-label="Date" className={`${selectCls} font-mono`} />
-              <SubmitButton>Start</SubmitButton>
-            </form>
-          )}
-        </Panel>
+          </Panel>
+        ) : (
+          <DisclosurePanel
+            label="Start session"
+            addLabel="Start a session"
+            form={() => (
+              <form action={startSessionAction} className="flex flex-wrap items-stretch gap-1.5 border-t border-border-header p-3">
+                <select name="templateId" aria-label="Template" className={`${selectCls} min-w-0 flex-[2_1_140px]`}>
+                  {data.templates.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                <input type="date" name="date" defaultValue={data.todayISO} aria-label="Date" className={`${selectCls} font-mono`} />
+                <SubmitButton>Start</SubmitButton>
+              </form>
+            )}
+          >
+            <p className="px-3 py-2.5 font-mono text-[10px] uppercase tracking-[.06em] text-faint">
+              Tap + to start a session from a template.
+            </p>
+          </DisclosurePanel>
+        )}
 
         <Panel label="Estimated 1RM — PRs" value={`${data.prs.length} lifts`}>
           {data.prs.length === 0 && (

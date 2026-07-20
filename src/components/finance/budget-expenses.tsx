@@ -2,6 +2,7 @@
 
 import { useMemo, useOptimistic, useRef, useState, useTransition } from "react";
 import { logExpenseAction } from "@/app/finance/actions";
+import { DisclosurePanel } from "@/components/disclosure-panel";
 import { Panel } from "@/components/panel";
 import { toISODate } from "@/lib/dates";
 import {
@@ -76,11 +77,13 @@ export function BudgetExpenses({
 
   return (
     <>
-      <Panel
+      <DisclosurePanel
         label={`Budget vs actual — ${monthLabel}`}
         value={`${fmtMoney(totalSpent)} / ${fmtMoney(totalCap)}`}
-        footer={
-          <div className="flex gap-1.5 p-3">
+        addLabel="Log expense"
+        /* stays open after each log — rapid ≤10s capture keeps focus on amount */
+        form={() => (
+          <div className="flex gap-1.5 border-t border-border-header p-3">
             <input
               ref={amountRef}
               value={amount}
@@ -116,11 +119,11 @@ export function BudgetExpenses({
               Log
             </button>
           </div>
-        }
+        )}
       >
         {rows.length === 0 && (
           <p className="px-3 py-2 font-mono text-[10px] uppercase tracking-[.06em] text-faint">
-            No budgets yet — set one below
+            No budgets yet — set caps under Set budget
           </p>
         )}
         {rows.map((b) => {
@@ -139,7 +142,7 @@ export function BudgetExpenses({
             </div>
           );
         })}
-      </Panel>
+      </DisclosurePanel>
 
       <Panel label="Expense log" value="CAPTURE TARGET ≤10 S">
         {expenses.length === 0 && (
