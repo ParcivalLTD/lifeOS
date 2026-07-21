@@ -2,11 +2,13 @@ import Link from "next/link";
 import { Panel } from "@/components/panel";
 import { AiModelPanel } from "@/components/settings/ai-model";
 import { AppleCalendarPanel } from "@/components/settings/apple-calendar";
+import { GoogleHealthPanel } from "@/components/settings/google-health";
 import { NudgeToggle } from "@/components/settings/nudge-toggle";
 import { listBackups, type BackupFileInfo } from "@/lib/backup";
 import type { ProviderOption } from "@/lib/ai/providers";
 import type { ProviderId, Tier } from "@/lib/ai/providers/types";
 import type { CaldavConnection } from "@/lib/data/caldav";
+import type { GHealthConnection } from "@/lib/data/ghealth";
 import { runBackupAction } from "./actions";
 
 const kb = (bytes: number) => `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -21,6 +23,9 @@ export async function SettingsContent({
   aiProviders,
   aiProvider,
   aiTier,
+  googleHealth,
+  ghealthConfigured,
+  ghealthOutcome,
 }: {
   userId?: string;
   email: string;
@@ -32,6 +37,9 @@ export async function SettingsContent({
   aiProviders: ProviderOption[];
   aiProvider: ProviderId | null;
   aiTier: Tier;
+  googleHealth: GHealthConnection | null;
+  ghealthConfigured: boolean;
+  ghealthOutcome?: string;
 }) {
 
   let backups: BackupFileInfo[] = [];
@@ -87,6 +95,25 @@ export async function SettingsContent({
           <AppleCalendarPanel
             connection={appleCalendar}
             configured={caldavConfigured}
+          />
+        </Panel>
+
+        <Panel
+          label="Google Health"
+          value={
+            googleHealth
+              ? googleHealth.status === "ok"
+                ? "CONNECTED"
+                : googleHealth.status === "expiring"
+                  ? `${Math.max(googleHealth.daysLeft, 0)}D LEFT`
+                  : "RECONNECT"
+              : "NOT CONNECTED"
+          }
+        >
+          <GoogleHealthPanel
+            connection={googleHealth}
+            configured={ghealthConfigured}
+            outcome={ghealthOutcome}
           />
         </Panel>
 

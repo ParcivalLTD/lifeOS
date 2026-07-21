@@ -27,7 +27,8 @@
     "test:chat": "tsx scripts/verify-chat.ts",
     "test:calendar": "tsx scripts/verify-calendar.ts",
     "test:caldav": "tsx scripts/verify-caldav.ts",
-    "test:providers": "tsx scripts/verify-providers.ts"
+    "test:providers": "tsx scripts/verify-providers.ts",
+    "test:ghealth": "tsx scripts/verify-ghealth.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.3",

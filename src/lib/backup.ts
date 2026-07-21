@@ -44,19 +44,31 @@ export type BackupDocument = {
 /**
  * Strip stored credentials out of an exported row.
  *
- * The Apple Calendar connection lives in `events.payload.caldav` and holds the
- * app-specific password, sealed with a key that exists only in the server
- * environment. The ciphertext is useless without that key, but a backup is a
+ * The Apple Calendar connection (`events.payload.caldav`, app-specific
+ * password) and the Google Health connection (`events.payload.ghealth`,
+ * OAuth refresh token) each hold a secret sealed with a key that exists only
+ * in the server environment. The ciphertext is useless without that key, but a backup is a
  * file that gets copied around — so the secret does not travel in it at all.
  * Everything else about the connection is kept, so a restore still shows that
  * a connection existed and simply needs reconnecting.
  */
 function redact(row: unknown): unknown {
-  const r = row as { payload?: { caldav?: Record<string, unknown> } };
-  if (!r?.payload?.caldav) return row;
-  const { secret, ...rest } = r.payload.caldav;
-  void secret;
-  return { ...r, payload: { ...r.payload, caldav: { ...rest, secretRedacted: true } } };
+  const r = row as {
+    payload?: { caldav?: Record<string, unknown>; ghealth?: Record<string, unknown> };
+  };
+  let out = row;
+  if (r?.payload?.caldav) {
+    const { secret, ...rest } = r.payload.caldav;
+    void secret;
+    out = { ...r, payload: { ...r.payload, caldav: { ...rest, secretRedacted: true } } };
+  }
+  const o = out as { payload?: { ghealth?: Record<string, unknown> } };
+  if (o?.payload?.ghealth) {
+    const { secret, ...rest } = o.payload.ghealth;
+    void secret;
+    out = { ...o, payload: { ...o.payload, ghealth: { ...rest, secretRedacted: true } } };
+  }
+  return out;
 }
 
 export async function buildExport(): Promise<BackupDocument> {

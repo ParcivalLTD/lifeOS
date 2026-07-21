@@ -31,7 +31,8 @@ const toItem = (row: typeof events.$inferSelect): EventItem => ({
  * work achievements (payload.work="achievement" — log entries, not dates to
  * plan around), stored review snapshots (payload has a `rev` key), and the
  * AI daily-nudge cache + preference (payload has a `nudge` or `pref` key),
- * and the Apple Calendar connection record (payload has a `caldav` key).
+ * and the Apple Calendar / Google Health connection records (payload has a
+ * `caldav` or `ghealth` key).
  * Generated bill occurrences, assessment deadlines, study sessions, and
  * project deadlines (payload.work="project") stay visible.
  *
@@ -48,6 +49,7 @@ export const calendarVisible = sql`
     or jsonb_exists(${events.payload}, 'nudge')
     or jsonb_exists(${events.payload}, 'pref')
     or jsonb_exists(${events.payload}, 'caldav')
+    or jsonb_exists(${events.payload}, 'ghealth')
   ))
 `;
 

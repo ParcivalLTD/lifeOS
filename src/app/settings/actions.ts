@@ -7,6 +7,8 @@ import { buildExport, uploadBackup } from "@/lib/backup";
 import { CalDavAuthError, verifyCredentials } from "@/lib/caldav/client";
 import { syncAppleCalendar } from "@/lib/caldav/sync";
 import { deleteConnection, saveConnection } from "@/lib/data/caldav";
+import { deleteGHealthConnection, refreshTokenOf } from "@/lib/data/ghealth";
+import { revokeToken } from "@/lib/ghealth/client";
 import { patchPreferences } from "@/lib/data/preferences";
 import { isProviderId, isTier } from "@/lib/ai/providers/types";
 
@@ -24,6 +26,19 @@ export async function runBackupAction(): Promise<void> {
     outcome = "error";
   }
   redirect(`/settings?backup=${outcome}`);
+}
+
+/**
+ * Disconnect Google Health: revoke the grant at Google's end (best-effort —
+ * the token may already be expired, and a network failure must not leave the
+ * sealed token stranded locally), then delete the stored connection.
+ */
+export async function disconnectGoogleHealthAction(): Promise<void> {
+  const user = await requireUser();
+  const token = await refreshTokenOf(user.id).catch(() => null);
+  if (token) await revokeToken(token);
+  await deleteGHealthConnection(user.id);
+  revalidatePath("/settings");
 }
 
 /** Save the assistant model choice (Settings is the only place it is set). */
