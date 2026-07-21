@@ -445,6 +445,23 @@ async function gymSessionsInRange(
   return rows.map(toSession);
 }
 
+/** Per-day gym outcomes in a range — planned = a session Event exists that
+ * day, done = it has a logged set (the module's own adherence semantics).
+ * Consumed by the sleep-pattern analysis (FR-HLTH); read-only reuse. */
+export async function gymDaysInRange(
+  userId: string,
+  fromISO: string,
+  toISOExclusive: string,
+): Promise<{ dateISO: string; done: boolean }[]> {
+  const sessions = await gymSessionsInRange(forUser(userId), fromISO, toISOExclusive);
+  const byDay = new Map<string, boolean>();
+  for (const s of sessions) {
+    byDay.set(s.dateISO, (byDay.get(s.dateISO) ?? false) || s.logged);
+  }
+  return [...byDay.entries()].sort(([a], [b]) => a.localeCompare(b))
+    .map(([dateISO, done]) => ({ dateISO, done }));
+}
+
 export async function weeklyAdherence(userId: string, weeks = 8): Promise<AdherenceWeek[]> {
   const udb = forUser(userId);
   const thisWeek = weekStartISO(toISODate(new Date()));

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRef } from "react";
 import { logHealthMetricAction } from "@/app/health/actions";
 import { DaySeriesChart, EmptySeries, SleepStagesChart } from "@/components/health/charts";
+import { SleepAnalysisPanel } from "@/components/health/sleep-analysis";
 import { Panel } from "@/components/panel";
 import { SubmitButton } from "@/components/submit-button";
 import type { HealthData } from "@/lib/tab-data";
@@ -115,6 +116,9 @@ export function HealthViewTab({ data }: { data: HealthData }) {
             <SubmitButton>Log</SubmitButton>
           </form>
         </Panel>
+
+        {/* SLEEP ANALYSIS (stage 4 — basis-stated, never fabricated) */}
+        <SleepAnalysisPanel analysis={data.sleepAnalysis} />
 
         {/* STEPS */}
         <Panel

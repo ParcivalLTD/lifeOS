@@ -2,10 +2,13 @@ import "server-only";
 
 import { and, eq, gte, inArray } from "drizzle-orm";
 import { forUser } from "@/db";
-import { metricDatapoints, metrics } from "@/db/schema";
+import { habitCompletions, habits, metricDatapoints, metrics } from "@/db/schema";
 import { getGHealthConnection, type GHealthStatus } from "@/lib/data/ghealth";
+import { gymDaysInRange } from "@/lib/data/gym";
 import { METRIC_SPECS, type MetricKey } from "@/lib/ghealth/mapping";
 import { addDaysISO, todayISO } from "@/lib/dates";
+import { isScheduledOn } from "@/lib/habits";
+import { analyzeSleep, type DayOutcome, type SleepAnalysis, type SleepNightData } from "@/lib/sleep";
 
 /**
  * Health module reads (FR-HLTH.1/.3). Pure metric-shape views — every series
@@ -54,6 +57,8 @@ export type HealthOverview = {
     spo2Latest: number | null;
   };
   nutrition: { days: NutritionDay[]; today: NutritionDay | null }; // 7 days
+  /** stage-4 sleep analysis over the trailing 30 nights (honesty-rule output) */
+  sleepAnalysis: SleepAnalysis;
   /** Google Health connection surface for the header line (null = never connected). */
   ghealth: { status: GHealthStatus; lastSyncAt: string | null } | null;
 };
@@ -61,7 +66,7 @@ export type HealthOverview = {
 const isoDayOf = (d: Date): string =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-type Row = { key: MetricKey; dateISO: string; value: number; timestamp: Date };
+type Row = { key: MetricKey; dateISO: string; value: number; timestamp: Date; source: string | null };
 
 /** All health-catalogue datapoints since `fromISO`, tagged with their key. */
 async function healthRows(userId: string, fromISO: string): Promise<Row[]> {
@@ -89,7 +94,7 @@ async function healthRows(userId: string, fromISO: string): Promise<Row[]> {
     if (!key) return [];
     const value = Number(p.value);
     if (!Number.isFinite(value)) return [];
-    return [{ key, dateISO: isoDayOf(p.timestamp), value, timestamp: p.timestamp }];
+    return [{ key, dateISO: isoDayOf(p.timestamp), value, timestamp: p.timestamp, source: p.source }];
   });
 }
 
@@ -112,11 +117,73 @@ const toSeries = (m: Map<string, number>): HealthDayPoint[] =>
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
+/** SleepNightData for the analysis window: one night per wake-up day. A
+ * night's wake time is REAL only when the duration row was synced (its
+ * timestamp is the session end); manual noon-stamped logs stay date-only. */
+function nightsFrom(rows: Row[], fromISO: string): SleepNightData[] {
+  const byDay = new Map<string, SleepNightData>();
+  const night = (d: string): SleepNightData => {
+    let n = byDay.get(d);
+    if (!n) {
+      byDay.set(d, (n = { dateISO: d, hours: null, deepMin: null, remMin: null, lightMin: null, awakeMin: null, wakeAt: null }));
+    }
+    return n;
+  };
+  for (const r of rows) {
+    if (r.dateISO < fromISO) continue;
+    const n = night(r.dateISO);
+    switch (r.key) {
+      case "sleepHours":
+        n.hours = r.value;
+        n.wakeAt = r.source === "google_health" ? r.timestamp.toISOString() : null;
+        break;
+      case "sleepDeep": n.deepMin = r.value; break;
+      case "sleepRem": n.remMin = r.value; break;
+      case "sleepLight": n.lightMin = r.value; break;
+      case "sleepAwake": n.awakeMin = r.value; break;
+      default: break;
+    }
+  }
+  return [...byDay.values()].sort((a, b) => a.dateISO.localeCompare(b.dateISO));
+}
+
+/** Same-day adherence outcomes for the pattern check — the modules' own
+ * numbers (habit completions, gym sessions), read-only. */
+async function dayOutcomes(userId: string, fromISO: string, today: string): Promise<DayOutcome[]> {
+  const udb = forUser(userId);
+  const [habitRows, completions, gymDays] = await Promise.all([
+    udb.select(habits, { where: eq(habits.archived, false) }),
+    udb.select(habitCompletions, { where: gte(habitCompletions.date, fromISO) }),
+    gymDaysInRange(userId, fromISO, addDaysISO(today, 1)),
+  ]);
+  const doneByDay = new Map<string, Set<string>>();
+  for (const c of completions) {
+    if (c.status !== "done") continue;
+    let set = doneByDay.get(c.date);
+    if (!set) doneByDay.set(c.date, (set = new Set()));
+    set.add(c.habitId);
+  }
+  const gymByDay = new Map(gymDays.map((g) => [g.dateISO, g.done]));
+  const out: DayOutcome[] = [];
+  for (let d = fromISO; d <= today; d = addDaysISO(d, 1)) {
+    const scheduled = habitRows.filter((h) => isScheduledOn(h.schedule, d));
+    const done = doneByDay.get(d) ?? new Set<string>();
+    out.push({
+      dateISO: d,
+      habitsScheduled: scheduled.length,
+      habitsDone: scheduled.filter((h) => done.has(h.id)).length,
+      gymDone: gymByDay.has(d) ? gymByDay.get(d)! : null,
+    });
+  }
+  return out;
+}
+
 export async function healthOverview(userId: string): Promise<HealthOverview> {
   const today = todayISO();
-  const [rows, conn] = await Promise.all([
+  const [rows, conn, outcomes] = await Promise.all([
     healthRows(userId, addDaysISO(today, -90)),
     getGHealthConnection(userId),
+    dayOutcomes(userId, addDaysISO(today, -29), today),
   ]);
 
   // weight — last value per day over 90 days; delta vs 30 days back
@@ -201,6 +268,12 @@ export async function healthOverview(userId: string): Promise<HealthOverview> {
       spo2Latest: spo2[spo2.length - 1]?.value ?? null,
     },
     nutrition: { days, today: days.find((d) => d.dateISO === today) ?? null },
+    sleepAnalysis: analyzeSleep(
+      nightsFrom(rows, addDaysISO(today, -29)),
+      outcomes,
+      today,
+      addDaysISO,
+    ),
     ghealth: conn ? { status: conn.status, lastSyncAt: conn.lastSyncAt ?? null } : null,
   };
 }
