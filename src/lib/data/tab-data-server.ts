@@ -8,6 +8,10 @@ import { aiConfigured } from "@/lib/ai/client";
 import { academicOverview } from "@/lib/data/academic";
 import { listEventsInRange } from "@/lib/data/events";
 import { getNudgeEnabled, getTodayNudge } from "@/lib/data/nudge";
+import { getConversation, listConversations } from "@/lib/data/conversations";
+import { getPreferences } from "@/lib/data/preferences";
+import { resolveForConversation, getAdapter } from "@/lib/ai/client";
+import { proposalsFromBlocks } from "@/lib/ai/replay";
 import { goalsReview, listReviews, weeklySummary } from "@/lib/data/review";
 import { workOverview } from "@/lib/data/work";
 import { monthlyPeriod, quarterlyPeriod } from "@/lib/review";
@@ -165,6 +169,47 @@ export async function buildReviewData(userId: string): Promise<ReviewData> {
   };
 }
 
+export async function buildChatData(
+  userId: string,
+  params: TabParams = {},
+): Promise<any> { // Using any to match the tab-data placeholder for now, or just returning ChatData
+  const c = params.c;
+  const [conversations, active] = await Promise.all([
+    listConversations(userId),
+    c ? getConversation(userId, c) : Promise.resolve(null),
+  ]);
+
+  const prefs = await getPreferences(userId);
+  const selection = resolveForConversation(prefs, active?.provider ?? null);
+  const activeModelLabel = selection
+    ? `${getAdapter(selection.provider).label} · ${getAdapter(selection.provider).models[selection.tier].label}`
+    : null;
+
+  const messages = (active?.messages ?? []).map((m) => ({
+    id: m.id,
+    role: m.role,
+    text: m.text,
+    decisions: m.decisions,
+    proposals:
+      m.role === "assistant"
+        ? proposalsFromBlocks(m.blocks).proposals.map((p) => ({
+            key: p.key,
+            description: p.description,
+            proposal: p.proposal,
+          }))
+        : [],
+  }));
+
+  return {
+    conversations,
+    conversationId: active?.id ?? null,
+    activeModelLabel,
+    messages,
+    todayISO: todayISO(),
+    aiConfigured: aiConfigured(),
+  };
+}
+
 export async function buildGymData(
   userId: string,
   params: TabParams = {},
@@ -269,6 +314,7 @@ const BUILDERS: {
   gym: buildGymData,
   health: buildHealthData,
   finance: buildFinanceData,
+  chat: buildChatData,
   review: buildReviewData,
 };
 

@@ -58,7 +58,15 @@ export async function SettingsContent({
           </p>
         </Panel>
 
-        <Panel label="AI layer" value="NFR-1">
+        <Panel label="Assistant model" value={aiProviders.length === 0 ? "NOT CONFIGURED" : undefined}>
+          <AiModelPanel
+            providers={aiProviders}
+            provider={aiProvider}
+            tier={aiTier}
+          />
+        </Panel>
+
+        <Panel label="AI features" value="NFR-1">
           <div className="flex flex-col gap-3 p-4">
             <p className="text-[12.5px]">
               Any assistant feature sees only structured summaries assembled by
@@ -114,14 +122,6 @@ export async function SettingsContent({
             connection={googleHealth}
             configured={ghealthConfigured}
             outcome={ghealthOutcome}
-          />
-        </Panel>
-
-        <Panel label="Assistant model" value={aiProviders.length === 0 ? "NOT CONFIGURED" : undefined}>
-          <AiModelPanel
-            providers={aiProviders}
-            provider={aiProvider}
-            tier={aiTier}
           />
         </Panel>
 

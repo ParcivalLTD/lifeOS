@@ -126,70 +126,7 @@ export function CalendarViewTab({ data, active }: { data: CalendarData; active: 
     }
   }, []);
 
-  // Swipe left/right pages to the next/prev day, week or month — whichever
-  // view is currently active (stepDate already knows the unit per view, the
-  // same helper the ‹ Today › toolbar buttons use). data-no-swipe on <main>
-  // keeps the top-level tab-switch gesture (TabsApp) from also claiming
-  // this drag; this is calendar-local paging, not tab navigation.
-  useEffect(() => {
-    const el = mainRef.current;
-    if (!el) return;
-    let startX = 0;
-    let startY = 0;
-    let axis: "h" | "v" | null = null;
-    let eligible = false;
 
-    const onStart = (e: TouchEvent) => {
-      axis = null;
-      eligible = e.touches.length === 1;
-      if (!eligible) return;
-      const target = e.target as HTMLElement | null;
-      if (target?.closest("input, textarea, select")) {
-        eligible = false;
-        return;
-      }
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-    };
-
-    const onMove = (e: TouchEvent) => {
-      if (!eligible || axis === "v") return;
-      const dx = e.touches[0].clientX - startX;
-      const dy = e.touches[0].clientY - startY;
-      if (axis === null) {
-        if (Math.abs(dx) < SWIPE_LOCK_PX && Math.abs(dy) < SWIPE_LOCK_PX) return;
-        axis = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
-        if (axis === "v") return; // native vertical scroll owns this touch
-      }
-      e.preventDefault(); // horizontal-locked: no scroll/selection underneath
-    };
-
-    const onEnd = (e: TouchEvent) => {
-      if (!eligible || axis !== "h") {
-        axis = null;
-        eligible = false;
-        return;
-      }
-      const dx = e.changedTouches[0].clientX - startX;
-      axis = null;
-      eligible = false;
-      if (Math.abs(dx) < SWIPE_COMMIT_PX) return;
-      const dir = dx < 0 ? 1 : -1;
-      const s = stateRef.current;
-      loadRef.current(s.view, stepDate(s.view, s.date, dir));
-    };
-
-    el.addEventListener("touchstart", onStart, { passive: true });
-    el.addEventListener("touchmove", onMove, { passive: false });
-    el.addEventListener("touchend", onEnd, { passive: true });
-    el.addEventListener("touchcancel", onEnd, { passive: true });
-    return () => {
-      el.removeEventListener("touchstart", onStart);
-      el.removeEventListener("touchmove", onMove);
-      el.removeEventListener("touchend", onEnd);
-      el.removeEventListener("touchcancel", onEnd);
-    };
-  }, []);
 
   const byDate = groupByDate(state.events);
   const isMobile = useIsMobile();
@@ -201,7 +138,7 @@ export function CalendarViewTab({ data, active }: { data: CalendarData; active: 
   }
 
   return (
-    <main ref={mainRef} data-no-swipe className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 p-4">
+    <main ref={mainRef} data-no-swipe className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 p-2 sm:p-4">
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className={`font-mono text-[10px] font-semibold uppercase tracking-[.08em] text-faint ${pending ? "opacity-60" : ""}`}>

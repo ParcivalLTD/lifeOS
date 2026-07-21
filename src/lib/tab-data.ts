@@ -44,19 +44,21 @@ export type TabDataKey =
   | "gym"
   | "health"
   | "finance"
+  | "chat"
   | "review";
 
-/** The six co-mounted, swipeable tabs of the primary nav. */
+/** The swipeable tabs of the primary nav. */
 export type TrackTabKey =
   | "today"
   | "daily"
   | "calendar"
   | "acadwork"
   | "gym"
-  | "finance";
+  | "finance"
+  | "assistant";
 
 /** A DTO reachable inside the track — i.e. a segment of some track tab. */
-export type TrackViewKey = Exclude<TabDataKey, "goals" | "review">;
+export type TrackViewKey = Exclude<TabDataKey, "goals">;
 
 /** One segment of a track tab: its own route, title and DTO. Tabs with a
  * single view have no segmented control; tabs with two render one at the top
@@ -71,7 +73,7 @@ export type TrackView = {
 export type TrackTab = {
   key: TrackTabKey;
   /** container width the views use, so the segmented bar lines up with them */
-  width: 720 | 1280;
+  width: 720 | 840 | 1280;
   views: TrackView[];
 };
 
@@ -116,6 +118,14 @@ export const TRACK_TABS: TrackTab[] = [
     key: "finance",
     width: 1280,
     views: [{ key: "finance", href: "/finance", label: "Finance", title: "HELM — FINANCE" }],
+  },
+  {
+    key: "assistant",
+    width: 840,
+    views: [
+      { key: "chat", href: "/assistant", label: "Chat", title: "HELM — ASSISTANT" },
+      { key: "review", href: "/review", label: "Reviews", title: "HELM — REVIEW" },
+    ],
   },
 ];
 
@@ -246,6 +256,15 @@ export type ReviewData = {
   timeline: StoredReview[];
 };
 
+export type ChatData = {
+  conversations: any[]; // will replace with correct type
+  conversationId: string | null;
+  activeModelLabel: string | null;
+  messages: any[]; // will replace with correct type
+  todayISO: string;
+  aiConfigured: boolean;
+};
+
 export type TabDataMap = {
   today: TodayData;
   goals: GoalsData;
@@ -257,6 +276,7 @@ export type TabDataMap = {
   gym: GymData;
   health: HealthData;
   finance: FinanceData;
+  chat: ChatData;
   review: ReviewData;
 };
 
@@ -268,4 +288,5 @@ export type TabParams = {
   date?: string;
   session?: string;
   lift?: string;
+  c?: string;
 };

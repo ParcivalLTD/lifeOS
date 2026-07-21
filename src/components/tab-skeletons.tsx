@@ -162,3 +162,11 @@ export function SettingsSkeleton() {
     </main>
   );
 }
+
+export function ChatSkeleton() {
+  return (
+    <main className="mx-auto w-full max-w-[840px] p-4">
+      <SkeletonPanel label="Assistant" rows={8} />
+    </main>
+  );
+}

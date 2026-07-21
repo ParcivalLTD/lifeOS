@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { AppHeader } from "@/components/app-header";
-import { ASSISTANT_SEGMENTS, Segmented } from "@/components/segmented";
-import { ReviewViewTab } from "@/components/tabs/views/review-view";
+import { TabsApp } from "@/components/tabs/tabs-app";
 import { requireUser } from "@/lib/auth";
-import { buildReviewData } from "@/lib/data/tab-data-server";
+import { buildInitialTrio } from "@/lib/data/tab-data-server";
 
 export const metadata: Metadata = { title: "HELM — REVIEW" };
 
@@ -14,8 +13,7 @@ export default async function ReviewPage() {
   return (
     <>
       <AppHeader />
-      <Segmented segments={ASSISTANT_SEGMENTS} active="reviews" />
-      <ReviewViewTab data={await buildReviewData(user.id)} />
+      <TabsApp initialView="review" initialData={await buildInitialTrio(user.id, "review")} />
     </>
   );
 }

@@ -15,6 +15,8 @@ import {
   TasksSkeleton,
   TodaySkeleton,
   WorkSkeleton,
+  ChatSkeleton,
+  ReviewSkeleton,
 } from "@/components/tab-skeletons";
 import { AcademicViewTab } from "@/components/tabs/views/academic-view";
 import { CalendarViewTab } from "@/components/tabs/views/calendar-view";
@@ -24,6 +26,8 @@ import { HabitsView } from "@/components/tabs/views/habits-view";
 import { HealthViewTab } from "@/components/tabs/views/health-view";
 import { TasksView } from "@/components/tabs/views/tasks-view";
 import { TodayView } from "@/components/tabs/views/today-view";
+import { ReviewViewTab } from "@/components/tabs/views/review-view";
+import { ChatViewTab } from "@/components/tabs/views/chat-view";
 import { WorkViewTab } from "@/components/tabs/views/work-view";
 import {
   tabForView,
@@ -112,6 +116,10 @@ function TabView({
       return cache.health ? <HealthViewTab data={cache.health} /> : <HealthSkeleton />;
     case "finance":
       return cache.finance ? <FinanceViewTab data={cache.finance} /> : <FinanceSkeleton />;
+    case "chat":
+      return cache.chat ? <ChatViewTab data={cache.chat} /> : <ChatSkeleton />;
+    case "review":
+      return cache.review ? <ReviewViewTab data={cache.review} /> : <ReviewSkeleton />;
   }
 }
 
@@ -449,7 +457,6 @@ export function TabsApp({
       <motion.div style={{ x }} className="relative">
         {mounted.map((t) => {
           const isActive = t.key === active;
-          const side = trackIndex(t.key) < idx ? "right-full" : "left-full";
           return (
             // keyed: a view keeps its component instance (inputs, filters,
             // scroll captives) while sliding between center and neighbor roles
@@ -458,7 +465,7 @@ export function TabsApp({
               aria-hidden={isActive ? undefined : true}
               inert={!isActive}
               className={
-                isActive ? undefined : `absolute inset-y-0 w-full overflow-hidden ${side}`
+                isActive ? undefined : `absolute inset-y-0 w-full overflow-hidden ${trackIndex(t.key) < idx ? "-left-full" : "left-full"}`
               }
             >
               <TabPane
