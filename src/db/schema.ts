@@ -349,11 +349,38 @@ export const metricDatapoints = pgTable(
       .references(() => metrics.id, { onDelete: "cascade" }),
     timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
     value: doublePrecision("value").notNull(),
-    source: text("source"),
+    /**
+     * Provenance/attribution. Long predates external sync and is LOAD-BEARING
+     * with per-row values: `gym:<sessionId>` (deleted by exact match when a
+     * session recomputes), `accounts`, `acad:<courseId>`, `work:<projectId>`,
+     * `manual`, … — all native-origin. External sync adds flat provider
+     * values (`google_health`, `photo_estimate`) alongside them; existing
+     * values are never rewritten. Default `native` covers writers that don't
+     * attribute more specifically.
+     */
+    source: text("source").default("native"),
+    /**
+     * The provider's stable id for a synced datapoint (Google Health
+     * `users/{u}/dataTypes/{t}/dataPoints/{id}`, suffixed `#facet` when one
+     * provider record fans out into several Metrics, e.g. a nutrition log's
+     * kcal/protein/carbs/fat). Null for native rows.
+     */
+    externalId: text("external_id"),
   },
   (t) => [
     index("metric_datapoints_metric_ts_idx").on(t.metricId, t.timestamp),
     index("metric_datapoints_user_idx").on(t.userId),
+    /**
+     * Webhook redeliveries must UPSERT, never duplicate — Google retries any
+     * non-204 delivery with backoff for up to 7 days, and explicitly warns
+     * that retries can duplicate UPSERT notifications. Same shape as the
+     * events sync index: PARTIAL (native rows all have null external_id and
+     * would never collide anyway) and USER-SCOPED (the conflict target must
+     * name user_id per the RLS-bypass rule).
+     */
+    uniqueIndex("metric_datapoints_source_external_uq")
+      .on(t.userId, t.source, t.externalId)
+      .where(sql`${t.externalId} IS NOT NULL`),
     ownerPolicy("metric_datapoints", t.userId),
   ],
 ).enableRLS();

@@ -43,6 +43,13 @@
       "when": 1784597732187,
       "tag": "0005_same_zeigeist",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784607184931,
+      "tag": "0006_mature_wrecking_crew",
+      "breakpoints": true
     }
   ]
 }
