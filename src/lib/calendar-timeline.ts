@@ -8,10 +8,10 @@ import type { EventItem } from "./event-utils";
 /** Row height of one hour. Chosen so the shortest real event in the data
  * (a 15-minute standup) still clears MIN_BLOCK_PX without being stretched —
  * i.e. every block's height is honestly proportional to its duration. */
-export const HOUR_PX = 56;
+export const HOUR_PX = 44;
 
-/** Floor for a block's height. At HOUR_PX=56 this is exactly 15 minutes, so
- * it only ever applies to sub-15-minute events. */
+/** Floor for a block's height. At HOUR_PX=44 this is about 19 minutes, so
+ * it only ever applies to sub-20-minute events. */
 export const MIN_BLOCK_PX = 14;
 
 /** Assumed duration when an event has a start but no end time. Rendered as a

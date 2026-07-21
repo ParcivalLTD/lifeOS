@@ -22,7 +22,7 @@ const GearIcon = () => (
 /**
  * The primary nav: Home icon + six tabs. Several merge a pair of views
  * behind a segmented control on the page itself (Daily = Tasks|Habits,
- * Acad & Work = Academic|Work, Health = Health|Gym; Assistant =
+ * Professional = Academic|Work, Health = Health|Gym; Assistant =
  * Chat|Reviews), so the row stays short enough to read on a 360px phone
  * without scrolling.
  *
@@ -34,7 +34,7 @@ const TABS = [
   { key: "today", href: "/", label: "Today", short: "Today", icon: HomeIcon },
   { key: "daily", href: "/tasks", label: "DAILY", short: "DAILY" },
   { key: "calendar", href: "/calendar", label: "CALENDAR", short: "CAL" },
-  { key: "acadwork", href: "/academic", label: "ACADEMIC & WORK", short: "ACAD·WORK" },
+  { key: "acadwork", href: "/academic", label: "PROFESSIONAL", short: "PROF" },
   { key: "gym", href: "/health", label: "HEALTH", short: "HEALTH" },
   { key: "finance", href: "/finance", label: "FINANCE", short: "FIN" },
   { key: "assistant", href: "/assistant", label: "ASSISTANT", short: "ASSIST" },
@@ -123,10 +123,9 @@ export function NavTabs() {
             key={t.key}
             href={t.href}
             onClick={(e) => onClick(e, t.key)}
-            className={`whitespace-nowrap border-b-2 px-1.5 py-2 font-mono text-[9px] font-semibold uppercase tracking-[.03em] no-underline sm:px-3 sm:text-[11px] sm:tracking-[.08em] ${activeCls}`}
+            className={`whitespace-nowrap border-b-2 px-1.5 py-2 font-mono text-[11px] font-semibold uppercase tracking-[.08em] no-underline sm:px-3 ${activeCls}`}
           >
-            <span className="sm:hidden">{t.short}</span>
-            <span className="hidden sm:inline">{t.label}</span>
+            {t.label}
           </Link>
         );
       })}

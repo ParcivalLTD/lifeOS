@@ -57,6 +57,17 @@ const groupByDate = (events: EventItem[]): Map<string, EventItem[]> => {
   return map;
 };
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+  return isMobile;
+}
+
 /**
  * Calendar inside the co-mounted track. The toolbar is client state (a Link
  * here would remount the whole track); range changes fetch via the tab-data
@@ -181,6 +192,13 @@ export function CalendarViewTab({ data, active }: { data: CalendarData; active: 
   }, []);
 
   const byDate = groupByDate(state.events);
+  const isMobile = useIsMobile();
+  let displayWeek = weekDates(state.date);
+  if (isMobile && state.view === "week") {
+    const idx = displayWeek.indexOf(state.date);
+    const startIdx = Math.min(Math.max(0, idx), 4);
+    displayWeek = displayWeek.slice(startIdx, startIdx + 3);
+  }
 
   return (
     <main ref={mainRef} data-no-swipe className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 p-4">
@@ -217,7 +235,7 @@ export function CalendarViewTab({ data, active }: { data: CalendarData; active: 
 
       {/* week and day share one hour-grid timeline; month keeps its own grid */}
       {state.view === "week" && (
-        <TimeGrid days={weekDates(state.date)} eventsByDate={byDate} today={state.todayISO} />
+        <TimeGrid days={displayWeek} eventsByDate={byDate} today={state.todayISO} />
       )}
       {state.view === "month" && (
         <MonthGrid cells={monthGridDates(state.date)} eventsByDate={byDate} today={state.todayISO} />

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const base =
-  "min-h-[36px] cursor-pointer whitespace-nowrap border px-3 py-1.5 text-center font-mono text-[10px] font-semibold uppercase tracking-[.06em] no-underline";
+  "inline-flex items-center justify-center min-h-[36px] cursor-pointer whitespace-nowrap border px-3 py-1.5 text-center font-mono text-[10px] font-semibold uppercase tracking-[.06em] no-underline";
 const idle = `${base} border-border-input bg-subtle text-ink`;
 const on = `${base} border-ink bg-ink text-[#ffffff]`;
 
