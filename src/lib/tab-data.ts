@@ -27,6 +27,7 @@ import type {
   NetWorthPoint,
   SavingsGoal,
 } from "./data/finance";
+import type { HealthOverview } from "./data/health";
 import type { Horizon } from "./goals";
 
 /** Every DTO the tab layer can build. Two of them — goals and review — are
@@ -41,6 +42,7 @@ export type TabDataKey =
   | "academic"
   | "work"
   | "gym"
+  | "health"
   | "finance"
   | "review";
 
@@ -105,7 +107,10 @@ export const TRACK_TABS: TrackTab[] = [
   {
     key: "gym",
     width: 1280,
-    views: [{ key: "gym", href: "/gym", label: "Gym", title: "HELM — GYM" }],
+    views: [
+      { key: "gym", href: "/gym", label: "Gym", title: "HELM — GYM" },
+      { key: "health", href: "/health", label: "Health", title: "HELM — HEALTH" },
+    ],
   },
   {
     key: "finance",
@@ -216,6 +221,9 @@ export type FinanceData = {
   fundsGoals: Record<string, { goalId: string; title: string }>;
 };
 
+/** Health inside the track (FR-HLTH.1/.3): synced + manual metric series. */
+export type HealthData = HealthOverview;
+
 export type AcademicData = AcademicOverview & {
   /** academic-domain active goals via the goal engine (FR-ACAD.1 — reused,
    * not rebuilt), horizon order preserved */
@@ -247,6 +255,7 @@ export type TabDataMap = {
   academic: AcademicData;
   work: WorkData;
   gym: GymData;
+  health: HealthData;
   finance: FinanceData;
   review: ReviewData;
 };

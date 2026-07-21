@@ -5,7 +5,8 @@ import { NextResponse, type NextRequest } from "next/server";
  * Routes reachable without a session (everything else requires the owner).
  * /api/backup and /api/sync/apple-calendar enforce their own auth (a bearer
  * secret or a session) so the scheduled-task callers (Coolify) aren't bounced
- * to /login.
+ * to /login. /api/webhooks/google-health enforces Google's shared secret +
+ * payload signature — Google's servers obviously have no session.
  */
 const PUBLIC_PATHS = [
   "/login",
@@ -13,6 +14,7 @@ const PUBLIC_PATHS = [
   "/auth/logout",
   "/api/backup",
   "/api/sync/apple-calendar",
+  "/api/webhooks/google-health",
 ];
 
 const isPublicPath = (pathname: string) =>

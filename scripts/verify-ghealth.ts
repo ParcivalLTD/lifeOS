@@ -117,9 +117,18 @@ async function main() {
     clientSrc.includes('import "server-only"'));
   check("boundary: data layer is server-only",
     readFileSync("src/lib/data/ghealth.ts", "utf8").includes('import "server-only"'));
-  check("boundary: the Health API helper only ever GETs",
-    /method: "GET"/.test(clientSrc.slice(clientSrc.indexOf("async function api"))) &&
-      !/method: "(POST|PUT|PATCH|DELETE)"/.test(clientSrc.slice(clientSrc.indexOf("async function api"))));
+  const apiFn = clientSrc.slice(
+    clientSrc.indexOf("async function api"),
+    clientSrc.indexOf("export async function confirmAccess"),
+  );
+  check("boundary: the Health API data helper only ever GETs",
+    /method: "GET"/.test(apiFn) && !/method: "(POST|PUT|PATCH|DELETE)"/.test(apiFn));
+  // stage 3 added exactly ONE sanctioned non-OAuth POST: webhook subscriber
+  // registration (config, not health data). Nothing else may POST the API.
+  const apiSection = clientSrc.slice(clientSrc.indexOf("async function api"));
+  check("boundary: the only API POST is subscriber registration (config write)",
+    (apiSection.match(/method: "POST"/g) ?? []).length === 1 &&
+      apiSection.indexOf('method: "POST"') > apiSection.indexOf("registerWebhookSubscriber"));
   check("scopes: exactly the four documented read-only scopes",
     GHEALTH_SCOPES.length === 4 &&
       GHEALTH_SCOPES.every((s) => s.includes("googlehealth.") && s.endsWith(".readonly")),

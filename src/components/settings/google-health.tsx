@@ -11,7 +11,11 @@ const secondary =
 
 /** One-shot outcome line after returning from the OAuth flow. */
 const OUTCOME: Record<string, { text: string; bad: boolean }> = {
-  ok: { text: "Connected — token verified against the Health API before saving.", bad: false },
+  ok: { text: "Connected — token verified, webhook subscriber registered.", bad: false },
+  "ok-no-webhook": {
+    text: "Connected, but webhook registration is pending — set GOOGLE_HEALTH_PROJECT_ID + GOOGLE_HEALTH_WEBHOOK_SECRET (and a public site URL), then reconnect.",
+    bad: true,
+  },
   denied: { text: "Connection cancelled at the Google consent screen.", bad: true },
   "state-mismatch": { text: "Connection failed a security check (state mismatch). Try again.", bad: true },
   error: { text: "Connection failed — see the server log for the exact error.", bad: true },

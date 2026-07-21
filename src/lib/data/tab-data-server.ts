@@ -22,6 +22,7 @@ import {
   netWorthSeries,
 } from "@/lib/data/finance";
 import { goalsByHorizon, savingsFundsGoals, topActiveGoals } from "@/lib/data/goals";
+import { healthOverview } from "@/lib/data/health";
 import {
   getSession,
   liftSeries,
@@ -45,6 +46,7 @@ import type {
   GoalsData,
   GymData,
   HabitsData,
+  HealthData,
   TabDataKey,
   TabDataMap,
   TabParams,
@@ -213,6 +215,10 @@ export async function buildGymData(
   };
 }
 
+export async function buildHealthData(userId: string): Promise<HealthData> {
+  return healthOverview(userId);
+}
+
 export async function buildFinanceData(userId: string): Promise<FinanceData> {
   const month = currentMonthKey();
   const [accounts, savings, expenses, budgets, series, nw, bills, funds] =
@@ -261,6 +267,7 @@ const BUILDERS: {
   academic: buildAcademicData,
   work: buildWorkData,
   gym: buildGymData,
+  health: buildHealthData,
   finance: buildFinanceData,
   review: buildReviewData,
 };

@@ -28,7 +28,8 @@
     "test:calendar": "tsx scripts/verify-calendar.ts",
     "test:caldav": "tsx scripts/verify-caldav.ts",
     "test:providers": "tsx scripts/verify-providers.ts",
-    "test:ghealth": "tsx scripts/verify-ghealth.ts"
+    "test:ghealth": "tsx scripts/verify-ghealth.ts",
+    "test:ghealth-sync": "tsx scripts/verify-ghealth-sync.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.3",

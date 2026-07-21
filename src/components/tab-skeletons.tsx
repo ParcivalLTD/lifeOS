@@ -114,6 +114,26 @@ export function GymSkeleton() {
   );
 }
 
+export function HealthSkeleton() {
+  return (
+    <main className="mx-auto w-full max-w-[1280px] p-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-3">
+        <Panel label="Weight">
+          <SkeletonChart />
+        </Panel>
+        <Panel label="Sleep — last 14 nights">
+          <SkeletonChart />
+        </Panel>
+        <Panel label="Steps — last 14 days">
+          <SkeletonChart />
+        </Panel>
+        <SkeletonPanel label="Heart & oxygen — 30 days" rows={3} />
+        <SkeletonPanel label="Nutrition — last 7 days" rows={3} />
+      </div>
+    </main>
+  );
+}
+
 export function FinanceSkeleton() {
   return (
     <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 p-4">

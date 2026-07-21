@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { exchangeCode, confirmAccess } from "@/lib/ghealth/client";
-import { saveGHealthConnection } from "@/lib/data/ghealth";
+import { exchangeCode, confirmAccess, registerWebhookSubscriber } from "@/lib/ghealth/client";
+import { saveGHealthConnection, setGHealthSubscriber } from "@/lib/data/ghealth";
+import { SUBSCRIBED_DATA_TYPES } from "@/lib/ghealth/mapping";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -12,6 +13,14 @@ import { createClient } from "@/lib/supabase/server";
  * store. A token that cannot actually read the Health API is never saved, so
  * a misconfigured consent (wrong scopes, wrong project) fails here loudly
  * instead of becoming a broken connection discovered at the first webhook.
+ *
+ * After the save, the webhook subscriber is registered for the synced data
+ * types (steps/weight/sleep/HR/HRV/SpO2/nutrition/exercise). Registration
+ * needs GOOGLE_HEALTH_PROJECT_ID + GOOGLE_HEALTH_WEBHOOK_SECRET and a
+ * publicly reachable NEXT_PUBLIC_SITE_URL (Google probes the endpoint
+ * synchronously during the call). A registration failure downgrades to
+ * "connected, webhooks pending" — the connection itself is kept, and Settings
+ * shows the outcome; re-running Connect retries registration.
  */
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -46,6 +55,27 @@ export async function GET(request: Request) {
       healthUserId,
       scopes: grant.scopes,
     });
+
+    // Webhook subscriber registration (push sync). Optional config: without
+    // a project id + webhook secret the connection still works, it just has
+    // no push channel yet.
+    const projectId = process.env.GOOGLE_HEALTH_PROJECT_ID;
+    const webhookSecret = process.env.GOOGLE_HEALTH_WEBHOOK_SECRET;
+    if (!projectId || !webhookSecret) return back("ok-no-webhook");
+
+    const subscriberId = "helm";
+    const reg = await registerWebhookSubscriber(grant.accessToken, {
+      projectId,
+      subscriberId,
+      endpointUri: new URL("/api/webhooks/google-health", base).toString(),
+      secret: webhookSecret,
+      dataTypes: SUBSCRIBED_DATA_TYPES,
+    });
+    if (!reg.ok) {
+      console.error("google health subscriber registration failed:", reg.detail);
+      return back("ok-no-webhook");
+    }
+    await setGHealthSubscriber(user.id, subscriberId);
     return back("ok");
   } catch (err) {
     console.error("google health connect failed:", err);

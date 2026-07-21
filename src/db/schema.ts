@@ -83,7 +83,7 @@ export const metricDirectionEnum = pgEnum("metric_direction", [
  * migration, which is the point — a new sync source should be a deliberate
  * schema change, not a free-text value that silently varies.
  */
-export const eventSourceEnum = pgEnum("event_source", ["native", "apple_calendar"]);
+export const eventSourceEnum = pgEnum("event_source", ["native", "apple_calendar", "google_health"]);
 
 /**
  * Which LLM vendor served a turn. Recorded so a transcript stays honest about

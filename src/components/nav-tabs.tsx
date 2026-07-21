@@ -20,10 +20,11 @@ const GearIcon = () => (
 );
 
 /**
- * The primary nav: Home icon + six tabs. Two of them merge a pair of views
+ * The primary nav: Home icon + six tabs. Several merge a pair of views
  * behind a segmented control on the page itself (Daily = Tasks|Habits,
- * Acad & Work = Academic|Work; Assistant = Chat|Reviews), so the row stays
- * short enough to read on a 360px phone without scrolling.
+ * Acad & Work = Academic|Work, Gym & Health = Gym|Health; Assistant =
+ * Chat|Reviews), so the row stays short enough to read on a 360px phone
+ * without scrolling.
  *
  * Goals is deliberately NOT here — it stays a real route reached from the
  * dashboard's Goals card ("All goals →"). Settings moved to the header's
@@ -34,7 +35,7 @@ const TABS = [
   { key: "daily", href: "/tasks", label: "DAILY", short: "DAILY" },
   { key: "calendar", href: "/calendar", label: "CALENDAR", short: "CAL" },
   { key: "acadwork", href: "/academic", label: "ACADEMIC & WORK", short: "ACAD·WORK" },
-  { key: "gym", href: "/gym", label: "GYM", short: "GYM" },
+  { key: "gym", href: "/gym", label: "GYM & HEALTH", short: "GYM·HLTH" },
   { key: "finance", href: "/finance", label: "FINANCE", short: "FIN" },
   { key: "assistant", href: "/assistant", label: "ASSISTANT", short: "ASSIST" },
 ] as const;
@@ -51,6 +52,7 @@ const PREFIXES: [string, TabKey][] = [
   ["/academic", "acadwork"],
   ["/work", "acadwork"],
   ["/gym", "gym"],
+  ["/health", "gym"],
   ["/finance", "finance"],
   ["/assistant", "assistant"],
   ["/review", "assistant"],

@@ -218,3 +218,88 @@ export async function confirmAccess(
     `Google Health API rejected the confirmation call (${identity.status}/${probe.status})`,
   );
 }
+
+// --- dataPoints (GET-only, paginated) ---------------------------------------
+
+/**
+ * Fetch datapoints for a data type in a civil-time window. `reconcile` uses
+ * the `:reconcile` endpoint — the SERVER-side multi-source merge — which is
+ * how steps avoid phone+watch double-counting (the whole reason the brief
+ * mandates it over a raw `:list`).
+ *
+ * Filters are AIP-160 with the API's snake_case field prefixes: interval
+ * types filter on `{type}.interval.start_time`, daily summaries on
+ * `{type}.date` (already civil), samples on `{type}.sample_time.physical_time`.
+ */
+export async function listDataPoints(
+  accessToken: string,
+  opts: {
+    path: string; // kebab-case URL segment, e.g. "daily-resting-heart-rate"
+    filter: string; // the full AIP-160 filter string
+    reconcile?: boolean;
+  },
+): Promise<Record<string, unknown>[]> {
+  const out: Record<string, unknown>[] = [];
+  let pageToken: string | null = null;
+  for (let page = 0; page < 20; page++) {
+    const q = new URLSearchParams({ filter: opts.filter });
+    if (pageToken) q.set("pageToken", pageToken);
+    const suffix = opts.reconcile ? ":reconcile" : "";
+    const { status, json } = await api(
+      accessToken,
+      `users/me/dataTypes/${opts.path}/dataPoints${suffix}?${q}`,
+    );
+    if (status < 200 || status >= 300) {
+      throw new GHealthError(`dataPoints fetch failed for ${opts.path}: ${status}`);
+    }
+    const body = json as { dataPoints?: unknown[]; nextPageToken?: string } | null;
+    for (const dp of body?.dataPoints ?? []) {
+      if (typeof dp === "object" && dp !== null) out.push(dp as Record<string, unknown>);
+    }
+    pageToken = body?.nextPageToken ?? null;
+    if (!pageToken) break;
+  }
+  return out;
+}
+
+// --- webhook subscriber registration (config write, not health data) --------
+
+/**
+ * Register (or replace) the project's webhook subscriber. This is the ONE
+ * sanctioned non-OAuth POST in this module: it configures notification
+ * delivery and writes no health data — the read-only guarantee is about the
+ * owner's data, and `api()` above stays GET-only.
+ *
+ * Google verifies the endpoint synchronously during this call (an authorized
+ * POST expecting 2xx and an unauthorized one expecting 401/403), so the
+ * webhook route must already be deployed and reachable when this runs.
+ */
+export async function registerWebhookSubscriber(
+  accessToken: string,
+  opts: {
+    projectId: string;
+    subscriberId: string;
+    endpointUri: string;
+    secret: string;
+    dataTypes: readonly string[];
+  },
+): Promise<{ ok: boolean; detail?: string }> {
+  const res = await fetch(`${apiBase()}/v4/projects/${opts.projectId}/subscribers`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      subscriberId: opts.subscriberId,
+      endpointUri: opts.endpointUri,
+      endpointAuthorization: { secret: opts.secret },
+      subscriberConfigs: [
+        { dataTypes: opts.dataTypes, subscriptionCreatePolicy: "AUTOMATIC" },
+      ],
+    }),
+  });
+  if (res.ok) return { ok: true };
+  const text = await res.text().catch(() => "");
+  return { ok: false, detail: `${res.status} ${text.slice(0, 200)}` };
+}
