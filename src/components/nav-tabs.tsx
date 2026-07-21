@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 /** Flat 16px house glyph — squared joins per the design system. */
 const HomeIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="miter" aria-hidden="true">
+  <svg className="shrink-0" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="miter" aria-hidden="true">
     <path d="M1.5 8.5 L8 2 L14.5 8.5" />
     <path d="M3.5 7.5 V14 H12.5 V7.5" />
   </svg>
@@ -13,7 +13,7 @@ const HomeIcon = () => (
 
 /** Flat gear glyph — square teeth, square hub (never circles). */
 const GearIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="miter" aria-hidden="true">
+  <svg className="shrink-0" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="miter" aria-hidden="true">
     <path d="M6.4 1.8 H9.6 L10 3.6 L11.6 4.3 L13.2 3.4 L14.8 6.2 L13.4 7.3 V8.7 L14.8 9.8 L13.2 12.6 L11.6 11.7 L10 12.4 L9.6 14.2 H6.4 L6 12.4 L4.4 11.7 L2.8 12.6 L1.2 9.8 L2.6 8.7 V7.3 L1.2 6.2 L2.8 3.4 L4.4 4.3 L6 3.6 Z" />
     <rect x="6.2" y="6.2" width="3.6" height="3.6" />
   </svg>
@@ -22,7 +22,7 @@ const GearIcon = () => (
 /**
  * The primary nav: Home icon + six tabs. Several merge a pair of views
  * behind a segmented control on the page itself (Daily = Tasks|Habits,
- * Acad & Work = Academic|Work, Gym & Health = Gym|Health; Assistant =
+ * Acad & Work = Academic|Work, Health = Health|Gym; Assistant =
  * Chat|Reviews), so the row stays short enough to read on a 360px phone
  * without scrolling.
  *
@@ -35,7 +35,7 @@ const TABS = [
   { key: "daily", href: "/tasks", label: "DAILY", short: "DAILY" },
   { key: "calendar", href: "/calendar", label: "CALENDAR", short: "CAL" },
   { key: "acadwork", href: "/academic", label: "ACADEMIC & WORK", short: "ACAD·WORK" },
-  { key: "gym", href: "/gym", label: "GYM & HEALTH", short: "GYM·HLTH" },
+  { key: "gym", href: "/health", label: "HEALTH", short: "HEALTH" },
   { key: "finance", href: "/finance", label: "FINANCE", short: "FIN" },
   { key: "assistant", href: "/assistant", label: "ASSISTANT", short: "ASSIST" },
 ] as const;
@@ -74,7 +74,7 @@ export function SettingsLink() {
     <Link
       href="/settings"
       aria-label="Settings"
-      className={`flex -my-1 items-center self-center p-1 no-underline ${active ? "text-ink" : "text-faint"}`}
+      className={`flex shrink-0 -my-1 items-center self-center p-1 no-underline ${active ? "text-ink" : "text-faint"}`}
     >
       <GearIcon />
     </Link>

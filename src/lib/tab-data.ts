@@ -108,8 +108,8 @@ export const TRACK_TABS: TrackTab[] = [
     key: "gym",
     width: 1280,
     views: [
-      { key: "gym", href: "/gym", label: "Gym", title: "HELM — GYM" },
       { key: "health", href: "/health", label: "Health", title: "HELM — HEALTH" },
+      { key: "gym", href: "/gym", label: "Gym", title: "HELM — GYM" },
     ],
   },
   {
