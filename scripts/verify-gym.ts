@@ -21,7 +21,7 @@ async function main() {
   const {
     listTemplates, listSessions, listPRs, liftSeries, listLifts,
     weeklyAdherence, thisWeekDays, startSessionFromTemplate, logSet,
-    getSession, archiveSession,
+    getSession, archiveSession, endSession,
   } = await import("@/lib/data/gym");
   const { listEventsInRange } = await import("@/lib/data/events");
   const { epley1RM, bestE1RM, round1 } = await import("@/lib/gym");
@@ -96,14 +96,18 @@ async function main() {
 
   const dows = await thisWeekDays(OWNER);
   assertSevenUniqueConsecutiveDays(dows, "thisWeekDays");
-  // the seed data deliberately puts several gym sessions on today (used to
-  // exercise the calendar's overlapping-events layout) — exactly the shape
-  // that used to produce a duplicate dateISO row per session
-  const todaySessionsSeeded = sessions.filter((s) => s.dateISO === todayISO()).length;
-  check("thisWeekDays: today's seed data has multiple sessions on one day (the regression case)",
-    todaySessionsSeeded >= 2, `${todaySessionsSeeded}`);
+  // The deterministic seed puts exactly ONE gym session on any given date.
+  // (Stray dev-testing sessions used to sit alongside it on today's date —
+  // e.g. an abandoned startSessionFromTemplate call never archived — which
+  // is exactly the shape that produced a duplicate dateISO row here AND, via
+  // its lingering metric datapoints, an inflated PR. Both are now guarded:
+  // startSessionFromTemplate is idempotent (below), and archiveSession
+  // retracts a session's metric contribution when it's removed.)
+  const todaySessions = sessions.filter((s) => s.dateISO === todayISO()).length;
+  check("thisWeekDays: seed has exactly one session on today's date",
+    todaySessions === 1, `${todaySessions}`);
   const todayBucket = dows.find((d) => d.dateISO === todayISO());
-  check("thisWeekDays: today still one bucket despite multiple sessions",
+  check("thisWeekDays: today's bucket reflects that one session",
     Boolean(todayBucket) && todayBucket!.planned === true);
 
   // --- scoping ---------------------------------------------------------------
@@ -119,6 +123,22 @@ async function main() {
   // the regression case, created live rather than only relying on seed data
   assertSevenUniqueConsecutiveDays(await thisWeekDays(OWNER),
     "thisWeekDays after adding one more same-day session");
+
+  // --- idempotent start (the actual root fix for the calendar-sliver bug) ---
+  // Two sessions from one template on one date used to land at the exact
+  // same sessionStart() instant, which the calendar's overlap layout then
+  // (correctly) rendered as colliding slivers — duplicate data masquerading
+  // as a rendering bug. Re-tapping "Start session" while one is still
+  // active must resume it, never fork a second row.
+  const restarted = await startSessionFromTemplate(OWNER, upper!.id, todayISO());
+  check("idempotent start: re-starting the SAME template+date resumes, doesn't fork",
+    restarted?.id === started!.id, `${restarted?.id} vs ${started!.id}`);
+  const activeUpperToday = (await listSessions(OWNER, 200)).filter(
+    (s) => s.templateId === upper!.id && s.dateISO === todayISO(),
+  );
+  check("idempotent start: exactly one active row for this template+date",
+    activeUpperToday.length === 1, `${activeUpperToday.length}`);
+
   const benchEx = started!.exercises.findIndex((e) => e.name === "Bench Press");
   check("start session: pre-filled sets, none done", started!.exercises[benchEx].sets.length >= 1 && started!.total > 0 && started!.done === 0);
   check("start session: pre-fill weight from last logged (82.5)", started!.exercises[benchEx].sets[0].kg === 82.5, `${started!.exercises[benchEx].sets[0].kg}`);
@@ -134,8 +154,19 @@ async function main() {
   const prReverted = (await listPRs(OWNER)).find((p) => p.lift === "Bench Press")?.e1rm;
   check("un-log set: PR reverts to 95 (session point cleared)", prReverted === 95, `${prReverted}`);
 
+  // --- ending releases the idempotency lock: a genuine second session -------
+  // (e.g. an AM/PM split) must NOT be blocked once the first is finished.
+  await endSession(OWNER, started!.id);
+  const second = await startSessionFromTemplate(OWNER, upper!.id, todayISO());
+  check("legitimate second session: ended session does NOT block a new start",
+    Boolean(second) && second!.id !== started!.id, `${second?.id} vs ${started!.id}`);
+  assertSevenUniqueConsecutiveDays(await thisWeekDays(OWNER),
+    "thisWeekDays with a real ended+new session pair (still no duplicate dateISO)");
+
   await archiveSession(OWNER, started!.id);
-  check("cleanup: session archived, gone from list", !(await listSessions(OWNER, 200)).some((s) => s.id === started!.id));
+  await archiveSession(OWNER, second!.id);
+  check("cleanup: both sessions archived, gone from list",
+    !(await listSessions(OWNER, 200)).some((s) => s.id === started!.id || s.id === second!.id));
   assertSevenUniqueConsecutiveDays(await thisWeekDays(OWNER), "thisWeekDays after cleanup");
 
   await closeDb();

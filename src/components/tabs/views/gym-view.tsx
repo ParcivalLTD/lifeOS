@@ -66,7 +66,10 @@ export function GymViewTab({ data }: { data: GymData }) {
             <form key={t.id} action={startSessionAction} className={`block w-full text-left ${i > 0 ? "border-t border-border-row" : ""}`}>
               <input type="hidden" name="templateId" value={t.id} />
               <input type="hidden" name="date" value={data.todayISO} />
-              <button type="submit" className="w-full cursor-pointer text-left bg-transparent hover:bg-subtle transition-colors">
+              {/* pending-disable so a second tap before the redirect lands
+                  can't fire a second request — belt-and-braces alongside the
+                  server-side idempotency guard in startSessionFromTemplate */}
+              <SubmitButton className="w-full cursor-pointer text-left bg-transparent hover:bg-subtle transition-colors disabled:opacity-50">
                 <div className="px-3 py-2.5">
                   <div className="font-mono text-[12.5px] font-semibold mb-1.5">{t.name}</div>
                   <div className="flex flex-col gap-1">
@@ -80,7 +83,7 @@ export function GymViewTab({ data }: { data: GymData }) {
                     ))}
                   </div>
                 </div>
-              </button>
+              </SubmitButton>
             </form>
           ))}
         </div>

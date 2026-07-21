@@ -196,8 +196,37 @@ export async function startSessionFromTemplate(
 ): Promise<GymSession | null> {
   const template = await getTemplate(userId, templateId);
   if (!template) return null;
+
+  const udb = forUser(userId);
+
+  /**
+   * Idempotent start: a double-tap on "Start session" (the button has no
+   * pending-disable — see gym-view.tsx), a retried request, or simply
+   * picking the same template twice resumes the session already in
+   * progress rather than forking a duplicate. Every session for a given
+   * date starts at the SAME fixed sessionStart() time, so two rows from one
+   * template on one date used to land at the exact same instant — the
+   * calendar's overlap layout then (correctly) rendered them as colliding
+   * slivers, which read as a rendering bug but was duplicate data.
+   *
+   * Scoped to sessions that are still ACTIVE (end IS NULL): once a session
+   * is properly ended, starting the same template again is a legitimate
+   * second session (e.g. an AM/PM split) and must create a fresh row.
+   */
+  const [active] = await udb.select(events, {
+    where: and(
+      isSessionSql,
+      eq(events.archived, false),
+      sql`(${events.payload} ->> 'templateId') = ${templateId}`,
+      sql`${events.end} is null`,
+      gte(events.start, parseISODate(dateISO)),
+      lt(events.start, parseISODate(addDaysISO(dateISO, 1))),
+    ),
+  });
+  if (active) return toSession(active);
+
   const last = await lastSessionFor(userId, template);
-  const [row] = await forUser(userId).insert(events, {
+  const [row] = await udb.insert(events, {
     domain: "gym",
     kind: "session",
     title: `Gym — ${template.name}`,
@@ -259,8 +288,18 @@ export async function addSet(
   await writeSessionExercises(userId, row, exercises);
 }
 
+/**
+ * Archiving a session must also retract its e1RM contribution — otherwise a
+ * mistaken or abandoned session's PR/lift-history datapoints (sourced
+ * `gym:<sessionId>`, per recomputeSessionMetrics) linger forever and keep
+ * counting toward PRs and liftSeries after the session that produced them is
+ * gone. logSet already retracts a single set's contribution on un-done; this
+ * is the same retraction, scoped to every lift the session ever touched.
+ */
 export async function archiveSession(userId: string, id: string): Promise<void> {
-  await forUser(userId).update(events, { archived: true }, and(eq(events.id, id), isSessionSql));
+  const udb = forUser(userId);
+  await udb.delete(metricDatapoints, eq(metricDatapoints.source, `gym:${id}`));
+  await udb.update(events, { archived: true }, and(eq(events.id, id), isSessionSql));
 }
 
 export async function endSession(userId: string, id: string): Promise<void> {
