@@ -14,6 +14,14 @@ import { join } from "node:path";
 import { config } from "dotenv";
 config({ path: [".env.local", ".env"], quiet: true });
 
+import { createRequire } from "node:module";
+
+// provider modules are `server-only`; this IS a server process, so neutralise
+// the marker (its presence is still asserted below)
+const __req = createRequire(import.meta.url);
+const __so = __req.resolve("server-only");
+__req.cache[__so] = { id: __so, filename: __so, loaded: true, exports: {} } as NodeJS.Module;
+
 let pass = 0;
 let fail = 0;
 const check = (name: string, cond: boolean, detail = "") => {
@@ -28,7 +36,8 @@ async function main() {
   const { closeDb, forUser } = await import("@/db");
   const { journalEntries } = await import("@/db/schema");
   const { assembleContext } = await import("@/lib/ai/context");
-  const { AI_MODEL, buildAiRequest, SYSTEM_PROMPT } = await import("@/lib/ai/request");
+  const { buildAiRequest, SYSTEM_PROMPT } = await import("@/lib/ai/request");
+  const { getAdapter } = await import("@/lib/ai/providers");
   const { eq } = await import("drizzle-orm");
 
   const OWNER = process.env.SEED_USER_ID!;
@@ -94,12 +103,17 @@ async function main() {
 
   // --- request builder: the EXACT body, current model -------------------------------
   const req = buildAiRequest(ctx, "chat", "Can I afford a new laptop this month?");
-  check("request: current Claude model id", req.model === AI_MODEL && AI_MODEL === "claude-opus-4-8", req.model);
-  check("request: static system prompt + context + task in user message",
+  // the request is provider-neutral now; the model is chosen at send time
+  check("request: carries no vendor model id (provider-neutral)", !("model" in req));
+  check("request: Claude deep tier still resolves to the current Opus",
+    getAdapter("anthropic").models.deep.id === "claude-opus-4-8",
+    getAdapter("anthropic").models.deep.id);
+  check("request: static system prompt + context + task in user turn",
     req.system === SYSTEM_PROMPT &&
-      req.messages.length === 1 &&
-      req.messages[0].content.includes("<lifeos_context>") &&
-      req.messages[0].content.includes("Can I afford a new laptop"));
+      req.turns.length === 1 &&
+      req.turns[0].role === "user" &&
+      req.turns[0].text.includes("<helm_context>") &&
+      req.turns[0].text.includes("Can I afford a new laptop"));
   check("request: default payload sends no journal bodies either",
     fragments.every((f) => !JSON.stringify(req).includes(f)));
 
@@ -117,19 +131,22 @@ async function main() {
     );
   const srcFiles = walk("src").filter((f) => /\.(ts|tsx)$/.test(f));
 
-  const sdkImporters = srcFiles.filter((f) => read(f).includes("@anthropic-ai/sdk"));
-  check("boundary: only src/lib/ai/client.ts imports the Anthropic SDK",
-    sdkImporters.length === 1 && sdkImporters[0].endsWith("src/lib/ai/client.ts"),
+  const sdkImporters = srcFiles.filter((f) => /from "@anthropic-ai\/sdk"/.test(read(f)));
+  check("boundary: only the Anthropic ADAPTER imports the Anthropic SDK",
+    sdkImporters.length === 1 && sdkImporters[0].endsWith("src/lib/ai/providers/anthropic.ts"),
     sdkImporters.join(","));
 
-  const keyReaders = srcFiles.filter((f) => read(f).includes("process.env.ANTHROPIC_API_KEY"));
-  check("boundary: only client.ts reads ANTHROPIC_API_KEY (server-side env)",
-    keyReaders.length === 1 && keyReaders[0].endsWith("src/lib/ai/client.ts"),
+  const keyReaders = srcFiles.filter((f) => /"ANTHROPIC_API_KEY"/.test(read(f)));
+  check("boundary: only the Anthropic adapter names ANTHROPIC_API_KEY",
+    keyReaders.length === 1 && keyReaders[0].endsWith("src/lib/ai/providers/anthropic.ts"),
     keyReaders.join(","));
   check("boundary: key is never NEXT_PUBLIC_",
     !srcFiles.some((f) => read(f).includes("NEXT_PUBLIC_ANTHROPIC")));
   check("boundary: client.ts is server-only",
     read("src/lib/ai/client.ts").includes('import "server-only"'));
+  check("boundary: every provider adapter is server-only",
+    ["anthropic", "openai", "google"].every((n) =>
+      read(`src/lib/ai/providers/${n}.ts`).includes('import "server-only"')));
 
   const aiSources = ["src/lib/ai/context.ts", "src/lib/ai/request.ts", "src/lib/ai/client.ts"].map(read);
   check("read-only layer: ai modules perform no inserts/updates/deletes",

@@ -85,6 +85,12 @@ export const metricDirectionEnum = pgEnum("metric_direction", [
  */
 export const eventSourceEnum = pgEnum("event_source", ["native", "apple_calendar"]);
 
+/**
+ * Which LLM vendor served a turn. Recorded so a transcript stays honest about
+ * who generated what; the provider is LOCKED once a conversation has turns.
+ */
+export const aiProviderEnum = pgEnum("ai_provider", ["anthropic", "openai", "google"]);
+
 export const habitCompletionStatusEnum = pgEnum("habit_completion_status", [
   "done",
   "skipped",
@@ -425,6 +431,14 @@ export const conversations = pgTable(
     ...coreEntityColumns(),
     /** Auto-titled from the first user message; editable later. */
     title: text("title").notNull().default("New chat"),
+    /** The provider this conversation is bound to. Null until the first
+     * assistant turn, then LOCKED — replaying a transcript through a
+     * different vendor's tool-calling conventions is not something we can
+     * promise is faithful, so the picker disables once turns exist. */
+    provider: aiProviderEnum("provider"),
+    /** Capability tier last chosen (fast | balanced | deep). Switchable at
+     * any time — it only selects a model within the locked provider. */
+    tier: text("tier"),
   },
   (t) => [
     index("conversations_user_idx").on(t.userId),
@@ -447,9 +461,15 @@ export const conversationMessages = pgTable(
      * the model on later turns. Null for plain user turns. */
     blocks: jsonb("blocks").$type<unknown[]>(),
     /** Owner decisions on this turn's proposals, keyed by proposal:
-     * {"<toolUseId>:<index>": "approved" | "rejected"}. Confirmed-action
-     * state survives a reload — nothing is ever re-applied on resume. */
+     * {"<callId>:<index>": "approved" | "rejected"}. Confirmed-action state
+     * survives a reload — nothing is ever re-applied on resume. */
     decisions: jsonb("decisions").$type<Record<string, string>>(),
+    /** Which provider generated this turn (null for user turns and for
+     * assistant turns written before multi-provider support). */
+    provider: aiProviderEnum("provider"),
+    /** The exact vendor model id that produced it, e.g. "claude-opus-4-8".
+     * Free text: model ids churn faster than any enum could track. */
+    model: text("model"),
   },
   (t) => [
     index("conversation_messages_conversation_idx").on(t.conversationId),

@@ -1,32 +1,15 @@
 /**
- * Pure request builder for the LLM boundary: assembled context → the EXACT
- * Messages API request body. Pure and SDK-free so the preview page and the
- * verify suite can inspect precisely what would be sent, byte for byte —
- * the audit surface for the boundary (nothing here performs I/O).
+ * Pure request builder for the LLM boundary: assembled context → the exact
+ * PROVIDER-NEUTRAL request. Pure and SDK-free so the preview page and the
+ * verify suite can inspect precisely what would be sent — the audit surface
+ * for the boundary (nothing here performs I/O).
  *
- * Only `src/lib/ai/client.ts` may put this request on the wire.
+ * This is the same request whichever provider serves it; only the adapter in
+ * `providers/` renders it into a vendor wire format, and only `client.ts`
+ * puts it on the wire.
  */
 import type { AiFeature, AssembledContext } from "@/lib/ai/context";
-
-/** Current Claude model (per Anthropic's docs at time of writing). */
-export const AI_MODEL = "claude-opus-4-8";
-
-export type AiMessage = {
-  role: "user" | "assistant";
-  /** string for plain text; block arrays for replayed assistant turns and
-   * user turns carrying tool_result blocks (opaque here — SDK-typed only at
-   * the client.ts boundary) */
-  content: string | unknown[];
-};
-
-export type AiRequestBody = {
-  model: string;
-  max_tokens: number;
-  system: string;
-  thinking?: { type: "adaptive" };
-  tools?: unknown[];
-  messages: AiMessage[];
-};
+import type { AiSendRequest, AiToolSpec, AiTurn } from "@/lib/ai/providers/types";
 
 /**
  * Static system prompt — deliberately frozen (no interpolation) so the
@@ -66,12 +49,18 @@ export const CHAT_SYSTEM_PROMPT = [
  * The proposal tool — plain JSON, wired to NOTHING. Its input is parsed by
  * `proposals.ts` and rendered for review; only `apply.ts` (behind the
  * owner's Approve, after full re-validation) ever writes.
+ *
+ * Declared in the canonical `AiToolSpec` shape: each adapter renames
+ * `parameters` to whatever its provider expects (`input_schema` for
+ * Anthropic, `parameters` for OpenAI, `parametersJsonSchema` for Gemini).
+ * The schema itself is identical for all three, which is what makes a
+ * proposal from any provider parse through the same validator.
  */
-export const PROPOSAL_TOOL = {
+export const PROPOSAL_TOOL: AiToolSpec = {
   name: "propose_changes",
   description:
     "Propose creating tasks, calendar events, or habits in Helm. Proposals are shown to the owner for review — nothing is created unless the owner approves each item. Dates are YYYY-MM-DD, times are 24h HH:MM. Domains: personal | academic | work | finance | gym | health. Event kinds: appointment | deadline | session | bill | birthday | other.",
-  input_schema: {
+  parameters: {
     type: "object",
     properties: {
       proposals: {
@@ -111,7 +100,7 @@ export const PROPOSAL_TOOL = {
     },
     required: ["proposals"],
   },
-} as const;
+};
 
 const FEATURE_TASK: Record<AiFeature, string> = {
   chat: "Answer the owner's question using the context above.",
@@ -132,13 +121,12 @@ export function buildAiRequest(
   context: AssembledContext,
   feature: AiFeature,
   userTask?: string,
-): AiRequestBody {
+): AiSendRequest {
   const task = userTask?.trim() || FEATURE_TASK[feature];
   return {
-    model: AI_MODEL,
-    max_tokens: 2048,
+    maxTokens: 2048,
     system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: `${contextBlock(context)}\n\n${task}` }],
+    turns: [{ role: "user", text: `${contextBlock(context)}\n\n${task}` }],
   };
 }
 
@@ -149,14 +137,13 @@ export function buildAiRequest(
  */
 export function buildChatRequest(
   context: AssembledContext,
-  turns: AiMessage[],
-): AiRequestBody {
+  turns: AiTurn[],
+): AiSendRequest {
   return {
-    model: AI_MODEL,
-    max_tokens: 4096,
+    maxTokens: 4096,
     system: CHAT_SYSTEM_PROMPT,
-    thinking: { type: "adaptive" },
+    reasoning: "deep",
     tools: [PROPOSAL_TOOL],
-    messages: [{ role: "user", content: contextBlock(context) }, ...turns],
+    turns: [{ role: "user", text: contextBlock(context) }, ...turns],
   };
 }

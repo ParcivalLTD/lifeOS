@@ -68,12 +68,12 @@ async function main() {
   check("advisory: daily-nudge request carries NO tools (structurally cannot write)",
     nudgeReq.tools === undefined && !("tools" in nudgeReq && (nudgeReq as { tools?: unknown[] }).tools));
   // contrast: chat DOES attach the proposal tool — proves the difference is deliberate
-  const chatReq = buildChatRequest(ctx, [{ role: "user", content: "hi" }]);
+  const chatReq = buildChatRequest(ctx, [{ role: "user", text: "hi" }]);
   check("advisory: (contrast) chat DOES attach the proposal tool — nudge deliberately omits it",
     chatReq.tools?.length === 1);
   check("advisory: nudge task asks for one short observation, no action verbs",
-    typeof nudgeReq.messages[0].content === "string" &&
-      /ONE short, data-grounded observation/.test(nudgeReq.messages[0].content));
+    nudgeReq.turns[0].role === "user" &&
+      /ONE short, data-grounded observation/.test(nudgeReq.turns[0].text));
 
   // --- 3: privacy — journal bodies excluded from the nudge context ---------------
   check("privacy: nudge context excludes raw journal body by default",
@@ -108,7 +108,7 @@ async function main() {
   // --- static: generation goes through the sole boundary, no write path ----------
   const nudgeGenSrc = readFileSync("src/lib/ai/nudge.ts", "utf8");
   check("static: generation uses the assembler + boundary (no direct SDK, no write)",
-    nudgeGenSrc.includes("assembleContext") && nudgeGenSrc.includes("sendToClaude") &&
+    nudgeGenSrc.includes("assembleContext") && nudgeGenSrc.includes("streamFromProvider") &&
       !nudgeGenSrc.includes("@anthropic-ai/sdk") && !/\.(insert|update|delete)\(/.test(nudgeGenSrc));
   check("static: the dashboard builder reads the CACHED nudge, never generates on load",
     (() => {

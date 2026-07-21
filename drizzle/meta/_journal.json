@@ -36,6 +36,13 @@
       "when": 1784546367192,
       "tag": "0004_exotic_magus",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784597732187,
+      "tag": "0005_same_zeigeist",
+      "breakpoints": true
     }
   ]
 }

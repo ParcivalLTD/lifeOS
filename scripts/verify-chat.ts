@@ -185,9 +185,9 @@ async function main() {
       e.isDirectory() ? walk(`${dir}/${e.name}`) : [`${dir}/${e.name}`],
     );
   const srcFiles = walk("src").filter((f) => /\.(ts|tsx)$/.test(f));
-  const sdkImporters = srcFiles.filter((f) => src(f).includes("@anthropic-ai/sdk"));
-  check("boundary: streaming lives in client.ts — still the ONLY SDK importer",
-    sdkImporters.length === 1 && sdkImporters[0].endsWith("src/lib/ai/client.ts"), sdkImporters.join(","));
+  const sdkImporters = srcFiles.filter((f) => /from "@anthropic-ai\/sdk"/.test(src(f)));
+  check("boundary: streaming lives behind the adapters — the ONLY SDK importers",
+    sdkImporters.length === 1 && sdkImporters[0].endsWith("src/lib/ai/providers/anthropic.ts"), sdkImporters.join(","));
   check("boundary: the chat route never imports the SDK directly (goes through client.ts)",
     !src("src/app/api/assistant/chat/route.ts").includes("@anthropic-ai/sdk"));
   check("boundary: conversations.ts is DB-only (no SDK, no fetch to the API)",

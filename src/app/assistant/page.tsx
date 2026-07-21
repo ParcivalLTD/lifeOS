@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { AssistantChat, type ChatMessageView } from "@/components/assistant-chat";
 import { Panel } from "@/components/panel";
 import { ASSISTANT_SEGMENTS, Segmented } from "@/components/segmented";
-import { aiConfigured } from "@/lib/ai/client";
+import { aiConfigured, availableProviders, DEFAULT_TIER } from "@/lib/ai/client";
 import { proposalsFromBlocks } from "@/lib/ai/replay";
 import { requireUser } from "@/lib/auth";
 import { getConversation, listConversations } from "@/lib/data/conversations";
@@ -51,6 +51,9 @@ export default async function AssistantPage({
           <AssistantChat
             conversations={conversations}
             conversationId={active?.id ?? null}
+            providers={availableProviders()}
+            lockedProvider={active?.provider ?? null}
+            initialTier={active?.tier ?? DEFAULT_TIER}
             messages={messages}
             todayISO={todayISO()}
           />

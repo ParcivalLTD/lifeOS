@@ -83,6 +83,36 @@ Every run dumps **all nine core tables into one JSON document**
   "Back up to storage now" writes the same dump to the bucket. Recent
   backups are listed on the settings page.
 
+## AI providers (Claude · ChatGPT · Gemini)
+
+The assistant runs on any of three providers, chosen per conversation. Each is
+enabled purely by setting its key — a provider with no key is **hidden from the
+picker**, never an error. With none set, the AI layer is off.
+
+Every provider offers the same three tiers:
+
+| Tier | Claude | ChatGPT | Gemini |
+|---|---|---|---|
+| Fast | `claude-haiku-4-5` | `gpt-5.6-luna` | `gemini-3.1-flash-lite` |
+| Balanced | `claude-sonnet-5` | `gpt-5.6-terra` | `gemini-3.5-flash` |
+| Deep | `claude-opus-4-8` | `gpt-5.6-sol` | `gemini-2.5-pro` |
+
+**Provider is locked once a conversation has a reply**; the tier stays
+switchable. A transcript carries that vendor's tool-call ids and your approve/
+reject decisions are keyed on them, so re-serving it through another vendor's
+conventions can't be guaranteed faithful. Start a new chat to switch provider.
+
+**Parity is enforced, not assumed.** The propose→approve flow is identical
+whoever generates it: adapters normalise each vendor's tool-calling convention
+into one canonical shape, so the same review card and the same validated write
+path run regardless. `npm run test:providers` proves it — one proposal through
+all three native wire formats, asserting identical cards and identical DB rows.
+
+> ⚠️ **Gemini's free tier lets Google use submitted content to improve their
+> products.** Helm sends structured summaries of your personal data, so this is
+> a real trade-off. The model picker labels it at the point of selection; the
+> Claude and ChatGPT tiers are paid and don't carry it.
+
 ## Apple Calendar sync (iCloud → Helm)
 
 One-way mirror of every calendar on an iCloud account. **Read-only: Helm never
@@ -177,7 +207,9 @@ CLAUDE.md § Infrastructure before designing around any such constraint.
 | `CRON_SECRET` | Coolify + local | bearer for `/api/backup`; any long random string |
 | `CALDAV_ENCRYPTION_KEY` | Coolify + local | encrypts the stored Apple app-specific password; `openssl rand -base64 32` |
 | `CALDAV_SYNC_SECRET` | Coolify + local | bearer for `/api/sync/apple-calendar`; `openssl rand -hex 32` |
-| `ANTHROPIC_API_KEY` | Coolify | enables the assistant + daily nudge; absent = features gate off |
+| `ANTHROPIC_API_KEY` | Coolify | enables the Claude provider |
+| `OPENAI_API_KEY` | Coolify | enables the ChatGPT provider |
+| `GOOGLE_AI_API_KEY` | Coolify | enables the Gemini provider |
 | `OWNER_EMAIL` / `OWNER_PASSWORD` | local only | consumed by `auth:create-owner` |
 | `SEED_USER_ID` | local only | consumed by `db:seed` |
 
@@ -194,6 +226,7 @@ CLAUDE.md § Infrastructure before designing around any such constraint.
 | `npm run auth:create-owner` | Create the single owner account (admin API) |
 | `npm run test:auth` | E2E auth + RLS test (needs stack + dev server running) |
 | `npm run test:caldav` | Apple Calendar sync against a local mock CalDAV server |
+| `npm run test:providers` | Multi-provider parity: identical review card + DB write from all three |
 | `npm run db:generate` | Generate SQL migrations from `src/db/schema.ts` |
 | `npm run db:migrate` | Apply migrations to `DATABASE_URL` |
 | `npm run db:seed` | Wipe + re-insert the seed user's data |

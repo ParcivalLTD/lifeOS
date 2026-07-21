@@ -69,7 +69,7 @@ to-do + calendar apps.
 | ~~Academic module (courses, assessments, study hours, pace flags)~~ — **BUILT** (Phase 3) | 3 |
 | ~~Work module (projects, achievements log, career goals, time tracking)~~ — **BUILT** (Phase 3) | 3 |
 | ~~Review system (weekly/monthly reviews, timeline)~~ — **BUILT** (Phase 3) | 3 |
-| AI assistant (chat, plans, daily nudge) — *steps 1–3 (assembler + boundary, chat w/ confirmed-action writes, dashboard daily nudge) BUILT* | 4 |
+| AI assistant (chat, plans, daily nudge) — *steps 1–3 BUILT, now MULTI-PROVIDER (Claude / ChatGPT / Gemini)* | 4 |
 | ~~Apple/iCloud Calendar sync (one-way, read-only)~~ — **BUILT** | 4 |
 | Other external integrations (Google Calendar, bank feeds/Basiq, health import) | 4 |
 
@@ -156,15 +156,50 @@ table itself) is fine — user-facing features are not.
 
 ### AI layer → boundary rules (Phase 4 steps 1–3, NFR-1 + FR-AI)
 
-- **`src/lib/ai/` is the ONLY path to the LLM API.** `context.ts` assembles
-  structured SUMMARIES (module computations, capped lists, no DB ids — the
-  verify suite asserts zero UUIDs); `request.ts` is the pure builder of the
-  exact request body (model `claude-opus-4-8`, `buildAiRequest` +
-  `buildChatRequest`); `client.ts` is the sole transport — `server-only`,
-  reads `ANTHROPIC_API_KEY` inside the send call, and is the one file allowed
-  to import `@anthropic-ai/sdk` (enforced by a `no-restricted-imports` lint
-  rule). Never call the API any other way; all chat context still flows
-  through `assembleContext`.
+- **`src/lib/ai/` is the ONLY path to any LLM API, and it is MULTI-PROVIDER**
+  (Claude, ChatGPT, Gemini). `context.ts` assembles structured SUMMARIES
+  (module computations, capped lists, no DB ids — the verify suite asserts
+  zero UUIDs); `request.ts` is the pure builder of the exact
+  PROVIDER-NEUTRAL request (`buildAiRequest` + `buildChatRequest`) — it
+  carries no vendor model id, because the model is chosen at send time.
+  `client.ts` is the sole transport façade; the three adapters in
+  `providers/` are the ONLY files allowed to import a vendor SDK
+  (`@anthropic-ai/sdk`, `openai`, `@google/genai` — each restricted to its own
+  adapter by `no-restricted-imports`, asserted by `npm run test:providers`).
+  Never call any API another way; all chat context still flows through
+  `assembleContext`, unchanged and provider-agnostic.
+
+### Provider layer → parity rules (multi-provider, NFR-1)
+
+- **The canonical shape is its own thing** (`providers/types.ts`:
+  `AiTurn`/`AiToolCall`/`AiToolResult`/`AiSendRequest`), deliberately not
+  modelled on any one vendor, so none is privileged and no vendor's
+  conventions leak upward. Adapters translate BOTH directions.
+- **Three mismatches the adapters absorb** — Anthropic returns tool args as an
+  object in a `tool_use` block; OpenAI returns a JSON **string** on
+  `function_call.arguments`; Gemini returns an object on a `functionCall` part
+  and has **no reliable call id** (its adapter synthesises one, because the
+  proposal key `"<callId>:<index>"` is PERSISTED with the owner's decision).
+  Results come back as a `tool_result` block / a `tool` role message / a
+  `functionResponse` matched by NAME — which is why `AiToolResult` carries
+  `name` as well as `callId`.
+- **Tiers, not model names**: fast | balanced | deep. Claude = Haiku 4.5 /
+  Sonnet 5 / Opus 4.8; ChatGPT = GPT-5.6 Luna / Terra / Sol; Gemini =
+  Flash-Lite 3.1 / Flash 3.5 / Pro 2.5 (all free-tier eligible —
+  `gemini-3.1-pro-preview` is paid-only).
+- **An unconfigured provider is HIDDEN, never an error** — `availableProviders()`
+  filters on `configured()`, so it cannot be selected at all.
+- **Provider is LOCKED once a conversation has an assistant turn** (the tier
+  stays switchable). A transcript carries that vendor's tool-call ids and the
+  owner's decisions are keyed on them, so re-serving it through another
+  vendor's conventions is not something we can promise is faithful.
+- **`proposals.ts` and `apply.ts` are untouched and provider-agnostic.**
+  `npm run test:providers` runs one golden proposal through all three native
+  wire shapes and asserts identical review-card text, identical validated
+  payloads, and identical DB rows — that is the parity guarantee.
+- ⚠️ **Gemini's free tier permits Google to train on submitted content.** Helm
+  sends summaries of the owner's personal data, so the picker labels this at
+  the point of selection. Do not remove that label.
 - **Raw journal body text is EXCLUDED by default** — journal contributes
   mood/energy/tags only. Body text requires the caller's explicit per-feature
   `includeJournalText: true`; the payload records the decision in

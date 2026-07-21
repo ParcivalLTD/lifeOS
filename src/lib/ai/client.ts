@@ -1,84 +1,60 @@
 /**
- * The SOLE path to the LLM API. Nothing else in the codebase may import
- * `@anthropic-ai/sdk` (enforced by the no-restricted-imports lint rule) and
- * nothing else may talk to the API. Every request body comes from the pure
- * builders in `request.ts` over an `assembleContext` payload — so the
- * "what gets sent" preview shows exactly what this module would transmit.
+ * The SOLE path to any LLM API.
  *
- * Server-side only: the `server-only` import makes bundling this into any
- * client component a build error, and the API key is read from the
- * environment inside the send call (never at module scope, never with a
- * NEXT_PUBLIC_ prefix — same handling as the Supabase service-role key).
+ * Vendor SDKs live behind the adapters in `providers/` — those three files are
+ * the only ones permitted to import `@anthropic-ai/sdk`, `openai`, or
+ * `@google/genai` (enforced by the no-restricted-imports lint rule and
+ * asserted by `npm run test:providers`). This module picks an adapter and
+ * hands it a provider-neutral request; nothing above it knows or cares which
+ * provider is active.
  *
- * This module has no write capability: it transmits and returns. Writes
- * happen only in apply.ts, behind the owner's explicit Approve.
+ * Every request body still comes from the pure builders in `request.ts` over
+ * an `assembleContext` payload, so the "what gets sent" preview shows exactly
+ * what this module would transmit — for any provider.
+ *
+ * Server-side only: `server-only` makes bundling this into a client component
+ * a build error, and each adapter reads its own key from the environment
+ * inside the send call (never at module scope, never NEXT_PUBLIC_).
+ *
+ * This module has no write capability: it transmits and returns. Writes happen
+ * only in apply.ts, behind the owner's explicit Approve.
  */
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
-import type { AiRequestBody } from "@/lib/ai/request";
 
-/** Whether the server-side key is configured (UI gates on this without ever
- * touching the env var itself — client.ts stays the sole reader). */
+import { getAdapter } from "@/lib/ai/providers";
+import type {
+  AiSendRequest,
+  AiStreamChunk,
+  ProviderId,
+} from "@/lib/ai/providers/types";
+
+export { anyProviderConfigured, availableProviders, defaultProvider, resolveSelection, DEFAULT_TIER } from "@/lib/ai/providers";
+export type { ProviderOption } from "@/lib/ai/providers";
+
+/** Whether ANY provider is configured — the UI gates on this without ever
+ * touching an env var itself (the adapters stay the sole readers). */
 export function aiConfigured(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+  // re-exported from the registry; kept as a named function because callers
+  // and the verify suite both reference `aiConfigured()` by name
+  return getAdapters().some((a) => a.configured());
 }
 
-export type StreamChunk =
-  | { type: "text"; text: string }
-  | { type: "done"; blocks: unknown[]; stopReason: string | null };
+function getAdapters() {
+  return (["anthropic", "openai", "google"] as ProviderId[]).map(getAdapter);
+}
+
+export type StreamChunk = AiStreamChunk;
 
 /**
- * Streaming counterpart to sendToClaude. Yields plain text deltas as they
- * arrive, then one final chunk with the complete content blocks (which carry
- * any propose_changes tool calls). SDK types stay sealed inside this module —
- * callers only see the plain protocol above, so the boundary holds.
+ * Streamed turn from a chosen provider. Yields plain text deltas as they
+ * arrive, then one final chunk carrying the assembled text and any tool calls
+ * — already normalised to the canonical `AiToolCall` shape, so the caller
+ * cannot tell which provider produced them.
  */
-export async function* streamFromClaude(body: AiRequestBody): AsyncGenerator<StreamChunk> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "ANTHROPIC_API_KEY is not set — the AI layer is disabled until the server-side key is configured",
-    );
-  }
-  const client = new Anthropic({ apiKey });
-  const stream = client.messages.stream({
-    model: body.model,
-    max_tokens: body.max_tokens,
-    system: body.system,
-    ...(body.thinking ? { thinking: body.thinking } : {}),
-    ...(body.tools ? { tools: body.tools as Anthropic.ToolUnion[] } : {}),
-    messages: body.messages as Anthropic.MessageParam[],
-  });
-
-  for await (const event of stream) {
-    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-      yield { type: "text", text: event.delta.text };
-    }
-  }
-
-  const final = await stream.finalMessage();
-  yield {
-    type: "done",
-    // strip SDK prototypes — these blocks are persisted and replayed verbatim
-    blocks: JSON.parse(JSON.stringify(final.content)) as unknown[],
-    stopReason: final.stop_reason ?? null,
-  };
-}
-
-export async function sendToClaude(body: AiRequestBody): Promise<Anthropic.Message> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "ANTHROPIC_API_KEY is not set — the AI layer is disabled until the server-side key is configured",
-    );
-  }
-  const client = new Anthropic({ apiKey });
-  return client.messages.create({
-    model: body.model,
-    max_tokens: body.max_tokens,
-    system: body.system,
-    ...(body.thinking ? { thinking: body.thinking } : {}),
-    ...(body.tools ? { tools: body.tools as Anthropic.ToolUnion[] } : {}),
-    messages: body.messages as Anthropic.MessageParam[],
-  });
+export function streamFromProvider(
+  provider: ProviderId,
+  model: string,
+  body: AiSendRequest,
+): AsyncGenerator<AiStreamChunk> {
+  return getAdapter(provider).stream(model, body);
 }

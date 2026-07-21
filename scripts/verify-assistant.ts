@@ -154,11 +154,11 @@ async function main() {
 
   // --- request builder: tool attached, boundary intact ----------------------------------
   const ctx = await assembleContext(OWNER, { feature: "chat" });
-  const req = buildChatRequest(ctx, [{ role: "user", content: "hello" }]);
-  check("chat request: proposal tool attached + adaptive thinking + context first",
-    req.tools?.length === 1 && (req.tools[0] as { name: string }).name === "propose_changes" &&
-      req.thinking?.type === "adaptive" &&
-      typeof req.messages[0].content === "string" && req.messages[0].content.includes("<lifeos_context>"));
+  const req = buildChatRequest(ctx, [{ role: "user", text: "hello" }]);
+  check("chat request: proposal tool attached + deep reasoning + context first",
+    req.tools?.length === 1 && req.tools[0].name === "propose_changes" &&
+      req.reasoning === "deep" &&
+      req.turns[0].role === "user" && req.turns[0].text.includes("<helm_context>"));
   check("chat system prompt states the confirmed-action contract",
     req.system === CHAT_SYSTEM_PROMPT && /NEVER executed/.test(CHAT_SYSTEM_PROMPT) && /owner explicitly approves/.test(CHAT_SYSTEM_PROMPT));
   check("tool definition itself is inert JSON (no handler, no imports)",

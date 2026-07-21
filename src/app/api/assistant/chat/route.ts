@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { aiConfigured, streamFromClaude } from "@/lib/ai/client";
+import { aiConfigured, resolveSelection, streamFromProvider } from "@/lib/ai/client";
 import { assembleContext } from "@/lib/ai/context";
 import { buildReplayTurns, proposalsFromBlocks } from "@/lib/ai/replay";
 import { buildChatRequest } from "@/lib/ai/request";
@@ -7,6 +7,7 @@ import {
   appendMessage,
   createConversation,
   getConversation,
+  setConversationSelection,
 } from "@/lib/data/conversations";
 import { createClient } from "@/lib/supabase/server";
 
@@ -42,7 +43,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "not-configured" }, { status: 503 });
   }
 
-  let payload: { conversationId?: unknown; text?: unknown };
+  let payload: {
+    conversationId?: unknown;
+    text?: unknown;
+    provider?: unknown;
+    tier?: unknown;
+  };
   try {
     payload = await req.json();
   } catch {
@@ -69,6 +75,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "not-found" }, { status: 404 });
   }
 
+  // A conversation is LOCKED to the provider that served its first turn — the
+  // stored tool-call ids (and the owner's decisions keyed on them) belong to
+  // that vendor's conventions. The requested provider only applies while the
+  // transcript is still empty; the tier is always honoured.
+  const selection = resolveSelection(
+    conversation.provider ?? payload.provider,
+    payload.tier ?? conversation.tier,
+  );
+  if (!selection) {
+    return NextResponse.json({ error: "not-configured" }, { status: 503 });
+  }
+  await setConversationSelection(
+    user.id,
+    conversationId,
+    selection.provider,
+    selection.tier,
+  );
+
   const context = await assembleContext(user.id, { feature: "chat" });
   const request = buildChatRequest(context, buildReplayTurns(conversation.messages));
 
@@ -76,28 +100,44 @@ export async function POST(req: Request) {
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const send = (d: unknown) => controller.enqueue(encoder.encode(sse(d)));
-      send({ type: "start", conversationId, title: conversation.title });
+      send({
+        type: "start",
+        conversationId,
+        title: conversation.title,
+        provider: selection.provider,
+        tier: selection.tier,
+        model: selection.model,
+      });
       try {
         let full = "";
-        for await (const chunk of streamFromClaude(request)) {
+        for await (const chunk of streamFromProvider(
+          selection.provider,
+          selection.model,
+          request,
+        )) {
           if (chunk.type === "text") {
             full += chunk.text;
             send({ type: "text", text: chunk.text });
           } else {
+            // canonical tool calls — identical shape whichever provider ran
             const messageId = await appendMessage(user.id, conversationId, {
               role: "assistant",
-              text: full,
-              blocks: chunk.blocks,
+              text: chunk.text || full,
+              blocks: chunk.calls,
+              provider: selection.provider,
+              model: selection.model,
             });
-            const { proposals, invalid } = proposalsFromBlocks(chunk.blocks);
+            const { proposals, invalid } = proposalsFromBlocks(chunk.calls);
             send({
               type: "done",
               conversationId,
               messageId,
-              text: full,
+              text: chunk.text || full,
               proposals,
               invalid,
               stopReason: chunk.stopReason,
+              provider: selection.provider,
+              model: selection.model,
             });
           }
         }
