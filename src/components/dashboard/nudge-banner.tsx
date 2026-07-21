@@ -39,6 +39,7 @@ export function NudgeBanner({
   const willGenerate = enabled && configured && !nudge && !sessionCached && attemptedForDate !== today;
 
   const [text, setText] = useState<string | null>(nudge ?? sessionCached);
+  const [failure, setFailure] = useState<string | null>(null);
   const [loading, setLoading] = useState(willGenerate || (inFlight && !nudge && !sessionCached));
 
   useEffect(() => {
@@ -50,9 +51,11 @@ export function NudgeBanner({
         if (res.ok) {
           sessionText = res.text;
           setText(res.text);
+        } else if (res.reason === "error") {
+          setFailure(res.detail ?? "the provider request failed");
         }
       })
-      .catch(() => {})
+      .catch(() => setFailure("the provider request failed"))
       .finally(() => {
         inFlight = false;
         setLoading(false);
@@ -108,7 +111,25 @@ export function NudgeBanner({
     );
   }
 
-  // enabled + configured, but generation produced nothing this session — stay
-  // quiet rather than showing an error on the dashboard
+  // Enabled + configured but generation failed. Say so plainly instead of
+  // rendering nothing: a silently absent nudge is indistinguishable from a
+  // disabled one, which sent the owner hunting for a bug that wasn't in the
+  // app at all. Honest placeholder, never fake data.
+  if (failure) {
+    return shell(
+      <>
+        <span className="min-w-[260px] flex-1 text-[12.5px]">
+          No nudge today — {failure}.
+        </span>
+        <Link
+          href="/settings"
+          className="flex-none font-mono text-[10px] font-semibold uppercase tracking-[.06em] text-faintest underline underline-offset-2"
+        >
+          Settings →
+        </Link>
+      </>,
+    );
+  }
+
   return null;
 }

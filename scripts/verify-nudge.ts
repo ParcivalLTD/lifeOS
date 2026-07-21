@@ -41,7 +41,13 @@ async function main() {
   const FOREIGN = "00000000-0000-0000-0000-00000000dead";
   const today = todayISO();
 
-  // clean slate: archive any pre-existing nudge/pref rows for the owner
+  // The preference row is SHARED — it now carries the owner's assistant model
+  // choice alongside the nudge toggle. Archiving it for a clean slate would
+  // destroy real user state (and silently drop the assistant back to the
+  // default provider), so snapshot it first and put it back at the end.
+  const { getPreferences, patchPreferences } = await import("@/lib/data/preferences");
+  const savedPrefs = await getPreferences(OWNER);
+
   const isNudgeOrPref = sql`${events.payload} is not null and (jsonb_exists(${events.payload}, 'nudge') or jsonb_exists(${events.payload}, 'pref'))`;
   await forUser(OWNER).update(events, { archived: true }, isNudgeOrPref);
 
@@ -116,8 +122,13 @@ async function main() {
       return s.includes("getTodayNudge") && !s.includes("generateNudgeText") && !s.includes("sendToClaude");
     })());
 
-  // --- cleanup: archive the test rows (restores default-enabled, no cached nudge) --
+  // --- cleanup: archive the test rows, then restore the owner's real prefs ---
   await forUser(OWNER).update(events, { archived: true }, isNudgeOrPref);
+  if (Object.keys(savedPrefs).length > 0) await patchPreferences(OWNER, savedPrefs);
+  check("cleanup: the owner's saved model choice survived the run",
+    JSON.stringify(await getPreferences(OWNER)) === JSON.stringify(savedPrefs) ||
+      Object.keys(savedPrefs).length === 0,
+    JSON.stringify(await getPreferences(OWNER)));
   check("cleanup: state restored (no cached nudge, default-enabled)",
     (await getTodayNudge(OWNER)) === null && (await getNudgeEnabled(OWNER)) === true);
 

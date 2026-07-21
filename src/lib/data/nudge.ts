@@ -41,10 +41,16 @@ export async function getTodayNudge(userId: string): Promise<{ text: string } | 
 export async function saveTodayNudge(userId: string, text: string): Promise<void> {
   const udb = forUser(userId);
   const today = toISODate(new Date());
+  // Deliberately looks up ARCHIVED rows too, so re-saving reuses the day's
+  // row instead of appending a second one. That means the update must also
+  // REVIVE it: `getTodayNudge` only reads unarchived rows, so updating an
+  // archived row and leaving it archived cached a nudge that could never be
+  // read back — the dashboard banner then stayed permanently empty with no
+  // error, for that date and every later save to it.
   const existing = await udb.select(events, { where: and(isNudge, nudgeDateIs(today)) });
   const payload: NudgePayload = { nudge: { date: today, text } };
   if (existing[0]) {
-    await udb.update(events, { payload }, eq(events.id, existing[0].id));
+    await udb.update(events, { payload, archived: false }, eq(events.id, existing[0].id));
   } else {
     await udb.insert(events, {
       domain: "personal",
