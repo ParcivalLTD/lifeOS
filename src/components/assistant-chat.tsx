@@ -11,8 +11,6 @@ import {
 import { Collapse } from "@/components/disclosure-panel";
 import { Panel } from "@/components/panel";
 import type { Proposal } from "@/lib/ai/proposals";
-import type { ProviderOption } from "@/lib/ai/providers";
-import type { ProviderId, Tier } from "@/lib/ai/providers/types";
 import type { ConversationSummary } from "@/lib/data/conversations";
 
 /** A stored message prepared server-side for rendering: proposals already
@@ -168,21 +166,16 @@ function ProposalCard({
 export function AssistantChat({
   conversations,
   conversationId: initialConversationId,
-  providers,
-  lockedProvider,
-  initialTier,
+  activeModelLabel,
   messages,
   todayISO,
 }: {
   conversations: ConversationSummary[];
   conversationId: string | null;
-  /** Only providers with a configured key — an unconfigured one is absent,
-   * never a disabled-with-error option. */
-  providers: ProviderOption[];
-  /** Set once this conversation has an assistant turn; the provider select
-   * is disabled from then on (the tier select stays live). */
-  lockedProvider: ProviderId | null;
-  initialTier: Tier;
+  /** Read-only label of the model serving this chat, e.g. "Claude · Opus
+   * 4.8". The chooser itself lives in Settings; this is just so the active
+   * model is still discoverable from here. */
+  activeModelLabel: string | null;
   messages: ChatMessageView[];
   todayISO: string;
 }) {
@@ -196,13 +189,8 @@ export function AssistantChat({
   const [error, setError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [input, setInput] = useState("");
-  const [provider, setProvider] = useState<ProviderId | null>(
-    lockedProvider ?? providers[0]?.id ?? null,
-  );
-  const [tier, setTier] = useState<Tier>(initialTier);
-  // the provider is locked by the FIRST assistant turn, so a fresh chat can
-  // still switch until it has one
-  const [locked, setLocked] = useState<ProviderId | null>(lockedProvider);
+  // what actually served the latest turn — the server decides, we only display
+  const [activeLabel, setActiveLabel] = useState<string | null>(activeModelLabel);
   const endRef = useRef<HTMLDivElement>(null);
 
   // Navigating to another conversation (or to a fresh one) re-seeds from the
@@ -215,9 +203,7 @@ export function AssistantChat({
     setTurns(hydrate(messages));
     setStreaming(null);
     setError(null);
-    setLocked(lockedProvider);
-    setProvider(lockedProvider ?? providers[0]?.id ?? null);
-    setTier(initialTier);
+    setActiveLabel(activeModelLabel);
   }
 
   useEffect(() => {
@@ -240,7 +226,7 @@ export function AssistantChat({
       const res = await fetch("/api/assistant/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ conversationId, text: message, provider, tier }),
+        body: JSON.stringify({ conversationId, text: message }),
       });
       if (!res.ok || !res.body) {
         const body = await res.json().catch(() => ({}));
@@ -270,14 +256,9 @@ export function AssistantChat({
           if (evt.type === "start") {
             newId = evt.conversationId;
             setConversationId(evt.conversationId);
-            // the server decides which provider actually served the turn
-            // (a locked conversation ignores the request) — follow it, and
-            // lock the picker from here on
-            if (evt.provider) {
-              setProvider(evt.provider);
-              setLocked(evt.provider);
-            }
-            if (evt.tier) setTier(evt.tier);
+            // the server decides which provider served the turn (a locked
+            // conversation keeps its own) — reflect it in the label
+            if (evt.modelLabel) setActiveLabel(evt.modelLabel);
           } else if (evt.type === "text") {
             acc += evt.text;
             setStreaming(acc);
@@ -385,60 +366,6 @@ export function AssistantChat({
           </div>
         }
       >
-        {/* provider + tier picker. The provider select locks once the
-            conversation has an assistant turn — its transcript carries that
-            vendor's tool-call ids, which the owner's stored decisions are
-            keyed on. The tier stays switchable at any time. */}
-        {provider && providers.length > 0 && (
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-border-row px-3 py-2">
-            <select
-              aria-label="Provider"
-              value={provider}
-              disabled={locked !== null}
-              onChange={(e) => {
-                const next = e.target.value as ProviderId;
-                setProvider(next);
-                const p = providers.find((x) => x.id === next);
-                if (p && !p.tiers.some((t) => t.tier === tier)) setTier("balanced");
-              }}
-              className="border border-border-input bg-subtle px-1.5 py-1 font-mono text-[10px] disabled:opacity-50"
-            >
-              {providers.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-            <select
-              aria-label="Model tier"
-              value={tier}
-              onChange={(e) => setTier(e.target.value as Tier)}
-              className="border border-border-input bg-subtle px-1.5 py-1 font-mono text-[10px]"
-            >
-              {(providers.find((p) => p.id === provider)?.tiers ?? []).map((t) => (
-                <option key={t.tier} value={t.tier}>
-                  {t.tier} — {t.label}
-                </option>
-              ))}
-            </select>
-            {locked !== null && (
-              <span className="font-mono text-[9px] uppercase tracking-[.05em] text-faint">
-                provider locked for this chat
-              </span>
-            )}
-            {(() => {
-              const note = providers
-                .find((p) => p.id === provider)
-                ?.tiers.find((t) => t.tier === tier)?.note;
-              return note ? (
-                <span className="w-full font-mono text-[9px] uppercase tracking-[.04em] text-status-warn">
-                  ⚠ {note}
-                </span>
-              ) : null;
-            })()}
-          </div>
-        )}
-
         <Collapse open={showHistory}>
           <div>
             {conversations.length === 0 && (
@@ -575,8 +502,9 @@ export function AssistantChat({
         </form>
 
         <div className="border-t border-border-row px-3 py-2 font-mono text-[9px] uppercase tracking-[.06em] text-faintest">
-          Advisory only — nothing changes unless you approve a review card ·
-          history saved to your database
+          {activeLabel ? `${activeLabel} · ` : ""}Advisory only — nothing
+          changes unless you approve a review card · history saved to your
+          database
         </div>
       </Panel>
     </div>

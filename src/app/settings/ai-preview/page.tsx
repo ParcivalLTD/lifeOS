@@ -61,11 +61,6 @@ export default async function AiPreviewPage({
                   </span>
                 ))}
               </div>
-              {p.tiers.find((t) => t.note) && (
-                <div className="mt-1 font-mono text-[9px] uppercase tracking-[.04em] text-status-warn">
-                  {p.tiers.find((t) => t.note)?.note}
-                </div>
-              )}
             </div>
           ))}
         </div>

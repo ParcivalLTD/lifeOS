@@ -4,10 +4,11 @@ import { AppHeader } from "@/components/app-header";
 import { AssistantChat, type ChatMessageView } from "@/components/assistant-chat";
 import { Panel } from "@/components/panel";
 import { ASSISTANT_SEGMENTS, Segmented } from "@/components/segmented";
-import { aiConfigured, availableProviders, DEFAULT_TIER } from "@/lib/ai/client";
+import { aiConfigured, getAdapter, resolveForConversation } from "@/lib/ai/client";
 import { proposalsFromBlocks } from "@/lib/ai/replay";
 import { requireUser } from "@/lib/auth";
 import { getConversation, listConversations } from "@/lib/data/conversations";
+import { getPreferences } from "@/lib/data/preferences";
 import { todayISO } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "HELM — ASSISTANT" };
@@ -27,6 +28,14 @@ export default async function AssistantPage({
 
   // parse each stored assistant turn's proposals server-side so a resumed
   // chat renders its review cards (and their decisions) without a round-trip
+  // which model will serve the next turn: the conversation's locked provider
+  // if it has one, otherwise the choice saved in Settings
+  const prefs = await getPreferences(user.id);
+  const selection = resolveForConversation(prefs, active?.provider ?? null);
+  const activeModelLabel = selection
+    ? `${getAdapter(selection.provider).label} · ${getAdapter(selection.provider).models[selection.tier].label}`
+    : null;
+
   const messages: ChatMessageView[] = (active?.messages ?? []).map((m) => ({
     id: m.id,
     role: m.role,
@@ -51,9 +60,7 @@ export default async function AssistantPage({
           <AssistantChat
             conversations={conversations}
             conversationId={active?.id ?? null}
-            providers={availableProviders()}
-            lockedProvider={active?.provider ?? null}
-            initialTier={active?.tier ?? DEFAULT_TIER}
+            activeModelLabel={activeModelLabel}
             messages={messages}
             todayISO={todayISO()}
           />

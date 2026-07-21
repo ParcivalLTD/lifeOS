@@ -7,6 +7,8 @@ import { buildExport, uploadBackup } from "@/lib/backup";
 import { CalDavAuthError, verifyCredentials } from "@/lib/caldav/client";
 import { syncAppleCalendar } from "@/lib/caldav/sync";
 import { deleteConnection, saveConnection } from "@/lib/data/caldav";
+import { patchPreferences } from "@/lib/data/preferences";
+import { isProviderId, isTier } from "@/lib/ai/providers/types";
 
 /** Manual "back up to storage now" from the settings page. */
 export async function runBackupAction(): Promise<void> {
@@ -22,6 +24,15 @@ export async function runBackupAction(): Promise<void> {
     outcome = "error";
   }
   redirect(`/settings?backup=${outcome}`);
+}
+
+/** Save the assistant model choice (Settings is the only place it is set). */
+export async function saveAiModelAction(provider: string, tier: string): Promise<void> {
+  const user = await requireUser();
+  if (!isProviderId(provider) || !isTier(tier)) return;
+  await patchPreferences(user.id, { aiProvider: provider, aiTier: tier });
+  revalidatePath("/settings");
+  revalidatePath("/assistant");
 }
 
 /**

@@ -97,10 +97,11 @@ Every provider offers the same three tiers:
 | Balanced | `claude-sonnet-5` | `gpt-5.6-terra` | `gemini-3.5-flash` |
 | Deep | `claude-opus-4-8` | `gpt-5.6-sol` | `gemini-2.5-pro` |
 
-**Provider is locked once a conversation has a reply**; the tier stays
-switchable. A transcript carries that vendor's tool-call ids and your approve/
-reject decisions are keyed on them, so re-serving it through another vendor's
-conventions can't be guaranteed faithful. Start a new chat to switch provider.
+**Choose the model in Settings → Assistant model.** The choice is saved and
+applies to every new chat; the assistant itself just shows which model is
+serving it. An existing chat stays on the provider that produced its first
+reply — its transcript carries that vendor's tool-call ids and your approve/
+reject decisions are keyed on them — so start a new chat to switch provider.
 
 **Parity is enforced, not assumed.** The propose→approve flow is identical
 whoever generates it: adapters normalise each vendor's tool-calling convention
@@ -108,10 +109,9 @@ into one canonical shape, so the same review card and the same validated write
 path run regardless. `npm run test:providers` proves it — one proposal through
 all three native wire formats, asserting identical cards and identical DB rows.
 
-> ⚠️ **Gemini's free tier lets Google use submitted content to improve their
-> products.** Helm sends structured summaries of your personal data, so this is
-> a real trade-off. The model picker labels it at the point of selection; the
-> Claude and ChatGPT tiers are paid and don't carry it.
+The Gemini tiers above are all free-tier eligible (`gemini-3.1-pro-preview` is
+paid-only). Note that Google's free tier permits them to use submitted content
+to improve their products.
 
 ## Apple Calendar sync (iCloud → Helm)
 

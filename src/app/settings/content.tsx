@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { Panel } from "@/components/panel";
+import { AiModelPanel } from "@/components/settings/ai-model";
 import { AppleCalendarPanel } from "@/components/settings/apple-calendar";
 import { NudgeToggle } from "@/components/settings/nudge-toggle";
 import { listBackups, type BackupFileInfo } from "@/lib/backup";
+import type { ProviderOption } from "@/lib/ai/providers";
+import type { ProviderId, Tier } from "@/lib/ai/providers/types";
 import type { CaldavConnection } from "@/lib/data/caldav";
 import { runBackupAction } from "./actions";
 
@@ -15,6 +18,9 @@ export async function SettingsContent({
   nudgeEnabled,
   appleCalendar,
   caldavConfigured,
+  aiProviders,
+  aiProvider,
+  aiTier,
 }: {
   userId?: string;
   email: string;
@@ -23,6 +29,9 @@ export async function SettingsContent({
   nudgeEnabled: boolean;
   appleCalendar: CaldavConnection | null;
   caldavConfigured: boolean;
+  aiProviders: ProviderOption[];
+  aiProvider: ProviderId | null;
+  aiTier: Tier;
 }) {
 
   let backups: BackupFileInfo[] = [];
@@ -78,6 +87,14 @@ export async function SettingsContent({
           <AppleCalendarPanel
             connection={appleCalendar}
             configured={caldavConfigured}
+          />
+        </Panel>
+
+        <Panel label="Assistant model" value={aiProviders.length === 0 ? "NOT CONFIGURED" : undefined}>
+          <AiModelPanel
+            providers={aiProviders}
+            provider={aiProvider}
+            tier={aiTier}
           />
         </Panel>
 

@@ -31,11 +31,6 @@ import type {
 
 const KEY = "GOOGLE_AI_API_KEY";
 
-/** Free-tier terms allow submitted content to be used to improve Google's
- * products. Surfaced in the picker so the choice is informed at the point it
- * is made — this app's whole premise is private personal data. */
-const FREE_TIER_NOTE = "Free tier — Google may use submitted content for training";
-
 const synthesiseId = (turnIndex: number, callIndex: number) =>
   `g${turnIndex}_${callIndex}`;
 
@@ -76,9 +71,9 @@ export const googleAdapter: ProviderAdapter = {
   // All three are free-tier eligible (gemini-3.1-pro-preview is paid-only, so
   // the deep tier uses the newest Pro that the free tier actually covers).
   models: {
-    fast: { id: "gemini-3.1-flash-lite", label: "Flash Lite 3.1", note: FREE_TIER_NOTE },
-    balanced: { id: "gemini-3.5-flash", label: "Flash 3.5", note: FREE_TIER_NOTE },
-    deep: { id: "gemini-2.5-pro", label: "Pro 2.5", note: FREE_TIER_NOTE },
+    fast: { id: "gemini-3.1-flash-lite", label: "Flash Lite 3.1" },
+    balanced: { id: "gemini-3.5-flash", label: "Flash 3.5" },
+    deep: { id: "gemini-2.5-pro", label: "Pro 2.5" },
   },
 
   async *stream(model, req): AsyncGenerator<AiStreamChunk> {

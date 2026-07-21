@@ -102,9 +102,6 @@ export type ModelChoice = {
   id: string;
   /** Shown in the picker. */
   label: string;
-  /** Surfaced in the UI where it materially affects the owner's decision —
-   * e.g. a free tier whose terms allow training on submitted content. */
-  note?: string;
 };
 
 export interface ProviderAdapter {

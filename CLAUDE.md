@@ -189,17 +189,27 @@ table itself) is fine — user-facing features are not.
   `gemini-3.1-pro-preview` is paid-only).
 - **An unconfigured provider is HIDDEN, never an error** — `availableProviders()`
   filters on `configured()`, so it cannot be selected at all.
-- **Provider is LOCKED once a conversation has an assistant turn** (the tier
-  stays switchable). A transcript carries that vendor's tool-call ids and the
-  owner's decisions are keyed on them, so re-serving it through another
-  vendor's conventions is not something we can promise is faithful.
+- **The model is chosen ONCE, in Settings → Assistant model**, and saved to
+  the shared preference row (`payload.pref.aiProvider` / `.aiTier`, see
+  `lib/data/preferences.ts`). The chat has no picker — only a read-only label
+  of what is serving it. The chat route reads the saved preference; the client
+  cannot name a provider in the request.
+- **Provider is still LOCKED once a conversation has an assistant turn.** A
+  transcript carries that vendor's tool-call ids and the owner's decisions are
+  keyed on them, so re-serving it through another vendor's conventions is not
+  something we can promise is faithful — the saved preference applies to NEW
+  chats.
+- **Preference writes MERGE** (`patchPreferences`). The nudge toggle and the
+  model choice share one `payload.pref` row; a replace-style write would wipe
+  its sibling.
 - **`proposals.ts` and `apply.ts` are untouched and provider-agnostic.**
   `npm run test:providers` runs one golden proposal through all three native
   wire shapes and asserts identical review-card text, identical validated
   payloads, and identical DB rows — that is the parity guarantee.
-- ⚠️ **Gemini's free tier permits Google to train on submitted content.** Helm
-  sends summaries of the owner's personal data, so the picker labels this at
-  the point of selection. Do not remove that label.
+- Gemini's configured tiers are free-tier eligible (`gemini-3.1-pro-preview`
+  is paid-only). Google's free tier permits them to use submitted content to
+  improve their products; the owner is aware and decided against an in-app
+  label (2026-07-21) — do not re-add one unprompted.
 - **Raw journal body text is EXCLUDED by default** — journal contributes
   mood/energy/tags only. Body text requires the caller's explicit per-feature
   `includeJournalText: true`; the payload records the decision in

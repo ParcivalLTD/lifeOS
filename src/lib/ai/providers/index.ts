@@ -38,7 +38,7 @@ export const getAdapter = (id: ProviderId): ProviderAdapter => ADAPTERS[id];
 export type ProviderOption = {
   id: ProviderId;
   label: string;
-  tiers: { tier: Tier; model: string; label: string; note?: string }[];
+  tiers: { tier: Tier; model: string; label: string }[];
 };
 
 const describe = (a: ProviderAdapter): ProviderOption => ({
@@ -46,7 +46,7 @@ const describe = (a: ProviderAdapter): ProviderOption => ({
   label: a.label,
   tiers: TIERS.map((tier) => {
     const m: ModelChoice = a.models[tier];
-    return { tier, model: m.id, label: m.label, note: m.note };
+    return { tier, model: m.id, label: m.label };
   }),
 });
 
@@ -84,6 +84,22 @@ export function resolveSelection(
     : fallback;
   const t = isTier(tier) ? tier : DEFAULT_TIER;
   return { provider: wanted, tier: t, model: ADAPTERS[wanted].models[t].id };
+}
+
+/**
+ * The owner's saved choice from Settings, resolved into something sendable.
+ *
+ * `lockedProvider` wins when present: a conversation that already has an
+ * assistant turn stays on the vendor that produced it, because its stored
+ * tool-call ids (and the decisions keyed on them) belong to that vendor's
+ * conventions. Everything else follows the saved preference, and anything
+ * unset or no-longer-configured falls back rather than erroring.
+ */
+export function resolveForConversation(
+  saved: { aiProvider?: ProviderId; aiTier?: Tier },
+  lockedProvider?: ProviderId | null,
+): { provider: ProviderId; tier: Tier; model: string } | null {
+  return resolveSelection(lockedProvider ?? saved.aiProvider, saved.aiTier);
 }
 
 export type { ProviderId, Tier };

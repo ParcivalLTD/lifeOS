@@ -28,7 +28,15 @@ import type {
   ProviderId,
 } from "@/lib/ai/providers/types";
 
-export { anyProviderConfigured, availableProviders, defaultProvider, resolveSelection, DEFAULT_TIER } from "@/lib/ai/providers";
+export {
+  anyProviderConfigured,
+  availableProviders,
+  defaultProvider,
+  resolveForConversation,
+  resolveSelection,
+  DEFAULT_TIER,
+} from "@/lib/ai/providers";
+export { getAdapter } from "@/lib/ai/providers";
 export type { ProviderOption } from "@/lib/ai/providers";
 
 /** Whether ANY provider is configured — the UI gates on this without ever

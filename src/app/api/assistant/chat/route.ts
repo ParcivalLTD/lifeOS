@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { aiConfigured, resolveSelection, streamFromProvider } from "@/lib/ai/client";
+import {
+  aiConfigured,
+  getAdapter,
+  resolveForConversation,
+  streamFromProvider,
+} from "@/lib/ai/client";
 import { assembleContext } from "@/lib/ai/context";
 import { buildReplayTurns, proposalsFromBlocks } from "@/lib/ai/replay";
 import { buildChatRequest } from "@/lib/ai/request";
@@ -9,6 +14,7 @@ import {
   getConversation,
   setConversationSelection,
 } from "@/lib/data/conversations";
+import { getPreferences } from "@/lib/data/preferences";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -43,12 +49,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "not-configured" }, { status: 503 });
   }
 
-  let payload: {
-    conversationId?: unknown;
-    text?: unknown;
-    provider?: unknown;
-    tier?: unknown;
-  };
+  let payload: { conversationId?: unknown; text?: unknown };
   try {
     payload = await req.json();
   } catch {
@@ -75,14 +76,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "not-found" }, { status: 404 });
   }
 
-  // A conversation is LOCKED to the provider that served its first turn — the
-  // stored tool-call ids (and the owner's decisions keyed on them) belong to
-  // that vendor's conventions. The requested provider only applies while the
-  // transcript is still empty; the tier is always honoured.
-  const selection = resolveSelection(
-    conversation.provider ?? payload.provider,
-    payload.tier ?? conversation.tier,
-  );
+  // The model comes from the owner's saved choice in Settings — the client
+  // does not get to name a provider. A conversation that already has an
+  // assistant turn stays LOCKED to the vendor that served it, because its
+  // stored tool-call ids (and the decisions keyed on them) follow that
+  // vendor's conventions.
+  const prefs = await getPreferences(user.id);
+  const selection = resolveForConversation(prefs, conversation.provider);
   if (!selection) {
     return NextResponse.json({ error: "not-configured" }, { status: 503 });
   }
@@ -107,6 +107,7 @@ export async function POST(req: Request) {
         provider: selection.provider,
         tier: selection.tier,
         model: selection.model,
+        modelLabel: `${getAdapter(selection.provider).label} · ${getAdapter(selection.provider).models[selection.tier].label}`,
       });
       try {
         let full = "";
