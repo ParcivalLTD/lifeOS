@@ -528,10 +528,25 @@ gym:      oklch(0.62 0.13 55)    health:   oklch(0.55 0.13 20)
   reclaimed once free), all-day items sit in their own strip above the grid,
   blocks are domain-tinted (`bg-domain-x/10` + 2px domain left edge), and
   today's column carries a current-time line. Window is 06–23, WIDENED (never
-  clipped) to fit outlying events — nothing is ever hidden. Week scrolls
-  horizontally at 108px/column with a sticky hour gutter; day fills the width
-  and is the mobile fallback. **Month view is unchanged.** Guarded by
-  `npm run test:calendar`, which checks the math and the real seeded week.
+  clipped) to fit outlying events — nothing is ever hidden. **Month view is
+  unchanged.** Guarded by `npm run test:calendar`, which checks the math and
+  the real seeded week.
+  - **Width is responsive, not fixed** (decided 2026-07-21, superseding the
+    earlier 108px/column + horizontal-scroll rule): week's 7 columns are a
+    plain `minmax(0, 1fr)` grid that always fills the available width —
+    wide on desktop, narrower (titles truncate harder) on a phone, but never
+    a scrollbar. Day already filled the width and is unchanged.
+  - **Swipe pages the date** (`CalendarViewTab` in `components/tabs/views/
+    calendar-view.tsx`), not tab-switching — a horizontal drag over the
+    calendar steps day/week/month via the same `stepDate` the ‹ Today ›
+    toolbar buttons use. `data-no-swipe` on the page keeps the top-level
+    tab-track gesture (`TabsApp`) from also claiming the drag; axis-lock +
+    a distance threshold mean a tap on an event or day-number link still
+    just navigates.
+  - **The last-picked view (month/week/day) is remembered** client-side
+    (`localStorage`, key `helm:calendar:view`) and restored on a bare
+    `/calendar` visit — an explicit `?view=` deep link (a "+N MORE" or
+    day-number link) is never overridden by the remembered preference.
 - **Segmented control** (sub-view switch): a row of mono UPPERCASE buttons at
   the top of a merged tab, active = ink fill + white text, inactive =
   `#fafaf6` bg + `#c9c9c0` border. Same rectangles-only rules as everything

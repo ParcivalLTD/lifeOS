@@ -27,8 +27,7 @@ const DOMAIN_BLOCK_CLASS: Record<Domain, string> = {
   health: "bg-domain-health/10 border-l-domain-health",
 };
 
-const GUTTER = 46; // px — hour labels; sticky so it survives horizontal scroll
-const DAY_W = 108; // px — week column width; below this titles stop being readable
+const GUTTER = 46; // px — fixed-width hour-label column
 
 /** Ticks every minute so the line stays honest; null until mounted so the
  * server and client render the same thing. */
@@ -115,9 +114,14 @@ function EventBlock({
  * items live in their own strip above the timed area rather than pretending
  * to occupy a time.
  *
- * One component serves both views — week passes seven days (horizontally
- * scrollable at 108px per column, with the hour gutter sticky), day passes one and
- * fills the width. Month view is untouched.
+ * One component serves both views — week passes seven days, day passes one.
+ * Columns always fill the available width (a plain `1fr` grid, no fixed or
+ * minimum pixel width, no internal horizontal scroll): responsive on any
+ * viewport, from a wide desktop panel down to a narrow phone, where columns
+ * simply get narrower and titles truncate harder rather than triggering a
+ * scrollbar. Paging to the next/prev day or week is a horizontal swipe,
+ * handled one level up in CalendarViewTab — not a scroll gesture here.
+ * Month view is untouched.
  */
 export function TimeGrid({
   days,
@@ -133,139 +137,132 @@ export function TimeGrid({
   const { fromHour, toHour } = visibleRange(perDay);
   const hours = Array.from({ length: toHour - fromHour }, (_, i) => fromHour + i);
   const gridHeight = hours.length * HOUR_PX;
-  const isWeek = days.length > 1;
 
   const allDayRows = perDay.map((events) => events.filter((e) => e.allDay));
   const hasAllDay = allDayRows.some((r) => r.length > 0);
 
-  // Week gets an explicit total width so the columns are exactly DAY_W each
-  // and the scroller has something to scroll. Sizing off `min-w-max` instead
-  // would let one long all-day chip stretch every column. `minmax(0, 1fr)`
-  // (not `auto`) is what lets the cells shrink so titles truncate.
+  // Every column shares the remaining width evenly. `minmax(0, 1fr)` (not
+  // `auto`) is what lets a column shrink below its content's natural size —
+  // a long all-day chip (min-w-0 + truncate) never stretches its column.
   const cols = {
     display: "grid",
     gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`,
   } as const;
 
   return (
-    <div className={`border border-border-outer bg-surface ${isWeek ? "overflow-x-auto" : ""}`}>
-      <div style={isWeek ? { width: GUTTER + days.length * DAY_W } : undefined}>
-        {/* day headers — today inverted, matching the month grid */}
+    <div className="border border-border-outer bg-surface">
+      {/* day headers — today inverted, matching the month grid */}
+      <div className="flex border-b border-border-header">
+        <div
+          className="flex-none border-r border-border-row bg-surface"
+          style={{ width: GUTTER }}
+        />
+        <div className="flex-1" style={cols}>
+          {days.map((dateISO) => {
+            const isToday = dateISO === today;
+            return (
+              <div
+                key={dateISO}
+                className={`flex items-baseline justify-between gap-1 border-l border-border-row px-2 py-1.5 ${
+                  isToday ? "bg-ink text-[#ffffff]" : "bg-subtle"
+                }`}
+              >
+                <span className="font-mono text-[10px] font-semibold tracking-[.08em]">
+                  {dowLabelOf(dateISO)}
+                </span>
+                <span className="font-mono text-[11px] font-semibold">
+                  {parseISODate(dateISO).getDate()}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* all-day strip — bills, deadlines, birthdays; never in the timed area */}
+      {hasAllDay && (
         <div className="flex border-b border-border-header">
           <div
-            data-gutter
-            className="sticky left-0 z-20 flex-none border-r border-border-row bg-surface"
+            className="flex-none border-r border-border-row bg-surface px-1 py-1.5 font-mono text-[8px] font-semibold uppercase tracking-[.04em] whitespace-nowrap text-faint"
             style={{ width: GUTTER }}
-          />
-          <div className="flex-1" style={cols}>
-            {days.map((dateISO) => {
-              const isToday = dateISO === today;
-              return (
-                <div
-                  key={dateISO}
-                  className={`flex items-baseline justify-between gap-1 border-l border-border-row px-2 py-1.5 ${
-                    isToday ? "bg-ink text-[#ffffff]" : "bg-subtle"
-                  }`}
-                >
-                  <span className="font-mono text-[10px] font-semibold tracking-[.08em]">
-                    {dowLabelOf(dateISO)}
-                  </span>
-                  <span className="font-mono text-[11px] font-semibold">
-                    {parseISODate(dateISO).getDate()}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* all-day strip — bills, deadlines, birthdays; never in the timed area */}
-        {hasAllDay && (
-          <div className="flex border-b border-border-header">
-            <div
-              data-gutter
-              className="sticky left-0 z-20 flex-none border-r border-border-row bg-surface px-1 py-1.5 font-mono text-[8px] font-semibold uppercase tracking-[.04em] whitespace-nowrap text-faint"
-              style={{ width: GUTTER }}
-            >
-              All-day
-            </div>
-            <div className="flex-1" style={cols}>
-              {days.map((dateISO, i) => (
-                <div
-                  key={dateISO}
-                  className="flex min-w-0 flex-col gap-1 border-l border-border-row p-1"
-                >
-                  {allDayRows[i].map((e) => (
-                    <AllDayChip key={e.id} event={e} />
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* the hour grid */}
-        <div className="flex">
-          <div
-            data-gutter
-            className="sticky left-0 z-20 flex-none border-r border-border-row bg-surface"
-            style={{ width: GUTTER, height: gridHeight }}
           >
-            {hours.map((h, i) => (
+            All-day
+          </div>
+          <div className="flex-1" style={cols}>
+            {days.map((dateISO, i) => (
               <div
-                key={h}
-                className="absolute right-1 font-mono text-[9px] leading-none text-faint"
-                // -4px lifts the label onto its hour line rather than below it
-                style={{ top: i * HOUR_PX - 4 }}
+                key={dateISO}
+                className="flex min-w-0 flex-col gap-1 border-l border-border-row p-1"
               >
-                {hourLabel(h)}
+                {allDayRows[i].map((e) => (
+                  <AllDayChip key={e.id} event={e} />
+                ))}
               </div>
             ))}
           </div>
+        </div>
+      )}
 
-          <div className="relative flex-1" style={{ ...cols, height: gridHeight }}>
-            {/* hour rules, drawn once across the whole timed area */}
-            <div className="pointer-events-none absolute inset-0">
-              {hours.map((h, i) => (
-                <div
-                  key={h}
-                  className="absolute inset-x-0 border-t border-border-row"
-                  style={{ top: i * HOUR_PX }}
-                />
-              ))}
+      {/* the hour grid */}
+      <div className="flex">
+        <div
+          className="flex-none border-r border-border-row bg-surface"
+          style={{ width: GUTTER, height: gridHeight }}
+        >
+          {hours.map((h, i) => (
+            <div
+              key={h}
+              className="absolute right-1 font-mono text-[9px] leading-none text-faint"
+              // -4px lifts the label onto its hour line rather than below it
+              style={{ top: i * HOUR_PX - 4 }}
+            >
+              {hourLabel(h)}
             </div>
+          ))}
+        </div>
 
-            {days.map((dateISO, i) => {
-              const placed = layoutDay(perDay[i]);
-              const isToday = dateISO === today;
-              return (
-                <div key={dateISO} className="relative border-l border-border-row">
-                  {placed.map((p) => (
-                    <EventBlock
-                      key={p.event.id}
-                      placed={p}
-                      fromHour={fromHour}
-                      past={dateISO < today}
-                    />
-                  ))}
-
-                  {/* current-time indicator, today's column only */}
-                  {isToday &&
-                    nowMin !== null &&
-                    nowMin >= fromHour * 60 &&
-                    nowMin <= toHour * 60 && (
-                      <div
-                        aria-hidden
-                        className="pointer-events-none absolute inset-x-0 z-10 border-t border-ink"
-                        style={{ top: ((nowMin - fromHour * 60) / 60) * HOUR_PX }}
-                      >
-                        <span className="absolute left-0 top-[-2px] h-[5px] w-[5px] bg-ink" />
-                      </div>
-                    )}
-                </div>
-              );
-            })}
+        <div className="relative flex-1" style={{ ...cols, height: gridHeight }}>
+          {/* hour rules, drawn once across the whole timed area */}
+          <div className="pointer-events-none absolute inset-0">
+            {hours.map((h, i) => (
+              <div
+                key={h}
+                className="absolute inset-x-0 border-t border-border-row"
+                style={{ top: i * HOUR_PX }}
+              />
+            ))}
           </div>
+
+          {days.map((dateISO, i) => {
+            const placed = layoutDay(perDay[i]);
+            const isToday = dateISO === today;
+            return (
+              <div key={dateISO} className="relative border-l border-border-row">
+                {placed.map((p) => (
+                  <EventBlock
+                    key={p.event.id}
+                    placed={p}
+                    fromHour={fromHour}
+                    past={dateISO < today}
+                  />
+                ))}
+
+                {/* current-time indicator, today's column only */}
+                {isToday &&
+                  nowMin !== null &&
+                  nowMin >= fromHour * 60 &&
+                  nowMin <= toHour * 60 && (
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-x-0 z-10 border-t border-ink"
+                      style={{ top: ((nowMin - fromHour * 60) / 60) * HOUR_PX }}
+                    >
+                      <span className="absolute left-0 top-[-2px] h-[5px] w-[5px] bg-ink" />
+                    </div>
+                  )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
